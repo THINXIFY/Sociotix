@@ -8,7 +8,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronDown,
   CircleAlert,
   Clock3,
   Heart,
@@ -59,6 +58,7 @@ import { FavoriteButton } from "./favorite-button";
 import { FINDER_QUERY_KEY, FinderPrompt } from "./service-finder";
 import { FxNote } from "./region";
 import { DemoTag, FINDER_ROUTE, ordersHref, Panel, ROUTES, useHydrated } from "./shared";
+import { Select } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
 /*  Steps, validation & pricing                                               */
@@ -1356,7 +1356,7 @@ function FormField({ field, ctx, service, platform }: { field: OrderField; ctx: 
       case "select":
         return (
           <div className="relative">
-            <select
+            <Select
               {...common}
               value={value}
               onChange={(e) => {
@@ -1371,8 +1371,7 @@ function FormField({ field, ctx, service, platform }: { field: OrderField; ctx: 
                   {o}
                 </option>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 end-3.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            </Select>
           </div>
         );
       case "budget":

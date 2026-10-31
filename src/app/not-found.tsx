@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 
 export const metadata: Metadata = { title: { absolute: "Page not found — Sociotix" }, robots: { index: false, follow: true } };
 

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { ToolGlyph } from "./parts";
 import { CopyButton } from "./results";
 import { useToolStatus } from "./use-ai-status";
+import { Select } from "@/components/ui/select";
 
 /*
  * AI Order Explanation (AI-05) — the customer surfaces.
@@ -372,7 +373,7 @@ export function OrderExplainer({ tool }: { tool: AiTool }) {
               <label htmlFor={`${titleId}-order`} className="text-sm font-medium">
                 Order
               </label>
-              <select
+              <Select
                 id={`${titleId}-order`}
                 value={reference}
                 onChange={(e) => {
@@ -386,7 +387,7 @@ export function OrderExplainer({ tool }: { tool: AiTool }) {
                     {o.reference} · {o.service.name}
                   </option>
                 ))}
-              </select>
+              </Select>
               {selected ? (
                 <div className="mt-3 rounded-xl border bg-background px-3.5 py-3 text-sm dark:bg-white/[0.02]">
                   <p className="font-semibold">{selected.service.name}</p>

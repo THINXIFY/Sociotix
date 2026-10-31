@@ -5,10 +5,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   ArrowDownLeft,
-  ArrowUpDown,
   ArrowUpRight,
   Check,
-  ChevronDown,
   ChevronRight,
   CircleCheck,
   Clock3,
@@ -53,6 +51,7 @@ import { clearPaymentPreviews, type PaymentPreview, usePaymentPreviews } from ".
 import { FxNote } from "./region";
 import { DemoTag, enter, ordersHref, Pagination, Panel, ROUTES, supportHref } from "./shared";
 import { CryptoIcon, MethodMark, NetworkBadge } from "./wallet-ui";
+import { Select as Dropdown } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
 /*  Rows                                                                      */
@@ -227,24 +226,21 @@ function Select({
   value,
   onChange,
   children,
-  icon: Icon = ChevronDown,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (v: string) => void;
   children: React.ReactNode;
-  icon?: LucideIcon;
 }) {
   return (
     <div className="relative min-w-0">
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
-      <select id={id} value={value} onChange={(ev) => onChange(ev.target.value)} className={selectClass}>
+      <Dropdown id={id} value={value} onChange={(ev) => onChange(ev.target.value)} className={selectClass}>
         {children}
-      </select>
-      <Icon className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      </Dropdown>
     </div>
   );
 }
@@ -505,7 +501,7 @@ export function Transactions() {
                 ))}
               </Select>
               <div className="col-span-2 sm:col-span-1 lg:contents">
-                <Select id="tx-sort" label="Sort by date" value={sort} onChange={(v) => setSort(v as SortOrder)} icon={ArrowUpDown}>
+                <Select id="tx-sort" label="Sort by date" value={sort} onChange={(v) => setSort(v as SortOrder)}>
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>
                 </Select>

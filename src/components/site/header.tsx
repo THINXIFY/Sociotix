@@ -4,11 +4,13 @@ import * as React from "react";
 import Link from "next/link";
 import { useTheme } from "next-themes";
 import { motion } from "motion/react";
+import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import { Menu, Moon, Sparkles, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Logo } from "@/components/brand";
-import { usePreview } from "@/components/providers";
+import { HeaderAccount, type HeaderViewer, MobileAccount } from "@/components/site/header-account";
+import { MobileSolutions, SolutionsMenuItem, SolutionsMenuPortal } from "@/components/site/solutions-menu";
 import { cn } from "@/lib/utils";
 
 export const NAV = [
@@ -85,21 +87,17 @@ function AiLink({ current, className, onClick, compactAtLg = false }: { current:
   );
 }
 
-export function Header({ page = "home" }: { page?: "home" | "ai" | "other" }) {
+/**
+ * The public header. Pages render it through `public-header.tsx`, which resolves `viewer` from the
+ * real session on the server; rendered on its own (tests, previews) it shows the guest controls.
+ */
+export function Header({ page = "home", viewer = { kind: "guest" } }: { page?: "home" | "ai" | "other"; viewer?: HeaderViewer }) {
   const home = page === "home";
   const active = useActiveSection(home);
   // On other pages, section links lead back to the homepage.
   const nav = NAV.map((n) => ({ ...n, href: home ? n.href : `/${n.href}` }));
   const scrolled = useScrolled();
-  const preview = usePreview();
   const [open, setOpen] = React.useState(false);
-
-  const openAuth = (kind: "Log in" | "Sign up") =>
-    preview({
-      title: `${kind} is coming next`,
-      description:
-        "Accounts, funds and order placement are part of the next build phase. For now you can explore the full service catalog on this page.",
-    });
 
   return (
     <header
@@ -121,10 +119,12 @@ export function Header({ page = "home" }: { page?: "home" | "ai" | "other" }) {
           <Logo />
         </a>
 
-        <nav aria-label="Primary" className="ml-1 hidden lg:block xl:ml-4">
-          <ul className="flex items-center gap-1">
+        {/* "More Solutions" opens a mega menu (hover or click); the other items stay section links. */}
+        <NavigationMenu.Root aria-label="Primary" delay={80} closeDelay={200} className="ml-1 hidden lg:block xl:ml-4">
+          <NavigationMenu.List className="flex items-center gap-1">
             {nav.map((item) => {
               const isActive = home && active === item.href;
+              if (item.href.endsWith("#more-solutions")) return <SolutionsMenuItem key={item.href} highlighted={isActive} signedIn={typeof viewer === "object" && viewer.kind === "customer"} />;
               return (
                 <li key={item.href}>
                   <a
@@ -147,22 +147,14 @@ export function Header({ page = "home" }: { page?: "home" | "ai" | "other" }) {
                 </li>
               );
             })}
-          </ul>
-        </nav>
+          </NavigationMenu.List>
+          <SolutionsMenuPortal />
+        </NavigationMenu.Root>
 
         <div className="ml-auto flex items-center gap-1.5">
           <AiLink current={page === "ai"} compactAtLg className="hidden h-9 md:inline-flex lg:px-2.5 xl:px-3" />
           <ThemeToggle />
-          <Button
-            variant="ghost"
-            className="hidden h-9 rounded-full px-4 sm:inline-flex"
-            onClick={() => openAuth("Log in")}
-          >
-            Log In
-          </Button>
-          <Button className="h-9 rounded-full px-3 sm:px-4" onClick={() => openAuth("Sign up")}>
-            Sign Up
-          </Button>
+          <HeaderAccount viewer={viewer} />
 
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger
@@ -178,8 +170,8 @@ export function Header({ page = "home" }: { page?: "home" | "ai" | "other" }) {
                   <Logo />
                 </SheetTitle>
               </div>
-              <nav aria-label="Mobile" className="flex flex-col p-3">
-                {nav.map((item) => (
+              <nav aria-label="Mobile" className="flex flex-col overflow-y-auto p-3">
+                {nav.filter((item) => !item.href.endsWith("#more-solutions")).map((item) => (
                   <a
                     key={item.href}
                     href={item.href}
@@ -192,28 +184,11 @@ export function Header({ page = "home" }: { page?: "home" | "ai" | "other" }) {
                     {item.label}
                   </a>
                 ))}
+                <MobileSolutions onNavigate={() => setOpen(false)} />
                 <AiLink current={page === "ai"} onClick={() => setOpen(false)} className="mt-2 h-12 justify-center rounded-xl text-base" />
               </nav>
-              <div className="mt-auto grid grid-cols-2 gap-2 border-t p-4">
-                <Button
-                  variant="outline"
-                  className="h-11 rounded-full"
-                  onClick={() => {
-                    setOpen(false);
-                    openAuth("Log in");
-                  }}
-                >
-                  Log In
-                </Button>
-                <Button
-                  className="h-11 rounded-full"
-                  onClick={() => {
-                    setOpen(false);
-                    openAuth("Sign up");
-                  }}
-                >
-                  Sign Up
-                </Button>
+              <div className="mt-auto border-t p-4">
+                <MobileAccount viewer={viewer} onNavigate={() => setOpen(false)} />
               </div>
             </SheetContent>
           </Sheet>

@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import {
-  ArrowUpDown,
   BadgeCheck,
   Ban,
   Check,
@@ -46,6 +45,7 @@ import { useDisplay } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { FxNote } from "./region";
 import { DemoTag, enter, Panel, PanelHeader } from "./shared";
+import { Select } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
 /*  Shared bits                                                               */
@@ -430,7 +430,7 @@ function Activity({ onOpen, className, style }: { onOpen: (id: string) => void; 
             <label htmlFor="ref-sort" className="sr-only">
               Sort referrals
             </label>
-            <select
+            <Select
               id="ref-sort"
               value={sort}
               onChange={(e) => setSort(e.target.value as Sort)}
@@ -439,8 +439,7 @@ function Activity({ onOpen, className, style }: { onOpen: (id: string) => void; 
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
               <option value="progress">Most progress</option>
-            </select>
-            <ArrowUpDown className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+            </Select>
           </div>
         </div>
 

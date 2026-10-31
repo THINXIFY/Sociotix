@@ -11,6 +11,7 @@ import { ORDER_STATUS_META, type OrderStatus } from "@/lib/orders";
 import { CATEGORIES, CATEGORY_LABEL, PRIORITY_LABEL, STATUS_META, TICKET_PRIORITIES, TICKET_STATUSES, type TicketCategory, type TicketEventView, type TicketMessageView, type TicketPriority, type TicketStatus, type TicketSummary } from "@/lib/support";
 import { cn } from "@/lib/utils";
 import { SelectInput } from "./form";
+import { Select } from "@/components/ui/select";
 
 /*
  * Live Admin Support (5G-A). A queue and a ticket workspace. The server
@@ -358,11 +359,11 @@ function TicketWorkspace({ reference, onBack, onChanged }: { reference: string; 
               {mode === "reply" ? (
                 <label className="flex items-center gap-2 text-xs text-muted-foreground">
                   After sending
-                  <select value={after} onChange={(e) => setAfter(e.target.value as typeof after)} className={cn(field, "h-8 w-auto py-0 text-xs")}>
+                  <Select value={after} onChange={(e) => setAfter(e.target.value as typeof after)} className={cn(field, "h-8 w-auto py-0 text-xs")}>
                     <option value="waiting">Wait for customer</option>
                     <option value="in_progress">Keep in progress</option>
                     <option value="resolved">Mark resolved</option>
-                  </select>
+                  </Select>
                 </label>
               ) : (
                 <span className="flex items-center gap-1.5 text-xs text-soon">
@@ -394,34 +395,34 @@ function TicketWorkspace({ reference, onBack, onChanged }: { reference: string; 
           <p className="text-sm font-bold">Manage</p>
           <label className="block text-xs font-semibold text-muted-foreground">
             Status
-            <select disabled={!can || busy !== null} value={t.status} onChange={(e) => act("status", { status: e.target.value }, "Status updated. The customer was notified.")} className={cn(field, "mt-1 h-9")}>
+            <Select disabled={!can || busy !== null} value={t.status} onChange={(e) => act("status", { status: e.target.value }, "Status updated. The customer was notified.")} className={cn(field, "mt-1 h-9")}>
               {TICKET_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {STATUS_META[s].staff}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="block text-xs font-semibold text-muted-foreground">
             Priority
-            <select disabled={!can || busy !== null} value={t.priority} onChange={(e) => act("priority", { priority: e.target.value }, "Priority updated.")} className={cn(field, "mt-1 h-9")}>
+            <Select disabled={!can || busy !== null} value={t.priority} onChange={(e) => act("priority", { priority: e.target.value }, "Priority updated.")} className={cn(field, "mt-1 h-9")}>
               {TICKET_PRIORITIES.map((p) => (
                 <option key={p} value={p}>
                   {PRIORITY_LABEL[p]}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
           <label className="block text-xs font-semibold text-muted-foreground">
             Assigned to
-            <select disabled={!can || busy !== null} value={t.assignedStaffId ?? ""} onChange={(e) => act("assign", { staffId: e.target.value || null }, "Assignment updated.")} className={cn(field, "mt-1 h-9")}>
+            <Select disabled={!can || busy !== null} value={t.assignedStaffId ?? ""} onChange={(e) => act("assign", { staffId: e.target.value || null }, "Assignment updated.")} className={cn(field, "mt-1 h-9")}>
               <option value="">Unassigned</option>
               {(staff.data?.staff ?? []).map((s) => (
                 <option key={s.staffId} value={s.staffId}>
                   {s.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         </div>
         <div className="rounded-2xl border bg-card p-4">

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useTheme } from "next-themes";
 import {
   Bell,
-  ChevronDown,
   Globe,
   KeyRound,
   Laptop,
@@ -32,6 +31,7 @@ import { resetDemoData, savePreferences, usePreferences } from "./demo-store";
 import { useLiveAccount } from "./live-account";
 import { CurrencyPicker, LanguagePicker, offersLanguages } from "./region";
 import { enter, Panel, ROUTES, useHydrated } from "./shared";
+import { Select } from "@/components/ui/select";
 
 const SECTIONS = [
   { id: "appearance", key: "settings.nav.appearance", icon: Palette },
@@ -249,10 +249,9 @@ function SelectField({
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
-      <select id={id} value={value} disabled={disabled} onChange={(ev) => onChange?.(ev.target.value)} className={selectClass}>
+      <Select id={id} value={value} disabled={disabled} onChange={(ev) => onChange?.(ev.target.value)} className={selectClass}>
         {children}
-      </select>
-      <ChevronDown className="pointer-events-none absolute end-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+      </Select>
     </div>
   );
 }

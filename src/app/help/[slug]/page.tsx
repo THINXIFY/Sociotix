@@ -6,7 +6,7 @@ import { articleTitle, CATEGORY_ICON, ContactStrip } from "@/components/help/hel
 import { HelpSearch } from "@/components/help/search";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { HELP_ARTICLE_BY_SLUG, HELP_ARTICLES, HELP_CATEGORIES, helpHref } from "@/lib/help/articles";
 import { breadcrumbs, graph, webPage } from "@/lib/seo/schema";
 import { SITE } from "@/lib/seo/site";

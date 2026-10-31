@@ -111,7 +111,7 @@ export function Hero() {
             and track progress—all from one powerful dashboard.
           </motion.p>
 
-          <motion.div variants={item} className="mt-7 grid grid-cols-2 gap-3 sm:mt-9 sm:flex">
+          <motion.div variants={item} className="mt-7 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:mt-9 sm:flex">
             <a
               href="#services"
               className={cn(

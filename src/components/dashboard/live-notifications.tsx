@@ -7,6 +7,7 @@ import { Bell, CheckCheck, LifeBuoy } from "lucide-react";
 import { formatDateTime } from "@/lib/i18n";
 import { api } from "@/lib/live-account";
 import { cn } from "@/lib/utils";
+import { popupSurface } from "@/components/ui/menu";
 
 /* Live in-app notifications (5G-A): the customer's own persisted notifications. Nothing here is sample data. */
 
@@ -50,7 +51,7 @@ export function LiveNotifications() {
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="end" sideOffset={8} collisionPadding={12} className="z-50">
-          <Popover.Popup className="w-[min(23rem,calc(100vw-1.5rem))] origin-(--transform-origin) rounded-2xl border bg-popover text-popover-foreground shadow-float outline-none transition-[opacity,scale] duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none">
+          <Popover.Popup className={cn(popupSurface, "w-[min(23rem,calc(100vw-1.5rem))]")}>
             <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
               <Popover.Title className="font-heading text-sm font-bold">Notifications</Popover.Title>
               <button type="button" disabled={!unread} onClick={() => mark({ all: true })} className="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-secondary disabled:pointer-events-none disabled:text-muted-foreground">

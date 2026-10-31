@@ -41,6 +41,7 @@ import { NewTicketSheet, type TicketPreset } from "./new-ticket";
 import { DemoTag, enter, Pagination, Panel, ROUTES } from "./shared";
 import { CategoryIcon, PriorityBadge, TicketStatusBadge } from "./support-ui";
 import { TicketThreadSheet } from "./ticket-thread";
+import { Select } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
 /*  Filters                                                                   */
@@ -286,24 +287,24 @@ export function SupportCenter() {
                     <label htmlFor="ticket-category" className="sr-only">
                       Category
                     </label>
-                    <select id="ticket-category" value={category} onChange={(ev) => setCategory(ev.target.value as "all" | TicketCategory)} className={selectClass}>
+                    <Select id="ticket-category" value={category} onChange={(ev) => setCategory(ev.target.value as "all" | TicketCategory)} className={selectClass}>
                       <option value="all">All categories</option>
                       {TICKET_CATEGORY_IDS.map((c) => (
                         <option key={c} value={c}>
                           {TICKET_CATEGORIES[c].label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
                     <ChevronDown className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
                   </div>
                   <div className="relative">
                     <label htmlFor="ticket-sort" className="sr-only">
                       Sort by activity
                     </label>
-                    <select id="ticket-sort" value={sort} onChange={(ev) => setSort(ev.target.value as SortOrder)} className={selectClass}>
+                    <Select id="ticket-sort" value={sort} onChange={(ev) => setSort(ev.target.value as SortOrder)} className={selectClass}>
                       <option value="recent">Recent activity</option>
                       <option value="oldest">Oldest activity</option>
-                    </select>
+                    </Select>
                     <ArrowUpDown className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
                   </div>
                 </div>

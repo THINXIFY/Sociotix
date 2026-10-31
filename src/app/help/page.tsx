@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { HELP_DESCRIPTION, HELP_TITLE, HelpCenter, popularArticles } from "@/components/help/help-center";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { breadcrumbs, faqPage, graph, webPage } from "@/lib/seo/schema";
 import { SITE } from "@/lib/seo/site";
 

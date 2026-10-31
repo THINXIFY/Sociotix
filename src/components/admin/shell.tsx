@@ -30,7 +30,7 @@ import { useViewer } from "@/components/auth/viewer";
 import { cn } from "@/lib/utils";
 import { ADMIN_PRIMARY, ADMIN_SECONDARY, type AdminSection } from "./nav";
 import { SEVERITY } from "./ui";
-import { popupSurface, menuItem as sharedMenuItem, menuSeparator } from "./menu";
+import { popupSurface, menuItem as sharedMenuItem, menuSeparator, menuItemDestructive } from "./menu";
 
 /* -------------------------------------------------------------------------- */
 /*  Collapsed sidebar, remembered per browser                                 */
@@ -475,7 +475,7 @@ function ProfileMenu() {
                 <ArrowLeft aria-hidden /> Back to website
               </Menu.LinkItem>
               <Menu.Separator className={menuSeparator} />
-              <Menu.Item className={menuItem} onClick={() => void staffSignOutAction()}>
+              <Menu.Item className={cn(menuItem, menuItemDestructive)} onClick={() => void staffSignOutAction()}>
                 <LogOut aria-hidden /> Sign out
               </Menu.Item>
             </Menu.Popup>

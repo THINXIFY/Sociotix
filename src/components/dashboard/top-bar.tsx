@@ -41,6 +41,7 @@ import { cn } from "@/lib/utils";
 import { markNotificationsRead, resetDemoData, useDemoActivity, useAvatarPreview, useDemoOrders, useDemoPrefsSaved, useOrderingChanges, usePaymentPreviews, useProfile, useTickets, whenLabel } from "./demo-store";
 import { offersLanguages, RegionDialog } from "./region";
 import { DemoTag, useDestinations } from "./shared";
+import { menuItem as sharedMenuItem, menuItemDestructive, popupSurface } from "@/components/ui/menu";
 
 /* -------------------------------------------------------------------------- */
 /*  Global service search                                                     */
@@ -223,8 +224,8 @@ export const ACTIVITY_ICONS: Record<ActivityKind, { Icon: typeof Bell; className
   demo: { Icon: FlaskConical, className: "border border-dashed border-primary/40 bg-card text-primary" },
 };
 
-const popupClass =
-  "origin-(--transform-origin) rounded-2xl border bg-popover text-popover-foreground shadow-float outline-none transition-[opacity,scale] duration-150 data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0 motion-reduce:transition-none";
+// The shared menu look (same as admin): one surface, row height, highlight and disabled state everywhere.
+const popupClass = popupSurface;
 
 const iconButton =
   "relative grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none data-popup-open:bg-muted data-popup-open:text-foreground";
@@ -306,8 +307,7 @@ function Notifications() {
 /*  Profile menu                                                              */
 /* -------------------------------------------------------------------------- */
 
-const menuItem =
-  "flex h-9 w-full cursor-default items-center gap-2.5 rounded-lg px-2.5 text-sm outline-none select-none data-highlighted:bg-muted [&_svg]:size-4 [&_svg]:text-muted-foreground";
+const menuItem = sharedMenuItem;
 
 export function Avatar({ className }: { className?: string }) {
   const { initials } = useProfile();
@@ -331,7 +331,6 @@ export function Avatar({ className }: { className?: string }) {
 }
 
 function ProfileMenu() {
-  const go = useDestinations();
   const viewer = useViewer();
   const { fullName, profile } = useProfile();
   const { resolvedTheme, setTheme } = useTheme();
@@ -371,12 +370,12 @@ function ProfileMenu() {
               </div>
             </div>
             <Menu.Separator className="my-1.5 h-px bg-border" />
-            <Menu.Item className={menuItem} onClick={() => go("profile")}>
+            <Menu.LinkItem className={menuItem} render={<Link href="/dashboard/profile" />}>
               <CircleUserRound aria-hidden /> {t("nav.profile")}
-            </Menu.Item>
-            <Menu.Item className={menuItem} onClick={() => go("settings")}>
+            </Menu.LinkItem>
+            <Menu.LinkItem className={menuItem} render={<Link href="/dashboard/settings" />}>
               <Settings aria-hidden /> {t("nav.settings")}
-            </Menu.Item>
+            </Menu.LinkItem>
             <Menu.LinkItem className={menuItem} render={<Link href="/dashboard/security" />}>
               <ShieldCheck aria-hidden /> Sign-in &amp; security
             </Menu.LinkItem>
@@ -413,7 +412,7 @@ function ProfileMenu() {
             <Menu.LinkItem className={menuItem} render={<Link href="/" />}>
               <ArrowLeft aria-hidden /> {t("nav.backToWebsite")}
             </Menu.LinkItem>
-            <Menu.Item className={menuItem} onClick={() => void signOutAction()}>
+            <Menu.Item className={cn(menuItem, menuItemDestructive)} onClick={() => void signOutAction()}>
               <LogOut aria-hidden /> {t("menu.signOut")}
             </Menu.Item>
           </Menu.Popup>

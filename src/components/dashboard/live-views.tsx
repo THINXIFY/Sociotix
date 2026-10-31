@@ -26,6 +26,7 @@ import type { CustomerDeposit } from "@/lib/deposits";
 import { useLiveAccount } from "./live-account";
 import { BankInstructionsPanel, DepositStatusBadge } from "./live-deposit";
 import { enter, FINDER_ROUTE, Pagination, Panel, PanelHeader, ROUTES } from "./shared";
+import { Select } from "@/components/ui/select";
 
 /*
  * Live-mode (DEMO_MODE off) dashboard views. Every figure comes from the
@@ -460,32 +461,32 @@ export function LiveCatalog() {
         </label>
         <label>
           <span className="sr-only">Platform</span>
-          <select value={platform} onChange={(ev) => (setPlatform(ev.target.value), setPageNo(1))} className={cn(control, "w-full")}>
+          <Select value={platform} onChange={(ev) => (setPlatform(ev.target.value), setPageNo(1))} className={cn(control, "w-full")}>
             <option value="">All platforms</option>
             {PLATFORMS.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           <span className="sr-only">Service type</span>
-          <select value={category} onChange={(ev) => (setCategory(ev.target.value), setPageNo(1))} className={cn(control, "w-full")}>
+          <Select value={category} onChange={(ev) => (setCategory(ev.target.value), setPageNo(1))} className={cn(control, "w-full")}>
             <option value="">All types</option>
             {CATEGORY_ORDER.map((c) => (
               <option key={c} value={c}>
                 {CATEGORY_META[c].label}
               </option>
             ))}
-          </select>
+          </Select>
         </label>
         <label>
           <span className="sr-only">Sort by</span>
-          <select value={sort} onChange={(ev) => (setSort(ev.target.value as "name" | "platform"), setPageNo(1))} className={cn(control, "w-full")}>
+          <Select value={sort} onChange={(ev) => (setSort(ev.target.value as "name" | "platform"), setPageNo(1))} className={cn(control, "w-full")}>
             <option value="platform">By platform</option>
             <option value="name">By name</option>
-          </select>
+          </Select>
         </label>
       </div>
 

@@ -91,7 +91,6 @@ const greetingFor = (h: number) => (h < 5 ? "Good evening" : h < 12 ? "Good morn
 const noopSubscribe = () => () => {};
 
 function Welcome({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  const go = useDestinations();
   const openOrder = useOpenOrder();
   const greeting = React.useSyncExternalStore(
     noopSubscribe,
@@ -137,14 +136,14 @@ function Welcome({ className, style }: { className?: string; style?: React.CSSPr
         </div>
 
         <div className="grid shrink-0 grid-cols-[1.3fr_1fr] gap-2.5 sm:flex">
-          <button type="button" className={cn(primaryBtn, "h-12 px-4 text-[0.95rem] whitespace-nowrap sm:px-6")} onClick={() => go("new-order")}>
+          <Link href={newOrderHref()} className={cn(primaryBtn, "h-12 px-4 text-[0.95rem] whitespace-nowrap sm:px-6")}>
             <Plus className="size-[1.1rem]" strokeWidth={2.6} aria-hidden />
             New Order
-          </button>
-          <button type="button" className={cn(secondaryBtn, "h-12 px-4 whitespace-nowrap sm:px-5")} onClick={() => go("add-funds")}>
+          </Link>
+          <Link href={ROUTES["add-funds"]!} className={cn(secondaryBtn, "h-12 px-4 whitespace-nowrap sm:px-5")}>
             <Wallet className="size-4" aria-hidden />
             Add Funds
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -187,7 +186,6 @@ function Welcome({ className, style }: { className?: string; style?: React.CSSPr
 /* -------------------------------------------------------------------------- */
 
 function WalletCard({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  const go = useDestinations();
   const [hidden, setHidden] = React.useState(false);
   const { main: whole, rest: cents } = formatMoneyParts(DEMO_WALLET.balance);
 
@@ -257,20 +255,18 @@ function WalletCard({ className, style }: { className?: string; style?: React.CS
       <FxNote tone="inverse" className="mt-3" />
 
       <div className="mt-5 grid grid-cols-2 gap-2.5">
-        <button
-          type="button"
-          onClick={() => go("add-funds")}
+        <Link
+          href={ROUTES["add-funds"]!}
           className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-lime text-sm font-semibold text-graphite transition-transform hover:-translate-y-px focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none"
         >
           <Plus className="size-4" strokeWidth={2.6} aria-hidden /> Add Funds
-        </button>
-        <button
-          type="button"
-          onClick={() => go("transactions")}
+        </Link>
+        <Link
+          href={ROUTES.transactions!}
           className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/30 focus-visible:outline-none"
         >
           <ArrowLeftRight className="size-4" aria-hidden /> Transactions
-        </button>
+        </Link>
       </div>
 
       <p className="mt-auto flex gap-2 pt-4 text-[0.72rem] leading-relaxed text-white/50">
@@ -420,7 +416,6 @@ function RecentOrders({
   className?: string;
   style?: React.CSSProperties;
 }) {
-  const go = useDestinations();
   const openOrder = useOpenOrder();
   const { recent, summary } = useDemoOrders();
   const orders = recent.filter((o) => inFilter(o, filter));
@@ -433,9 +428,9 @@ function RecentOrders({
           title="Recent orders"
           description="Your latest orders and where they stand."
           action={
-            <button type="button" className={ghostLink} onClick={() => go("orders")}>
+            <Link href={ROUTES.orders!} className={ghostLink}>
               View orders <ArrowRight className="size-3.5" aria-hidden />
-            </button>
+            </Link>
           }
         />
         <div className="-mx-1 mt-4 overflow-x-auto px-1 no-scrollbar">
@@ -615,9 +610,9 @@ function QuickFinder({ className, style }: { className?: string; style?: React.C
         title="Find a service"
         description={`${CATALOG_TOTALS.services} services across ${CATALOG_TOTALS.platforms} platforms.`}
         action={
-          <button type="button" className={ghostLink} onClick={() => go("new-order")}>
+          <Link href={newOrderHref()} className={ghostLink}>
             Browse all <ArrowRight className="size-3.5" aria-hidden />
-          </button>
+          </Link>
         }
       />
 
@@ -922,7 +917,6 @@ function QuickAccess({ className, style }: { className?: string; style?: React.C
 /* -------------------------------------------------------------------------- */
 
 function NeedsAction({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  const go = useDestinations();
   const openOrder = useOpenOrder();
   const needsAction = useDemoOrders().recent.filter((o) => o.status === "attention");
 
@@ -967,14 +961,13 @@ function NeedsAction({ className, style }: { className?: string; style?: React.C
                   </p>
                   <p className="mt-0.5 text-[0.8rem] leading-snug text-muted-foreground">{o.attention?.reason}</p>
                   <div className="mt-3 flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => go("orders", { query: { order: o.id } })}
+                    <Link
+                      href={ordersHref({ order: o.id })}
                       className="inline-flex h-8 items-center gap-1.5 rounded-full bg-foreground px-3.5 text-xs font-semibold text-background transition-opacity hover:opacity-85 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
                     >
                       {o.attention?.action}
                       <ArrowRight className="size-3.5" aria-hidden />
-                    </button>
+                    </Link>
                     <button
                       type="button"
                       onClick={() => openOrder(o)}
@@ -1026,7 +1019,6 @@ function LatestUpdates({ className, style }: { className?: string; style?: React
 /* -------------------------------------------------------------------------- */
 
 function HelpPanel({ className, style }: { className?: string; style?: React.CSSProperties }) {
-  const go = useDestinations();
   return (
     <Panel className={cn("flex items-start gap-4 p-4 sm:p-5", className)} style={style} aria-labelledby="help-title">
       <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-secondary-foreground">
@@ -1040,13 +1032,12 @@ function HelpPanel({ className, style }: { className?: string; style?: React.CSS
           Share your order ID and our team will look into it with you.
         </p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={() => go("support")}
+          <Link
+            href={ROUTES.support!}
             className="inline-flex h-9 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
           >
             Get Support
-          </button>
+          </Link>
           <Link href="/#faq" className={ghostLink}>
             Read the FAQ
           </Link>

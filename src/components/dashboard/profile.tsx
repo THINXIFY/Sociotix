@@ -20,6 +20,7 @@ import { saveProfile, setAvatarPreview, useAvatarPreview, useProfile } from "./d
 import { useLiveAccount } from "./live-account";
 import { DemoTag, enter, Panel } from "./shared";
 import { Avatar } from "./top-bar";
+import { Select } from "@/components/ui/select";
 
 
 const inputClass =
@@ -222,21 +223,21 @@ export function MyProfile() {
                   <input id="p-phone" type="tel" autoComplete="tel" placeholder="+1 555 010 2030" value={current.phone} onChange={(ev) => set("phone", ev.target.value)} className={inputClass} {...invalid("p-phone", err("phone"))} />
                 </Field>
                 <Field id="p-country" label="Country" value={current.country} editing={editing}>
-                  <select id="p-country" autoComplete="country-name" value={current.country} onChange={(ev) => set("country", ev.target.value)} className={inputClass}>
+                  <Select id="p-country" autoComplete="country-name" value={current.country} onChange={(ev) => set("country", ev.target.value)} className={inputClass}>
                     {!current.country ? <option value="">Choose a country</option> : null}
                     {COUNTRIES.map((c) => (
                       <option key={c}>{c}</option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
                 <Field id="p-tz" label="Timezone" value={timezoneLabel(current.timezone)} editing={editing}>
-                  <select id="p-tz" value={current.timezone} onChange={(ev) => set("timezone", ev.target.value)} className={inputClass}>
+                  <Select id="p-tz" value={current.timezone} onChange={(ev) => set("timezone", ev.target.value)} className={inputClass}>
                     {TIMEZONES.map((t) => (
                       <option key={t.id} value={t.id}>
                         {t.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </Field>
               </div>
             </Section>
@@ -251,11 +252,11 @@ export function MyProfile() {
                     <input id="p-biz-site" type="url" inputMode="url" autoComplete="url" placeholder="example.com" value={current.business.website} onChange={(ev) => setBiz("website", ev.target.value)} className={inputClass} {...invalid("p-biz-site", err("website"))} />
                   </Field>
                   <Field id="p-biz-country" label="Company country" value={current.business.country} editing={editing}>
-                    <select id="p-biz-country" value={current.business.country} onChange={(ev) => setBiz("country", ev.target.value)} className={inputClass}>
+                    <Select id="p-biz-country" value={current.business.country} onChange={(ev) => setBiz("country", ev.target.value)} className={inputClass}>
                       {COUNTRIES.map((c) => (
                         <option key={c}>{c}</option>
                       ))}
-                    </select>
+                    </Select>
                   </Field>
                   {live ? null : <Field id="p-biz-ref" label="Tax or company reference" optional hint="Only if you'd like it on invoices. Never upload documents here." value={current.business.reference} editing={editing} error={err("reference")}>
                     <input id="p-biz-ref" value={current.business.reference} maxLength={30} onChange={(ev) => setBiz("reference", ev.target.value)} className={inputClass} {...invalid("p-biz-ref", err("reference"), "p-biz-ref-hint")} />

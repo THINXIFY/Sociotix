@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/json-ld";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { Hero } from "@/components/site/hero";
 import { Platforms } from "@/components/site/platforms";
 import { Marketplace } from "@/components/site/marketplace";

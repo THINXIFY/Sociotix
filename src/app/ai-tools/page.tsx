@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { AI_FAQ, AiLanding } from "@/components/ai/landing";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { isIndexableTool } from "@/lib/ai/guides";
 import { AI_TOOLS, aiToolHref } from "@/lib/ai/registry";
 import { breadcrumbs, faqPage, graph, itemList, webPage } from "@/lib/seo/schema";

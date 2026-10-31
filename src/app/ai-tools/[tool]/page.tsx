@@ -11,7 +11,7 @@ import { ServiceSearch } from "@/components/ai/service-search";
 import { AiWorkspace } from "@/components/ai/workspace";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { isIndexableTool, TOOL_GUIDES } from "@/lib/ai/guides";
 import { AI_TOOL_BY_SLUG, AI_TOOLS, type AiTool, aiToolHref } from "@/lib/ai/registry";
 import { breadcrumbs, faqPage, graph, webApplication, webPage } from "@/lib/seo/schema";

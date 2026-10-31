@@ -1,15 +1,15 @@
 "use client";
 
 import { Accordion } from "@base-ui/react/accordion";
-import { ArrowUpRight, BookOpen, Mail, MessageCircle, Plus, Ticket } from "lucide-react";
-import { usePreview } from "@/components/providers";
+import Link from "next/link";
+import { ArrowUpRight, BookOpen, MessageCircle, Plus, Ticket } from "lucide-react";
 import { Eyebrow, Reveal, Section } from "@/components/site/primitives";
 
 const FAQS = [
   {
     id: "account",
     q: "How do I create an account?",
-    a: "Registration opens in the next phase. You'll sign up with an email address, verify it, and use one account for every platform in the catalog.",
+    a: "Choose Sign Up, enter your name, email and a password, then confirm your email from the link we send. One account works for every platform in the catalog.",
   },
   {
     id: "availability",
@@ -24,7 +24,7 @@ const FAQS = [
   {
     id: "payments",
     q: "How do payments work?",
-    a: "You'll be able to add funds to your account balance with a supported payment method, or pay directly for a single order. Prices are shown only once they're configured for a service — we never display placeholder prices.",
+    a: "Orders are paid from your account balance. Adding funds needs an approved payment method, and none is active yet — the Add Funds page shows each method's status. Prices are shown only once they're configured for a service — we never display placeholder prices.",
   },
   {
     id: "tracking",
@@ -39,18 +39,11 @@ const FAQS = [
   {
     id: "support",
     q: "How do I get support?",
-    a: "Support is attached to each order, so our team sees the full context straight away. You'll also be able to open a general ticket from your dashboard.",
+    a: "Open a ticket from the Support page in your dashboard and link it to an order if it's about one, so our team sees the full context straight away. Replies appear in the same conversation, and the Help Center answers the most common questions.",
   },
 ];
 
 export function Faq() {
-  const preview = usePreview();
-  const soon = (title: string) => () =>
-    preview({
-      title: `${title} — preview`,
-      description: "Support channels open with customer accounts in the next build phase.",
-    });
-
   return (
     <Section id="faq" className="border-t bg-surface/60">
       <div className="grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.4fr)] lg:gap-14">
@@ -66,7 +59,7 @@ export function Faq() {
 
           {/* Support card — desktop position */}
           <div className="mt-8 hidden lg:block">
-            <SupportCard onAction={soon} />
+            <SupportCard />
           </div>
         </Reveal>
 
@@ -104,18 +97,18 @@ export function Faq() {
 
         {/* Support card — mobile/tablet position */}
         <div className="lg:hidden">
-          <SupportCard onAction={soon} />
+          <SupportCard />
         </div>
       </div>
     </Section>
   );
 }
 
-function SupportCard({ onAction }: { onAction: (title: string) => () => void }) {
+function SupportCard() {
   const channels = [
-    { icon: Ticket, label: "Order tickets" },
-    { icon: Mail, label: "Email" },
-    { icon: MessageCircle, label: "Live chat" },
+    { icon: Ticket, label: "Support tickets" },
+    { icon: BookOpen, label: "Help Center" },
+    { icon: MessageCircle, label: "Live chat · planned" },
   ];
   return (
     <div className="relative overflow-hidden rounded-3xl bg-graphite p-6 text-white">
@@ -123,9 +116,9 @@ function SupportCard({ onAction }: { onAction: (title: string) => () => void }) 
       <div className="relative">
         <p className="font-heading text-lg font-bold">Still have a question?</p>
         <p className="mt-1.5 text-sm leading-relaxed text-white/65">
-          Our team can help with services, orders and payments. Support opens alongside customer accounts.
+          Our team can help with services, orders and payments. Open a ticket from your dashboard — replies appear there.
         </p>
-        <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Planned support channels">
+        <ul className="mt-5 flex flex-wrap gap-1.5" aria-label="Support channels">
           {channels.map(({ icon: Icon, label }) => (
             <li
               key={label}
@@ -137,9 +130,8 @@ function SupportCard({ onAction }: { onAction: (title: string) => () => void }) 
           ))}
         </ul>
         <div className="mt-6 flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={onAction("Contact support")}
+          <Link
+            href="/dashboard/support?new=1"
             className="btn-shine group inline-flex h-10 items-center gap-1.5 rounded-full bg-lime px-4 text-sm font-semibold text-graphite transition-transform hover:-translate-y-px"
           >
             Contact support
@@ -147,14 +139,13 @@ function SupportCard({ onAction }: { onAction: (title: string) => () => void }) 
               className="size-4 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
               aria-hidden
             />
-          </button>
-          <button
-            type="button"
-            onClick={onAction("Help center")}
+          </Link>
+          <Link
+            href="/help"
             className="inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-white/80 ring-1 ring-white/15 transition-colors hover:bg-white/10 hover:text-white"
           >
             <BookOpen className="size-4" aria-hidden /> Help center
-          </button>
+          </Link>
         </div>
       </div>
     </div>

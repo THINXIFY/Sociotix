@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { ACTION_ICON, automationApi, FlowPreview, TRIGGER_ICON } from "./automation-parts";
 import { page, primaryButton, quietButton, SocialNav } from "./parts";
 import { useUnsavedWarning } from "./publishing-parts";
+import { Select } from "@/components/ui/select";
 
 /* Guided workflow builder (AI-08): trigger → action → configure → review & activate. No node canvas. */
 
@@ -226,13 +227,13 @@ export function AutomationBuilder({ existing, template }: { existing: Automation
         {s.triggerType === "draft_due" || s.actionType === "flag_drafts" ? (
           <label className="block max-w-[16rem]">
             <span className={label}>Drafts planned within</span>
-            <select value={s.withinDays} onChange={(e) => set({ withinDays: Number(e.target.value) })} className={cn(field, "mt-1.5")}>
+            <Select value={s.withinDays} onChange={(e) => set({ withinDays: Number(e.target.value) })} className={cn(field, "mt-1.5")}>
               {[1, 2, 3, 5, 7, 10, 14].map((n) => (
                 <option key={n} value={n}>
                   {n} day{n === 1 ? "" : "s"}
                 </option>
               ))}
-            </select>
+            </Select>
           </label>
         ) : null}
         <p className="text-[0.75rem] text-muted-foreground">Time zone: {tz}. Daylight-saving changes are handled for you.</p>

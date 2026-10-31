@@ -9,6 +9,7 @@ import { api, ApiError } from "@/lib/live-account";
 import { formatDateTime } from "@/lib/i18n";
 import { CATEGORIES, CATEGORY_LABEL, STATUS_META, type TicketCategory, type TicketEventView, type TicketMessageView, type TicketStatus, type TicketSummary } from "@/lib/support";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 
 /*
  * Live customer Support (5G-A). The customer's own tickets only; the server
@@ -231,6 +232,9 @@ function NewTicket({ orders, initialOrder, onCancel, onCreated }: { orders: { re
   const [text, setText] = React.useState("");
   const [orderRef, setOrderRef] = React.useState(initialOrder ?? "");
   const [touched, setTouched] = React.useState(false);
+  // Opening the form moves focus into it, so keyboard and screen-reader users land on the first field.
+  const subjectRef = React.useRef<HTMLInputElement>(null);
+  React.useEffect(() => subjectRef.current?.focus(), []);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   // One key per form: a double click or a retried request opens the ticket once.
@@ -288,7 +292,7 @@ function NewTicket({ orders, initialOrder, onCancel, onCreated }: { orders: { re
           <label htmlFor="tk-subject" className="mb-1.5 block text-sm font-semibold">
             Subject
           </label>
-          <input id="tk-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="e.g. My order hasn't started yet" aria-invalid={subjectErr ? true : undefined} aria-describedby={subjectErr ? "tk-subject-err" : undefined} className={cn(field, "h-11")} />
+          <input ref={subjectRef} id="tk-subject" value={subject} onChange={(e) => setSubject(e.target.value)} maxLength={150} placeholder="e.g. My order hasn't started yet" aria-invalid={subjectErr ? true : undefined} aria-describedby={subjectErr ? "tk-subject-err" : undefined} className={cn(field, "h-11")} />
           {subjectErr ? (
             <p id="tk-subject-err" className="mt-1 text-xs text-destructive">
               {subjectErr}
@@ -299,7 +303,7 @@ function NewTicket({ orders, initialOrder, onCancel, onCreated }: { orders: { re
           <label htmlFor="tk-order" className="mb-1.5 flex items-baseline justify-between text-sm font-semibold">
             Related order <span className="text-xs font-normal text-muted-foreground">Optional</span>
           </label>
-          <select id="tk-order" value={orderRef} onChange={(e) => setOrderRef(e.target.value)} className={cn(field, "h-11")}>
+          <Select id="tk-order" value={orderRef} onChange={(e) => setOrderRef(e.target.value)} className={cn(field, "h-11")}>
             <option value="">{orders.length ? "No order" : "You have no orders yet"}</option>
             {orders.map((o) => (
               <option key={o.reference} value={o.reference}>
@@ -307,7 +311,7 @@ function NewTicket({ orders, initialOrder, onCancel, onCreated }: { orders: { re
               </option>
             ))}
             {initialOrder && !orders.some((o) => o.reference === initialOrder) ? <option value={initialOrder}>{initialOrder}</option> : null}
-          </select>
+          </Select>
         </div>
       </div>
 

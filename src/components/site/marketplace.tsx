@@ -6,7 +6,6 @@ import {
   ArrowRight,
   ArrowUpDown,
   Check,
-  ChevronDown,
   LayoutGrid,
   Search,
   Sparkles,
@@ -18,6 +17,7 @@ import { PlatformIcon, PlatformTile } from "@/components/brand";
 import { useCatalogFilters, usePreview, type CategoryFilter } from "@/components/providers";
 import { CATEGORY_ICONS, Section, SectionHeading, StatusBadge } from "@/components/site/primitives";
 import { cn } from "@/lib/utils";
+import { Select } from "@/components/ui/select";
 import {
   CATALOG_TOTALS,
   CATEGORY_META,
@@ -110,8 +110,7 @@ export function Marketplace() {
   const isPristine = platform === "all" && category === "all" && status === "all" && !query;
   const activePlatform = platform === "all" ? null : PLATFORM_BY_ID[platform];
 
-  // Service pages and order forms arrive with the customer ordering flow;
-  // until then "View service" opens a summary preview.
+  // "View service" opens a summary with a real next step: configuring the order in the dashboard.
   const openService = (s: Service) => {
     const p = PLATFORM_BY_ID[s.platformId];
     preview({
@@ -175,20 +174,25 @@ export function Marketplace() {
             <label htmlFor="service-sort" className="sr-only">
               Sort services
             </label>
-            <ArrowUpDown className="pointer-events-none absolute top-1/2 left-5 size-4 sm:left-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
-            <select
+            <Select
               id="service-sort"
               value={sort}
               onChange={(e) => setSort(e.target.value as SortKey)}
-              className="h-14 w-14 appearance-none rounded-2xl border bg-background text-sm font-medium text-transparent outline-none focus:border-primary/60 focus:ring-3 focus:ring-primary/15 sm:w-48 sm:pr-10 sm:pl-10 sm:text-foreground [&>option]:text-foreground"
+              aria-label="Sort services"
+              trigger={
+                <span className="flex min-w-0 items-center gap-2">
+                  <ArrowUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                  <span className="hidden truncate sm:inline">{SORTS[sort]}</span>
+                </span>
+              }
+              className="h-14 w-14 justify-center rounded-2xl bg-background px-0 font-medium max-sm:[&>svg:last-child]:hidden sm:w-48 sm:justify-between sm:px-3.5"
             >
               {Object.entries(SORTS).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
               ))}
-            </select>
-            <ChevronDown className="pointer-events-none absolute top-1/2 right-3.5 hidden size-4 -translate-y-1/2 text-muted-foreground sm:block" aria-hidden />
+            </Select>
           </div>
         </div>
 

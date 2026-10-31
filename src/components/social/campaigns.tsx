@@ -12,6 +12,7 @@ import { browserTimeZone } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
 import { page, primaryButton, quietButton, SocialHeader } from "./parts";
 import { EmptyIllustration, postsApi } from "./publishing-parts";
+import { Select } from "@/components/ui/select";
 
 /*
  * AI Campaign Studio (AI-07). Goal-based campaign planning through the shared
@@ -105,11 +106,11 @@ export function CampaignStudio({ data }: { data: PublishingData }) {
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <label className="block">
                 <span className={label}>Objective</span>
-                <select value={objective} onChange={(e) => setObjective(e.target.value)} className={cn(field, "mt-1.5")}>
+                <Select value={objective} onChange={(e) => setObjective(e.target.value)} className={cn(field, "mt-1.5")}>
                   {GROWTH_GOALS.map((g) => (
                     <option key={g}>{g}</option>
                   ))}
-                </select>
+                </Select>
               </label>
               <fieldset>
                 <legend className={label}>Length</legend>
@@ -148,12 +149,12 @@ export function CampaignStudio({ data }: { data: PublishingData }) {
                 </label>
                 <label className="block">
                   <span className={label}>Monthly budget</span>
-                  <select value={budget} onChange={(e) => setBudget(e.target.value)} className={cn(field, "mt-1.5")}>
+                  <Select value={budget} onChange={(e) => setBudget(e.target.value)} className={cn(field, "mt-1.5")}>
                     <option value="">Not stated</option>
                     {BUDGET_RANGES.map((b) => (
                       <option key={b}>{b}</option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
                 <label className="block">
                   <span className={label}>Anything else</span>

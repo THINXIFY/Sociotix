@@ -37,6 +37,7 @@ import { type LocalOrder, resetDemoData, useDemoOrders } from "./demo-store";
 import { OrderDetails } from "./order-details";
 import { FxNote } from "./region";
 import { DemoTag, enter, newOrderHref, OrderStatusBadge, Panel, ROUTES } from "./shared";
+import { Select } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
 /*  Filters                                                                   */
@@ -327,24 +328,24 @@ export function MyOrders() {
                 <label htmlFor="orders-platform" className="sr-only">
                   Platform
                 </label>
-                <select id="orders-platform" value={platform} onChange={(ev) => setPlatform(ev.target.value)} className={selectClass}>
+                <Select id="orders-platform" value={platform} onChange={(ev) => setPlatform(ev.target.value)} className={selectClass}>
                   <option value="all">All platforms</option>
                   {ORDER_PLATFORMS.map((p) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
                     </option>
                   ))}
-                </select>
+                </Select>
                 <ChevronDown className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               </div>
               <div className="relative">
                 <label htmlFor="orders-sort" className="sr-only">
                   Sort by date
                 </label>
-                <select id="orders-sort" value={sort} onChange={(ev) => setSort(ev.target.value as SortOrder)} className={selectClass}>
+                <Select id="orders-sort" value={sort} onChange={(ev) => setSort(ev.target.value as SortOrder)} className={selectClass}>
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>
-                </select>
+                </Select>
                 <ArrowUpDown className="pointer-events-none absolute top-1/2 end-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
               </div>
             </div>

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { automationApi, AutomationBadge, FlowPreview, RunBadge, TEMPLATE_ICON } from "./automation-parts";
 import { page, primaryButton, quietButton, SocialHeader, When } from "./parts";
 import { EmptyIllustration } from "./publishing-parts";
+import { Select } from "@/components/ui/select";
 
 /* Automation Studio overview (AI-08). Real workflows, runs and inbox items only. */
 
@@ -407,13 +408,13 @@ export function AutomationStudio({ data }: { data: AutomationData & { accounts: 
                 </label>
                 <label>
                   <span className="sr-only">Sort automations</span>
-                  <select value={sort} onChange={(e) => setSort(e.target.value as keyof typeof SORTS)} className="h-8 rounded-full border bg-card px-3 text-[0.78rem] font-semibold outline-none focus-visible:ring-3 focus-visible:ring-primary/30">
+                  <Select value={sort} onChange={(e) => setSort(e.target.value as keyof typeof SORTS)} className="h-8 rounded-full border bg-card px-3 text-[0.78rem] font-semibold outline-none focus-visible:ring-3 focus-visible:ring-primary/30">
                     {Object.entries(SORTS).map(([k, v]) => (
                       <option key={k} value={k}>
                         {v}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </label>
               </div>
             </div>

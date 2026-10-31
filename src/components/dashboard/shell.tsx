@@ -22,7 +22,6 @@ import {
   ROUTES,
   SECONDARY_NAV,
   useActiveDestination,
-  useDestinations,
   useHydrated,
 } from "./shared";
 import { useDemoOrders, usePreferences, useProfile } from "./demo-store";
@@ -327,7 +326,6 @@ const ALL_NAV = [...PRIMARY_NAV, ...AI_NAV, ...SECONDARY_NAV];
 const navItem = (id: Destination) => ALL_NAV.find((n) => n.id === id)!;
 
 function BottomNav() {
-  const go = useDestinations();
   const activeId = useActiveDestination();
   const [moreOpen, setMoreOpen] = React.useState(false);
   const { attention } = useDemoOrders().summary;
@@ -418,19 +416,18 @@ function BottomNav() {
               const Icon = item.icon;
               return (
                 <li key={id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMoreOpen(false);
-                      go(id);
-                    }}
+                  {/* Real links (open in a new tab, announced as links), like the sidebar. */}
+                  <NavTarget
+                    id={id}
+                    onClick={() => setMoreOpen(false)}
+                    aria-current={activeId === id ? "page" : undefined}
                     className="flex h-14 w-full items-center gap-3 rounded-2xl border bg-card px-3.5 text-start text-sm font-semibold transition-colors hover:border-primary/30 active:bg-muted"
                   >
                     <span className="grid size-8 place-items-center rounded-xl bg-secondary text-secondary-foreground">
                       <Icon className="size-4" aria-hidden />
                     </span>
                     {navLabel(item)}
-                  </button>
+                  </NavTarget>
                 </li>
               );
             })}

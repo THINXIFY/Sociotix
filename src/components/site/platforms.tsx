@@ -133,7 +133,8 @@ export function Platforms() {
               preview({
                 title: "Suggest a platform",
                 description:
-                  "The catalog is built to add new networks and categories without a redesign. Platform requests will open with customer accounts in the next phase.",
+                  "The catalog is built to add new networks and categories without a redesign. Missing a platform you need? Tell our team in a support ticket.",
+                action: { label: "Contact support", href: "/dashboard/support?new=1" },
               })
             }
             className="flex h-full min-h-36 w-full flex-col items-center justify-center gap-2.5 rounded-3xl border border-dashed p-5 text-center text-muted-foreground transition-colors hover:border-primary/50 hover:bg-card/60 hover:text-foreground lg:min-h-0 lg:flex-row lg:py-5 xl:min-h-48 xl:flex-col"

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { type LandingAvailability, SOCIAL_DESCRIPTION, SOCIAL_TITLE, SocialLanding, socialFaq } from "@/components/social/landing";
 import { SOCIAL_PROVIDER_IDS, SOCIAL_ROUTES } from "@/lib/social/platforms";
 import { breadcrumbs, faqPage, graph, webPage } from "@/lib/seo/schema";

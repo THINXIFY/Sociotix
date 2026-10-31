@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { PRICING_DESCRIPTION, PRICING_FAQ, PRICING_TITLE, PricingPage } from "@/components/ai-workspace/pricing";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
-import { Header } from "@/components/site/header";
+import { Header } from "@/components/site/public-header";
 import { AI_ROUTES } from "@/lib/ai/workspace";
 import { breadcrumbs, faqPage, graph, webPage } from "@/lib/seo/schema";
 import { SITE } from "@/lib/seo/site";

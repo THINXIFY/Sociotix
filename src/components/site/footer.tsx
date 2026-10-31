@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Share2, Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand";
-import { useCatalogFilters, usePreview } from "@/components/providers";
+import { useCatalogFilters } from "@/components/providers";
 import { ThemeToggle } from "@/components/site/header";
-import { cn } from "@/lib/utils";
 
 /*
  * Global footer. Every link goes to a real route or on-page section; pages
@@ -56,13 +55,11 @@ function FooterLinkItem({ link }: { link: FooterLink }) {
 
 export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
   const { explore: exploreHere } = useCatalogFilters();
-  const preview = usePreview();
   // Off the homepage the catalog isn't on the page, so its links go back to it.
   const away = page !== "home";
   const anchor = (hash: string) => (away ? `/${hash}` : hash);
   const router = useRouter();
   const explore = (filters?: Parameters<typeof exploreHere>[0]) => (away ? router.push("/#services") : exploreHere(filters));
-  const notYet = (title: string) => () => preview({ title, description: `The ${title} page will be published before launch.` });
 
   const columns: { title: string; links: FooterLink[] }[] = [
     {
@@ -176,10 +173,12 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
             <p className="text-[0.8rem] text-muted-foreground">© 2026 Sociotix. All rights reserved.</p>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
               <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+                {/* Not published yet (written policy needed before launch): labelled, never a dead link. */}
                 {legal.map((l) => (
-                  <button key={l} type="button" onClick={notYet(l)} className={cn(linkClass, "text-[0.8rem]")}>
+                  <span key={l} className="inline-flex items-center gap-1.5 text-[0.8rem] text-muted-foreground">
                     {l}
-                  </button>
+                    <span className="rounded-full px-1.5 py-px text-[0.55rem] font-semibold tracking-[0.08em] uppercase ring-1 ring-border ring-inset">Soon</span>
+                  </span>
                 ))}
               </nav>
               <span className="hidden h-4 w-px bg-border sm:block" aria-hidden />

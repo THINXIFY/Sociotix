@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import {
   AlertCircle,
@@ -16,7 +17,6 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PlatformTile } from "@/components/brand";
-import { usePreview } from "@/components/providers";
 import { Reveal, SampleTag, Section, SectionHeading } from "@/components/site/primitives";
 import { cn } from "@/lib/utils";
 import { PLATFORM_BY_ID } from "@/lib/catalog";
@@ -135,7 +135,6 @@ export function OrderTracking() {
   const order = ORDERS[active];
   const tone = TONES[order.tone];
   const platform = PLATFORM_BY_ID[order.platformId];
-  const preview = usePreview();
   const tabRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
 
   const confirmed = order.states.filter((s) => s === "done").length;
@@ -151,11 +150,6 @@ export function OrderTracking() {
     tabRefs.current[next]?.focus();
   };
 
-  const openSupport = (label: string) =>
-    preview({
-      title: `${label} — preview`,
-      description: "Order actions and support open with customer accounts in the next build phase.",
-    });
 
   return (
     <Section id="order-tracking" className="border-t">
@@ -343,14 +337,13 @@ export function OrderTracking() {
                       </p>
                       <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{order.now.body}</p>
                       {order.now.action ? (
-                        <button
-                          type="button"
-                          onClick={() => openSupport(order.now.action!)}
+                        <Link
+                          href="/dashboard/orders"
                           className="group mt-4 inline-flex items-center gap-1.5 rounded-full bg-card px-3.5 py-1.5 text-xs font-semibold shadow-soft transition-transform hover:-translate-y-px"
                         >
                           {order.now.action}
                           <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden />
-                        </button>
+                        </Link>
                       ) : null}
                     </div>
 
@@ -398,18 +391,17 @@ export function OrderTracking() {
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { icon: MessageSquare, label: "Message support" },
-                    { icon: PencilLine, label: "Request a change" },
-                    { icon: FileQuestion, label: "Order FAQ" },
-                  ].map(({ icon: Icon, label }) => (
-                    <button
+                    { icon: MessageSquare, label: "Message support", href: "/dashboard/support?new=1" },
+                    { icon: PencilLine, label: "Request a change", href: "/help/order-needs-information" },
+                    { icon: FileQuestion, label: "Order FAQ", href: "/help/order-statuses" },
+                  ].map(({ icon: Icon, label, href }) => (
+                    <Link
                       key={label}
-                      type="button"
-                      onClick={() => openSupport(label)}
+                      href={href}
                       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-secondary hover:text-secondary-foreground"
                     >
                       <Icon className="size-3.5" aria-hidden /> {label}
-                    </button>
+                    </Link>
                   ))}
                 </div>
               </div>

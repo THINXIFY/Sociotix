@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, Check, ChevronDown, Info, MessageCircleQuestion, Search, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Info, MessageCircleQuestion, Search, Sparkles, X } from "lucide-react";
 import { type AiTool, CATALOG_PLATFORM_CHOICES } from "@/lib/ai/registry";
 import { api, ApiError } from "@/lib/live-account";
 import { cn } from "@/lib/utils";
 import { AiPlatformIcon } from "./platform-icon";
 import { useToolStatus } from "./use-ai-status";
 import { EXAMPLE_EVENT } from "./workspace";
+import { Select } from "@/components/ui/select";
 
 /*
  * Smart Service Search (AI-04).
@@ -245,15 +246,14 @@ export function ServiceSearch({ tool }: { tool: AiTool }) {
                 Platform
               </label>
               <span className="relative">
-                <select id={`${formId}-p`} value={platform} onChange={(e) => setPlatform(e.target.value)} className="h-9 appearance-none rounded-full border bg-background pr-8 pl-3 text-xs font-semibold outline-none focus-visible:ring-3 focus-visible:ring-primary/25 dark:bg-white/[0.03]">
+                <Select id={`${formId}-p`} value={platform} onChange={(e) => setPlatform(e.target.value)} className="h-9 appearance-none rounded-full border bg-background pr-8 pl-3 text-xs font-semibold outline-none focus-visible:ring-3 focus-visible:ring-primary/25 dark:bg-white/[0.03]">
                   <option value="">Any platform</option>
                   {Object.entries(CATALOG_PLATFORM_CHOICES).map(([id, name]) => (
                     <option key={id} value={id}>
                       {name}
                     </option>
                   ))}
-                </select>
-                <ChevronDown className="pointer-events-none absolute top-1/2 right-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden />
+                </Select>
               </span>
               {aiReady ? (
                 <div role="radiogroup" aria-label="Search mode" className="inline-flex rounded-full border bg-background p-0.5 dark:bg-white/[0.03]">
