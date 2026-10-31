@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { REFUND_POLICY_ALIASES, REFUNDS_ANCHOR, TERMS_PATH, termsPublished } from "./src/lib/legal/terms";
 
 const isDev = process.env.NODE_ENV === "development";
 
@@ -51,6 +52,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/help/what-is-socivanta", destination: "/help/what-is-sociotix", permanent: true },
       { source: "/help/what-are-socivanta-ai-tools", destination: "/help/what-are-sociotix-ai-tools", permanent: true },
+      // Refund and return policy URLs land on the refund terms, once the Terms of Service are published.
+      ...(termsPublished() ? REFUND_POLICY_ALIASES.map((source) => ({ source, destination: `${TERMS_PATH}#${REFUNDS_ANCHOR}`, permanent: true })) : []),
     ];
   },
   turbopack: {

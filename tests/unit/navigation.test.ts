@@ -26,12 +26,18 @@ describe("public navigation entry points", () => {
     expect(html).not.toMatch(/opens in the next phase|next build phase/i);
   });
 
-  it("footer legal items aren't dead buttons: they're labelled as not yet published", () => {
+  it("footer legal items aren't dead buttons: published pages are links, drafts are labelled 'Soon'", async () => {
+    const { privacyPolicyPublished } = await import("@/lib/legal/privacy");
+    const { termsPublished } = await import("@/lib/legal/terms");
     const html = renderToStaticMarkup(createElement(Providers, null, createElement(Footer, { page: "other" })));
-    for (const l of ["Terms of Service", "Privacy Policy", "Refund Policy"]) {
+    for (const l of ["Terms of Service", "Privacy Policy"]) {
       expect(html).not.toMatch(new RegExp(`<button[^>]*>${l}`));
       expect(html).toContain(l);
     }
+    // Refunds and cancellations live in the Terms of Service; there's no separate refund policy.
+    expect(html).not.toMatch(/Refund Policy|Return Policy/);
+    expect(/href="\/privacy"/.test(html)).toBe(privacyPolicyPublished());
+    expect(/href="\/terms"/.test(html)).toBe(termsPublished());
     expect(html).toContain('href="/help"');
   });
 });

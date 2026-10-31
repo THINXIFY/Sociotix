@@ -6,6 +6,8 @@ import { ArrowRight, Share2, Sparkles } from "lucide-react";
 import { Logo } from "@/components/brand";
 import { useCatalogFilters } from "@/components/providers";
 import { ThemeToggle } from "@/components/site/header";
+import { PRIVACY_PATH, privacyPolicyPublished } from "@/lib/legal/privacy";
+import { TERMS_PATH, termsPublished } from "@/lib/legal/terms";
 
 /*
  * Global footer. Every link goes to a real route or on-page section; pages
@@ -89,6 +91,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
       links: [
         { label: "More Solutions", href: anchor("#more-solutions") },
         { label: "About Us", href: "/about" },
+        { label: "Media Kit", href: "/media-kit" },
       ],
     },
     {
@@ -103,7 +106,12 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
     },
   ];
 
-  const legal = ["Terms of Service", "Privacy Policy", "Refund Policy"];
+  // A legal page is linked only once it's approved and published; until then it shows "Soon".
+  // Refunds and cancellations live in the Terms of Service, so there's no separate refund policy.
+  const legal: { label: string; href?: string }[] = [
+    { label: "Terms of Service", href: termsPublished() ? TERMS_PATH : undefined },
+    { label: "Privacy Policy", href: privacyPolicyPublished() ? PRIVACY_PATH : undefined },
+  ];
 
   return (
     <footer className="relative isolate overflow-hidden border-t bg-card dark:bg-[#0f1014]">
@@ -174,12 +182,18 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1">
               <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
                 {/* Not published yet (written policy needed before launch): labelled, never a dead link. */}
-                {legal.map((l) => (
-                  <span key={l} className="inline-flex items-center gap-1.5 text-[0.8rem] text-muted-foreground">
-                    {l}
-                    <span className="rounded-full px-1.5 py-px text-[0.55rem] font-semibold tracking-[0.08em] uppercase ring-1 ring-border ring-inset">Soon</span>
-                  </span>
-                ))}
+                {legal.map((l) =>
+                  l.href ? (
+                    <Link key={l.label} href={l.href} className="rounded-sm text-[0.8rem] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
+                      {l.label}
+                    </Link>
+                  ) : (
+                    <span key={l.label} className="inline-flex items-center gap-1.5 text-[0.8rem] text-muted-foreground">
+                      {l.label}
+                      <span className="rounded-full px-1.5 py-px text-[0.55rem] font-semibold tracking-[0.08em] uppercase ring-1 ring-border ring-inset">Soon</span>
+                    </span>
+                  ),
+                )}
               </nav>
               <span className="hidden h-4 w-px bg-border sm:block" aria-hidden />
               <span className="-ms-1.5 flex items-center gap-0.5 text-[0.8rem] text-muted-foreground sm:ms-0">

@@ -6,6 +6,12 @@ import { metadata as homeMetadata } from "@/app/page";
 import { metadata as socialMetadata } from "@/app/social-management/page";
 import { metadata as aboutMetadata } from "@/app/about/page";
 import { ABOUT_DESCRIPTION, aboutFaq } from "@/components/site/about";
+import PrivacyPage, { metadata as privacyMetadata } from "@/app/privacy/page";
+import { PRIVACY_DESCRIPTION } from "@/components/legal/privacy-policy";
+import { PRIVACY_POLICY, privacyPolicyPublished } from "@/lib/legal/privacy";
+import TermsPage, { metadata as termsMetadata } from "@/app/terms/page";
+import { TERMS_DESCRIPTION } from "@/components/legal/terms-of-service";
+import { TERMS, termsPublished } from "@/lib/legal/terms";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { isIndexableTool, TOOL_GUIDES } from "@/lib/ai/guides";
@@ -40,6 +46,7 @@ describe("sitemap and robots", () => {
     expect(urls).toEqual([
       "https://www.example.com/",
       "https://www.example.com/about",
+      "https://www.example.com/media-kit",
       "https://www.example.com/ai-tools",
       "https://www.example.com/ai-tools/caption-generator",
       "https://www.example.com/ai-tools/hashtag-keyword-finder",
@@ -56,6 +63,8 @@ describe("sitemap and robots", () => {
       "https://www.example.com/social-management",
       "https://www.example.com/pricing",
       ...["/help", ...HELP_ARTICLES.map((a) => `/help/${a.slug}`)].map((p) => `https://www.example.com${p}`),
+      "https://www.example.com/privacy",
+      "https://www.example.com/terms",
     ]);
     expect(urls.join()).not.toMatch(/localhost|dashboard|admin|login|register|api/);
     expect(new Set(urls).size).toBe(urls.length);
@@ -190,5 +199,63 @@ describe("about page", () => {
     }
     expect(aboutFaq([])[4].a).not.toMatch(/^Yes/);
     expect(aboutFaq(["Instagram"])[4].a).toContain("connect Instagram today");
+  });
+});
+
+describe("privacy policy (revised text published, effective 2026-11-01)", () => {
+  it("can't be published while a required detail is missing or the contact is unverified (address optional)", () => {
+    const complete = { status: "published" as const, lastUpdated: "2026-11-01", controllerName: "Example", controllerAddress: null, privacyEmail: "privacy@example.com", contactVerified: true, minimumAge: "none" as const };
+    expect(privacyPolicyPublished(complete)).toBe(true);
+    for (const key of ["lastUpdated", "controllerName", "privacyEmail", "minimumAge"] as const) {
+      expect(privacyPolicyPublished({ ...complete, [key]: null }), key).toBe(false);
+    }
+    expect(privacyPolicyPublished({ ...complete, contactVerified: false })).toBe(false);
+    expect(privacyPolicyPublished({ ...complete, status: "draft" })).toBe(false);
+  });
+
+  it("uses the owner-approved details and is indexable and in the sitemap", () => {
+    process.env.APP_URL = "https://www.example.com";
+    expect(PRIVACY_POLICY).toMatchObject({ status: "published", lastUpdated: "2026-11-01", controllerName: "Sociotix", controllerAddress: null, privacyEmail: "hello@sociotix.com", contactVerified: true, minimumAge: "none" });
+    expect(privacyPolicyPublished()).toBe(true);
+    expect(privacyMetadata.robots).toBeUndefined();
+    expect(sitemap().map((e) => e.url)).toContain("https://www.example.com/privacy");
+  });
+
+  it("is served in production once published", () => {
+    process.env.APP_ENV = "production";
+    expect(() => PrivacyPage()).not.toThrow();
+  });
+
+  it("has the agreed title, a canonical, and a sized description", () => {
+    expect((privacyMetadata.title as { absolute: string }).absolute).toBe("Privacy Policy | Sociotix");
+    expect(privacyMetadata.alternates?.canonical).toBe("/privacy");
+    expect(PRIVACY_DESCRIPTION.length).toBeGreaterThanOrEqual(120);
+    expect(PRIVACY_DESCRIPTION.length).toBeLessThanOrEqual(175);
+  });
+});
+
+describe("terms of service (published, effective 2026-11-01)", () => {
+  it("can't be published without governing law, a liability limit, a date and a published privacy policy", () => {
+    const complete = { status: "published" as const, lastUpdated: "2026-11-01", governingLaw: "the laws of Example", liabilityCap: "the amount you paid" };
+    expect(termsPublished(complete)).toBe(true);
+    for (const key of ["lastUpdated", "governingLaw", "liabilityCap"] as const) expect(termsPublished({ ...complete, [key]: null }), key).toBe(false);
+    expect(termsPublished({ ...complete, status: "draft" })).toBe(false);
+  });
+
+  it("uses the owner-approved details and is indexable, in the sitemap and served in production", () => {
+    process.env.APP_URL = "https://www.example.com";
+    expect(TERMS).toMatchObject({ status: "published", lastUpdated: "2026-11-01", governingLaw: expect.stringContaining("Pakistan"), liabilityCap: "the amount you paid Sociotix in the 12 months before the claim" });
+    expect(termsPublished()).toBe(true);
+    expect(termsMetadata.robots).toBeUndefined();
+    expect(sitemap().map((e) => e.url)).toContain("https://www.example.com/terms");
+    process.env.APP_ENV = "production";
+    expect(() => TermsPage()).not.toThrow();
+  });
+
+  it("has a unique title, canonical and sized description", () => {
+    expect((termsMetadata.title as { absolute: string }).absolute).toBe("Terms of Service | Sociotix");
+    expect(termsMetadata.alternates?.canonical).toBe("/terms");
+    expect(TERMS_DESCRIPTION.length).toBeGreaterThanOrEqual(120);
+    expect(TERMS_DESCRIPTION.length).toBeLessThanOrEqual(175);
   });
 });

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="512" height="512">
+  <title>Sociotix mark</title>
+  <rect width="32" height="32" rx="9" fill="#7047EB"/>
+  <path d="M20.6 10.4c-1.1-1-2.7-1.6-4.5-1.6-2.9 0-4.9 1.5-4.9 3.7 0 4.6 8.6 3 8.6 6.3 0 1.1-1.2 1.9-3 1.9-1.6 0-3-.6-4-1.6" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="23" cy="22.5" r="2.6" fill="#C8FF52"/>
+</svg>
