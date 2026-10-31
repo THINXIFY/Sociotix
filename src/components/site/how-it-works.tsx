@@ -32,7 +32,7 @@ const STEPS = [
   {
     icon: Wallet,
     title: "Add Funds",
-    body: "Securely fund your account using supported payment methods.",
+    body: "Top up your wallet balance. Every deposit is recorded in your account history.",
     Visual: FundsVisual,
   },
   {

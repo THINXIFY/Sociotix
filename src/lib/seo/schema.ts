@@ -19,8 +19,9 @@ export function website(): Thing {
   return { "@type": "WebSite", "@id": SITE_ID(), name: SITE.name, url: absoluteUrl("/"), publisher: { "@id": ORG_ID() }, inLanguage: "en" };
 }
 
-export function webPage({ path, name, description, type = "WebPage" }: { path: string; name: string; description: string; type?: "WebPage" | "CollectionPage" }): Thing {
-  return { "@type": type, "@id": `${absoluteUrl(path)}#webpage`, url: absoluteUrl(path), name, description, isPartOf: { "@id": SITE_ID() }, inLanguage: "en" };
+/** `about` links the page to the Organization node (used by the About page, which emits that node too). */
+export function webPage({ path, name, description, type = "WebPage", about = false }: { path: string; name: string; description: string; type?: "WebPage" | "CollectionPage" | "AboutPage"; about?: boolean }): Thing {
+  return { "@type": type, "@id": `${absoluteUrl(path)}#webpage`, url: absoluteUrl(path), name, description, isPartOf: { "@id": SITE_ID() }, ...(about ? { about: { "@id": ORG_ID() } } : {}), inLanguage: "en" };
 }
 
 export function breadcrumbs(items: { name: string; path: string }[]): Thing {

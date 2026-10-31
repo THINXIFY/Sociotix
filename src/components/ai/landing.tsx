@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   ArrowDown,
@@ -21,13 +22,14 @@ import {
 } from "lucide-react";
 import { PlatformIcon } from "@/components/brand";
 import { Reveal } from "@/components/site/primitives";
-import { AI_TOOL_BY_ID, AI_TOOLS, PLATFORM_CHOICES } from "@/lib/ai/registry";
+import { viewerFromSession } from "@/components/site/public-header";
+import { AI_TOOL_BY_ID, AI_TOOLS, type AiTool, aiToolHref, PLATFORM_CHOICES } from "@/lib/ai/registry";
 import { PLATFORMS } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { AiDirectory } from "./directory";
 import { HeroAtmosphere } from "./hero-atmosphere";
 import { AiHeroVisual } from "./hero-visual";
-import { AI_ICONS, AiMark, FAMILY, ToolGlyph } from "./parts";
+import { AiMark, FAMILY, ToolGlyph } from "./parts";
 import { WorkspacePreview } from "./workspace-preview";
 
 /*
@@ -366,48 +368,139 @@ function Why() {
 
 /* -------------------------------------------------------------------------- */
 
-function FreeUse() {
-  const withFree = AI_TOOLS.filter((t) => t.free && t.free.signedInPerDay > 0);
+/** Free allowances come from the registry. They're planned and only start when each tool launches. */
+const FREE_TOOLS = AI_TOOLS.filter((t) => (t.free?.signedInPerDay ?? 0) > 0);
+const FREE_FEATURED = FREE_TOOLS.filter((t) => t.category === "content");
+const FREE_MORE = FREE_TOOLS.filter((t) => t.category !== "content");
+const MAX_PIPS = Math.max(...FREE_TOOLS.map((t) => t.free!.signedInPerDay));
+const shortName = (t: AiTool) => t.name.replace(/^AI /, "");
+const perDay = (t: AiTool) => t.free!.signedInPerDay;
+
+/** A quiet meter: one pip per daily run, on a shared scale so allowances compare at a glance. */
+function Pips({ n }: { n: number }) {
   return (
-    <section id="free" className="dark relative isolate scroll-mt-16 overflow-hidden border-y border-white/[0.06] bg-[#0b0c10] py-16 text-foreground sm:py-24" aria-labelledby="free-title">
+    <span className="flex items-center gap-[3px]" aria-hidden>
+      {Array.from({ length: MAX_PIPS }, (_, i) => (
+        <span key={i} className={cn("h-3 w-[3px] rounded-full", i < n ? "bg-lime/80" : "bg-white/[0.08]")} />
+      ))}
+    </span>
+  );
+}
+
+const ctaArrow = <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none" aria-hidden />;
+
+function GuestStartCta() {
+  return (
+    <Link href="/register" className={primaryCta}>
+      Start for Free {ctaArrow}
+    </Link>
+  );
+}
+
+/** Signed-in customers go straight to their AI workspace; everyone else creates the free account. */
+async function StartFreeCta() {
+  const viewer = await viewerFromSession();
+  if (typeof viewer === "object" && viewer.kind === "customer") {
+    return (
+      <Link href="/dashboard/ai" className={primaryCta}>
+        Open AI Workspace {ctaArrow}
+      </Link>
+    );
+  }
+  return <GuestStartCta />;
+}
+
+const freeCard =
+  "group/tool relative flex rounded-2xl bg-white/[0.035] ring-1 ring-white/[0.07] transition-[background-color,box-shadow,transform] duration-200 hover:-translate-y-px hover:bg-white/[0.06] hover:ring-white/15 focus-visible:ring-2 focus-visible:ring-lime/60 focus-visible:outline-none motion-reduce:transition-none motion-reduce:hover:translate-y-0";
+
+function FreeUse() {
+  return (
+    <section id="free" className="dark relative isolate scroll-mt-16 overflow-hidden border-y border-white/[0.06] bg-[#0b0c10] py-16 text-foreground sm:py-20" aria-labelledby="free-title">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-[linear-gradient(90deg,transparent,rgb(200_255_82/0.45),transparent)]" aria-hidden />
       <div className="pointer-events-none absolute -bottom-40 -left-40 -z-10 size-[36rem] rounded-full bg-[radial-gradient(closest-side,rgb(112_71_235/0.28),transparent)]" aria-hidden />
-      <div className={cn(wrap, "grid grid-cols-1 gap-10 lg:grid-cols-[1fr_1.1fr] lg:items-center lg:gap-16")}>
+      <div className={cn(wrap, "grid grid-cols-1 gap-10 lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:gap-14")}>
         <Reveal>
           <p className={cn(eyebrow, "text-lime")}>Free to use</p>
-          <h2 id="free-title" className="mt-3 font-heading text-[3.2rem] leading-[0.95] font-extrabold tracking-[-0.045em] text-white sm:text-[4.6rem]">
-            Free.
-            <br />
-            <span className="text-white/40">Every day.</span>
+          <h2 id="free-title" className="mt-3 font-heading text-[2.75rem] leading-[0.98] font-extrabold tracking-[-0.045em] text-white sm:text-[3.5rem]">
+            Free. <span className="whitespace-nowrap text-white/40">Every day.</span>
           </h2>
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-white/60">Each tool comes with free daily runs on a free Sociotix account — the same one you use for services. No card. No subscription.</p>
-          <div className="mt-8 flex flex-col gap-3 min-[440px]:flex-row">
-            <Link href="/register" className={primaryCta}>
-              Create a free account <ArrowRight className="size-4" aria-hidden />
-            </Link>
-            <Link href="/login" className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 px-6 text-[0.95rem] font-semibold text-white transition-colors hover:bg-white/5">
-              Sign in
-            </Link>
-          </div>
-        </Reveal>
-        <Reveal delay={0.06} className="rounded-[1.75rem] border border-white/10 bg-white/[0.03] p-2">
-          <ul className="divide-y divide-white/[0.07]">
-            {withFree.map((t) => {
-              const Icon = AI_ICONS[t.icon];
-              return (
-                <li key={t.id} className="flex items-center gap-4 px-4 py-3.5 sm:px-5">
-                  <Icon className="size-4 shrink-0 text-white/45" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate text-[0.95rem] font-medium text-white">{t.name.replace(/^AI /, "")}</span>
-                  <span className="font-heading text-xl font-extrabold text-lime tabular-nums">{t.free!.signedInPerDay}</span>
-                  <span className="w-10 text-xs text-white/45">a day</span>
-                </li>
-              );
-            })}
-          </ul>
-          <p className="flex items-start gap-2 rounded-[1.25rem] bg-white/[0.04] px-4 py-3.5 text-[0.8rem] leading-relaxed text-white/55 sm:px-5">
-            <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            Planned allowances that start when each tool launches. Limits reset at midnight UTC. Nothing is generated today.
+          <p className="mt-5 max-w-md text-[1.05rem] leading-relaxed text-white/60">
+            Every tool will include free daily runs on your Sociotix account, the same one you use for services.
           </p>
+          <ul className="mt-6 flex flex-wrap gap-2 text-[0.8rem] text-white/70">
+            {["No card needed", "No subscription", "Resets daily at midnight UTC"].map((x) => (
+              <li key={x} className="inline-flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 ring-1 ring-white/[0.07]">
+                <Check className="size-3.5 text-lime" aria-hidden /> {x}
+              </li>
+            ))}
+          </ul>
+          <div className="mt-8 flex flex-col gap-3 min-[440px]:flex-row">
+            <Suspense fallback={<GuestStartCta />}>
+              <StartFreeCta />
+            </Suspense>
+            <a href="#tools" className="inline-flex h-12 items-center justify-center rounded-full border border-white/15 px-6 text-[0.95rem] font-semibold text-white transition-colors hover:bg-white/5 focus-visible:ring-3 focus-visible:ring-white/25 focus-visible:outline-none">
+              Explore all tools
+            </a>
+          </div>
+          <p className="mt-6 flex max-w-md items-start gap-2 text-[0.8rem] leading-relaxed text-white/45">
+            <Lock className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            These are planned allowances. They start when each tool launches. Nothing is generated today.
+          </p>
+        </Reveal>
+
+        <Reveal delay={0.06} className="rounded-[1.75rem] border border-white/10 bg-white/[0.025] p-2.5 sm:p-3">
+          <div className="flex items-center justify-between gap-3 px-2 pt-1.5 pb-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-white">
+              {FAMILY.content.name}
+              <span className="rounded-full bg-lime/15 px-2 py-0.5 text-[0.66rem] font-semibold text-lime">First to launch</span>
+            </h3>
+            <span className="hidden text-[0.72rem] text-white/45 min-[380px]:inline">Free runs a day</span>
+          </div>
+          <ul className="grid grid-cols-2 gap-2">
+            {FREE_FEATURED.map((t) => (
+              <li key={t.id}>
+                <Link href={aiToolHref(t)} className={cn(freeCard, "h-full flex-col gap-3 p-3 sm:p-4")}>
+                  <span className="flex flex-col items-start gap-2.5 sm:flex-row sm:gap-3">
+                    <ToolGlyph tool={t} size="sm" />
+                    <span className="min-w-0">
+                      <span className="block text-[0.92rem] leading-snug font-semibold text-white">{shortName(t)}</span>
+                      <span className="mt-0.5 hidden text-[0.78rem] leading-snug text-white/50 sm:block">{t.tagline}</span>
+                    </span>
+                  </span>
+                  <span className="mt-auto flex items-end justify-between gap-3">
+                    <span className="flex items-baseline gap-1">
+                      <span className="font-heading text-2xl leading-none font-extrabold text-lime tabular-nums">{perDay(t)}</span>
+                      <span className="text-xs text-white/45">a day</span>
+                    </span>
+                    <span className="hidden sm:block">
+                      <Pips n={perDay(t)} />
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="flex items-center justify-between gap-3 px-2 pt-5 pb-2.5">
+            <h3 className="text-sm font-semibold text-white">
+              {FAMILY.growth.name} <span className="text-white/35">&amp;</span> {FAMILY.assist.name}
+            </h3>
+            <span className="shrink-0 text-[0.72rem] text-white/45">{FREE_MORE.length} tools</span>
+          </div>
+          <ul className="grid grid-cols-2 gap-1.5">
+            {FREE_MORE.map((t) => (
+              <li key={t.id}>
+                <Link href={aiToolHref(t)} className={cn(freeCard, "h-full items-center gap-2.5 rounded-xl py-2 ps-2.5 pe-3 min-[380px]:ps-2")} title={t.tagline}>
+                  <ToolGlyph tool={t} size="sm" className="hidden size-7 rounded-lg min-[380px]:grid [&_svg]:size-3.5" />
+                  <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-2">
+                    <span className="line-clamp-2 text-[0.8rem] leading-tight font-medium text-white/85 group-hover/tool:text-white sm:line-clamp-1 sm:flex-1 sm:text-[0.82rem]">{shortName(t)}</span>
+                    <span className="shrink-0 text-[0.75rem] text-white/45 sm:text-[0.78rem]">
+                      <span className="font-semibold text-lime tabular-nums">{perDay(t)}</span>/day
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </Reveal>
       </div>
     </section>

@@ -14,5 +14,5 @@ import { absoluteUrl } from "@/lib/seo/site";
  */
 export default function sitemap(): MetadataRoute.Sitemap {
   const tools = AI_TOOLS.filter((t) => isIndexableTool(t.id)).map((t) => aiToolHref(t));
-  return ["/", "/ai-tools", ...tools, SOCIAL_ROUTES.landing, AI_ROUTES.pricing, "/help", ...HELP_ARTICLES.map((a) => helpHref(a.slug))].map((path) => ({ url: absoluteUrl(path) }));
+  return ["/", "/about", "/ai-tools", ...tools, SOCIAL_ROUTES.landing, AI_ROUTES.pricing, "/help", ...HELP_ARTICLES.map((a) => helpHref(a.slug))].map((path) => ({ url: absoluteUrl(path) }));
 }

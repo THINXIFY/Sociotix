@@ -7,6 +7,7 @@ import { Accordion } from "@base-ui/react/accordion";
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import { motion } from "motion/react";
 import { ArrowRight, ChevronDown, LayoutGrid, Lock, type LucideIcon, Share2, Sparkles, Store, Wand2, Workflow } from "lucide-react";
+import { NAV_INDICATOR_ID, navIndicator, navIndicatorTransition, navItem, navItemActive, navItemIdle } from "@/components/site/nav-styles";
 import { popupSurface } from "@/components/ui/menu";
 import { CATALOG_TOTALS } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
@@ -69,14 +70,12 @@ export function SolutionsMenuItem({ highlighted, signedIn = false }: { highlight
   return (
     <NavigationMenu.Item value="solutions">
       <NavigationMenu.Trigger
-        className={cn(
-          "group relative inline-flex items-center gap-1 rounded-full px-2 py-2 text-sm font-medium whitespace-nowrap outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-primary/40 data-popup-open:text-foreground xl:px-3",
-          highlighted || current ? "text-foreground" : "text-muted-foreground hover:text-foreground",
-        )}
+        className={cn(navItem, "group data-popup-open:bg-foreground/[0.055] data-popup-open:text-foreground dark:data-popup-open:bg-white/[0.07]", highlighted || current ? navItemActive : navItemIdle)}
       >
+        {highlighted ? <motion.span layoutId={NAV_INDICATOR_ID} aria-hidden className={navIndicator} transition={navIndicatorTransition} /> : null}
         More Solutions
         <NavigationMenu.Icon className="flex">
-          <ChevronDown className="size-3.5 transition-transform duration-150 group-data-popup-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+          <ChevronDown className="size-3.5 text-foreground/40 transition-[transform,color] duration-200 group-hover:text-foreground/70 group-data-popup-open:rotate-180 group-data-popup-open:text-primary motion-reduce:transition-none dark:group-data-popup-open:text-[#b9a6ff]" aria-hidden />
         </NavigationMenu.Icon>
       </NavigationMenu.Trigger>
       <NavigationMenu.Content className="w-[min(40rem,calc(100vw-2rem))] p-2" onPointerLeave={() => setActive(null)}>

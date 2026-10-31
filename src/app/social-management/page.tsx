@@ -2,12 +2,11 @@ import type { Metadata } from "next";
 import { JsonLd } from "@/components/seo/json-ld";
 import { Footer } from "@/components/site/footer";
 import { Header } from "@/components/site/public-header";
-import { type LandingAvailability, SOCIAL_DESCRIPTION, SOCIAL_TITLE, SocialLanding, socialFaq } from "@/components/social/landing";
-import { SOCIAL_PROVIDER_IDS, SOCIAL_ROUTES } from "@/lib/social/platforms";
+import { SOCIAL_DESCRIPTION, SOCIAL_TITLE, SocialLanding, socialFaq } from "@/components/social/landing";
+import { SOCIAL_ROUTES } from "@/lib/social/platforms";
 import { breadcrumbs, faqPage, graph, webPage } from "@/lib/seo/schema";
 import { SITE } from "@/lib/seo/site";
-import { getEnv } from "@/server/env";
-import { providerAvailability } from "@/server/social/service";
+import { socialReadiness } from "@/server/social/readiness";
 
 export const metadata: Metadata = {
   title: { absolute: SOCIAL_TITLE },
@@ -17,19 +16,8 @@ export const metadata: Metadata = {
   twitter: { card: "summary_large_image", title: "Sociotix Social Management — One workspace for your accounts", description: "Bring the social accounts you manage together in one calm, read-only dashboard." },
 };
 
-/** Which platforms can really be connected, from the server's configuration at build time (rebuild after switching one on). */
-function readiness(): LandingAvailability {
-  let env: ReturnType<typeof getEnv> | null = null;
-  try {
-    env = getEnv();
-  } catch {
-    env = null;
-  }
-  return Object.fromEntries(SOCIAL_PROVIDER_IDS.map((id) => [id, env ? providerAvailability(env, id).state === "available" : false])) as LandingAvailability;
-}
-
 export default function SocialManagementPage() {
-  const ready = readiness();
+  const ready = socialReadiness();
   return (
     <>
       <Header page="other" />

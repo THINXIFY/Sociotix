@@ -7,6 +7,7 @@ import { Menu } from "@base-ui/react/menu";
 import { CircleUserRound, LayoutDashboard, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { signOutAction } from "@/app/(auth)/actions";
 import { staffSignOutAction } from "@/app/admin/(access)/actions";
+import { controlGhost, controlPrimary } from "@/components/site/nav-styles";
 import { buttonVariants } from "@/components/ui/button";
 import { menuItem, menuItemDestructive, menuPopup, menuSeparator } from "@/components/ui/menu";
 import { cn } from "@/lib/utils";
@@ -51,18 +52,18 @@ export function HeaderAccount({ viewer }: { viewer: HeaderViewer }) {
     // Same footprint as the guest buttons, so nothing jumps when the real state arrives.
     return (
       <span aria-hidden className="flex items-center gap-1.5">
-        <span className="hidden h-9 w-[4.5rem] animate-pulse rounded-full bg-muted/70 motion-reduce:animate-none sm:block" />
-        <span className="h-9 w-[5.25rem] animate-pulse rounded-full bg-muted/70 motion-reduce:animate-none" />
+        <span className="hidden h-9 w-[4.25rem] animate-pulse rounded-[10px] bg-muted/70 motion-reduce:animate-none sm:block" />
+        <span className="h-9 w-[5.25rem] animate-pulse rounded-[10px] bg-muted/70 motion-reduce:animate-none" />
       </span>
     );
   }
   if (viewer.kind === "guest") {
     return (
       <>
-        <Link href="/login" className={cn(buttonVariants({ variant: "ghost" }), "hidden h-9 rounded-full px-4 sm:inline-flex")}>
+        <Link href="/login" className={cn(controlGhost, "hidden sm:inline-flex")}>
           Log In
         </Link>
-        <Link href="/register" className={cn(buttonVariants(), "h-9 rounded-full px-3 sm:px-4")}>
+        <Link href="/register" className={cn(controlPrimary, "px-3.5 sm:px-4")}>
           Sign Up
         </Link>
       </>
@@ -72,20 +73,20 @@ export function HeaderAccount({ viewer }: { viewer: HeaderViewer }) {
   const signOut = () => void (viewer.kind === "customer" ? signOutAction() : staffSignOutAction());
   return (
     <>
-      <Link href={dash.href} className={cn(buttonVariants(), "hidden h-9 gap-1.5 rounded-full px-4 sm:inline-flex")}>
-        <LayoutDashboard className="size-4" aria-hidden /> {dash.label}
+      <Link href={dash.href} className={cn(controlPrimary, "hidden ps-3 sm:inline-flex")}>
+        <LayoutDashboard className="size-4 opacity-90" aria-hidden /> {dash.label}
       </Link>
       <Menu.Root>
-        <Menu.Trigger className="rounded-full p-0.5 transition-shadow outline-none hover:ring-2 hover:ring-primary/20 focus-visible:ring-3 focus-visible:ring-primary/40 data-popup-open:ring-2 data-popup-open:ring-primary/30">
-          <span className={avatarClass} aria-hidden>
+        <Menu.Trigger className="ms-0.5 rounded-full p-[3px] ring-1 ring-black/[0.08] transition-[box-shadow] duration-150 outline-none hover:ring-primary/45 focus-visible:ring-2 focus-visible:ring-primary/50 data-popup-open:ring-2 data-popup-open:ring-primary/45 motion-reduce:transition-none dark:ring-white/15">
+          <span className={cn(avatarClass, "size-[1.875rem] text-[0.7rem]")} aria-hidden>
             {viewer.initials}
           </span>
           <span className="sr-only">Account menu for {viewer.name}</span>
         </Menu.Trigger>
         <Menu.Portal>
           <Menu.Positioner side="bottom" align="end" sideOffset={8} collisionPadding={12} className="z-50 outline-none">
-            <Menu.Popup className={cn(menuPopup, "w-60")}>
-              <div className="flex items-center gap-2.5 px-2.5 pt-1.5 pb-2.5">
+            <Menu.Popup className={cn(menuPopup, "w-64")}>
+              <div className="mb-1 flex items-center gap-2.5 rounded-lg bg-muted/60 px-2.5 py-2.5 dark:bg-white/[0.04]">
                 <span className={avatarClass} aria-hidden>
                   {viewer.initials}
                 </span>
@@ -137,14 +138,14 @@ export function HeaderAccount({ viewer }: { viewer: HeaderViewer }) {
 
 /** Bottom of the phone menu: guest buttons, or Dashboard + Log Out. */
 export function MobileAccount({ viewer, onNavigate }: { viewer: HeaderViewer; onNavigate: () => void }) {
-  if (viewer === "loading") return <div aria-hidden className="h-11 animate-pulse rounded-full bg-muted/70 motion-reduce:animate-none" />;
+  if (viewer === "loading") return <div aria-hidden className="h-11 animate-pulse rounded-xl bg-muted/70 motion-reduce:animate-none" />;
   if (viewer.kind === "guest") {
     return (
       <div className="grid grid-cols-2 gap-2">
-        <Link href="/login" onClick={onNavigate} className={cn(buttonVariants({ variant: "outline" }), "h-11 rounded-full")}>
+        <Link href="/login" onClick={onNavigate} className={cn(buttonVariants({ variant: "outline" }), "h-11 rounded-xl")}>
           Log In
         </Link>
-        <Link href="/register" onClick={onNavigate} className={cn(buttonVariants(), "h-11 rounded-full")}>
+        <Link href="/register" onClick={onNavigate} className={cn(buttonVariants(), "h-11 rounded-xl")}>
           Sign Up
         </Link>
       </div>
@@ -157,13 +158,13 @@ export function MobileAccount({ viewer, onNavigate }: { viewer: HeaderViewer; on
         Signed in as <span className="font-medium text-foreground">{viewer.name}</span>
       </p>
       <div className="grid grid-cols-2 gap-2">
-        <Link href={dash.href} onClick={onNavigate} className={cn(buttonVariants(), "h-11 gap-1.5 rounded-full")}>
+        <Link href={dash.href} onClick={onNavigate} className={cn(buttonVariants(), "h-11 gap-1.5 rounded-xl")}>
           <LayoutDashboard className="size-4" aria-hidden /> {dash.label}
         </Link>
         <button
           type="button"
           onClick={() => void (viewer.kind === "customer" ? signOutAction() : staffSignOutAction())}
-          className={cn(buttonVariants({ variant: "outline" }), "h-11 gap-1.5 rounded-full text-destructive hover:text-destructive")}
+          className={cn(buttonVariants({ variant: "outline" }), "h-11 gap-1.5 rounded-xl text-destructive hover:text-destructive")}
         >
           <LogOut className="size-4" aria-hidden /> Log Out
         </button>

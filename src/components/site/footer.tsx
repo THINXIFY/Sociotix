@@ -88,7 +88,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
       title: "Company",
       links: [
         { label: "More Solutions", href: anchor("#more-solutions") },
-        { label: "About", soon: true },
+        { label: "About Us", href: "/about" },
       ],
     },
     {
@@ -119,7 +119,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
               <Logo />
             </Link>
             <p className="mt-5 max-w-[24rem] font-heading text-[1.2rem] leading-[1.3] font-extrabold tracking-[-0.02em] text-balance text-foreground">
-              Smarter social growth. <span className="text-primary dark:text-[#b9a6ff]">Simpler digital marketing.</span>
+              Smarter Social. <span className="text-primary dark:text-[#b9a6ff]">Bigger Impact.</span>
             </p>
             <p className="mt-2.5 max-w-[24rem] text-[0.88rem] leading-[1.65] text-muted-foreground">Discover social media services, AI-powered tools and a more organized way to manage your online presence.</p>
 

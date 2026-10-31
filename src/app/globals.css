@@ -539,3 +539,43 @@ html:is(:lang(ar), :lang(ur)) .tabular-nums {
 @media (prefers-reduced-motion: reduce) {
   .sv-rise, .sv-fade { animation: none; }
 }
+
+/* -------------------------------------------------------------------------- */
+/*  About page: ecosystem orbit (transform/opacity/stroke only)               */
+/* -------------------------------------------------------------------------- */
+
+@keyframes about-rotate {
+  to { transform: rotate(360deg); }
+}
+@keyframes about-dash {
+  to { stroke-dashoffset: -20; }
+}
+@keyframes about-pulse {
+  0% { transform: scale(1); opacity: 0.5; }
+  70%, 100% { transform: scale(1.55); opacity: 0; }
+}
+@layer utilities {
+  .about-orbit-spin { animation: about-rotate 70s linear infinite; }
+  .about-orbit-counter { animation: about-rotate 70s linear infinite reverse; }
+  .about-orbit-slow { animation: about-rotate 110s linear infinite reverse; }
+  .about-dash { animation: about-dash 1.4s linear infinite; }
+  .about-pulse { animation: about-pulse 3.4s ease-out infinite; }
+}
+/* Hovering or focusing a product node lights up its connection to the core. */
+.about-orbit:has([data-node="0"]:is(:hover, :focus-visible)) [data-beam="0"],
+.about-orbit:has([data-node="1"]:is(:hover, :focus-visible)) [data-beam="1"],
+.about-orbit:has([data-node="2"]:is(:hover, :focus-visible)) [data-beam="2"],
+.about-orbit:has([data-node="3"]:is(:hover, :focus-visible)) [data-beam="3"] {
+  stroke: var(--color-primary);
+  stroke-opacity: 1;
+  stroke-width: 1.6;
+}
+@media (prefers-reduced-motion: reduce) {
+  .about-orbit-spin,
+  .about-orbit-counter,
+  .about-orbit-slow,
+  .about-dash,
+  .about-pulse {
+    animation: none;
+  }
+}

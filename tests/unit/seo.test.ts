@@ -4,6 +4,8 @@ import { generateMetadata as toolMetadata } from "@/app/ai-tools/[tool]/page";
 import { metadata as hubMetadata } from "@/app/ai-tools/page";
 import { metadata as homeMetadata } from "@/app/page";
 import { metadata as socialMetadata } from "@/app/social-management/page";
+import { metadata as aboutMetadata } from "@/app/about/page";
+import { ABOUT_DESCRIPTION, aboutFaq } from "@/components/site/about";
 import robots from "@/app/robots";
 import sitemap from "@/app/sitemap";
 import { isIndexableTool, TOOL_GUIDES } from "@/lib/ai/guides";
@@ -37,6 +39,7 @@ describe("sitemap and robots", () => {
     const urls = sitemap().map((e) => e.url);
     expect(urls).toEqual([
       "https://www.example.com/",
+      "https://www.example.com/about",
       "https://www.example.com/ai-tools",
       "https://www.example.com/ai-tools/caption-generator",
       "https://www.example.com/ai-tools/hashtag-keyword-finder",
@@ -110,8 +113,8 @@ describe("tool pages", () => {
       expect(String(m.description)).toMatch(/Coming soon to Sociotix AI\.$/);
     }
     expect(titles.size).toBe(12);
-    const all = [homeMetadata, hubMetadata, socialMetadata].map((m) => (m.title as { absolute: string }).absolute);
-    expect(new Set([...all, ...titles]).size).toBe(15);
+    const all = [homeMetadata, hubMetadata, socialMetadata, aboutMetadata].map((m) => (m.title as { absolute: string }).absolute);
+    expect(new Set([...all, ...titles]).size).toBe(16);
   });
 
   it("each page owns a distinct primary intent and links to other implemented tools", () => {
@@ -159,5 +162,33 @@ describe("site pages", () => {
       expect(String(m.description).length).toBeLessThanOrEqual(200);
     }
     expect(String(homeMetadata.description)).not.toMatch(/guarantee|instant results|real followers/i);
+  });
+});
+
+describe("about page", () => {
+  it("is indexable with a canonical, sized metadata and social cards", () => {
+    expect(aboutMetadata.alternates?.canonical).toBe("/about");
+    expect(aboutMetadata.robots).toBeUndefined();
+    const title = (aboutMetadata.title as { absolute: string }).absolute;
+    expect(title.length).toBeLessThanOrEqual(60);
+    expect(ABOUT_DESCRIPTION.length).toBeGreaterThanOrEqual(120);
+    expect(ABOUT_DESCRIPTION.length).toBeLessThanOrEqual(175);
+    expect(aboutMetadata.openGraph).toMatchObject({ url: "/about" });
+  });
+
+  it("emits an AboutPage about the Organization, and FAQ answers that never overclaim", () => {
+    process.env.APP_URL = "https://www.example.com";
+    const page = webPage({ path: "/about", name: "x", description: "y", type: "AboutPage", about: true });
+    expect(page).toMatchObject({ "@type": "AboutPage", about: { "@id": "https://www.example.com/#organization" } });
+    for (const live of [[], ["Instagram"]]) {
+      const faq = aboutFaq(live);
+      expect(faq).toHaveLength(6);
+      const text = JSON.stringify(faq).toLowerCase();
+      for (const banned of ["available now", "guaranteed growth", "results are guaranteed", "we guarantee", "go viral", "award", "trusted by", "customers worldwide"]) expect(text, banned).not.toContain(banned);
+      expect(text).toContain("none of them generate content today");
+      expect(text).toContain("once ordering and payments open");
+    }
+    expect(aboutFaq([])[4].a).not.toMatch(/^Yes/);
+    expect(aboutFaq(["Instagram"])[4].a).toContain("connect Instagram today");
   });
 });

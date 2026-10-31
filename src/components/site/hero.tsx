@@ -107,8 +107,8 @@ export function Hero() {
             variants={text}
             className="mt-6 max-w-xl text-base leading-relaxed text-pretty text-muted-foreground sm:mt-7 sm:text-lg"
           >
-            Discover social media services across all major platforms. Explore solutions, manage orders,
-            and track progress—all from one powerful dashboard.
+            Find the right social media service on every major platform, see exactly what each one includes,
+            and track every order from one clear dashboard.
           </motion.p>
 
           <motion.div variants={item} className="mt-7 grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 sm:mt-9 sm:flex">
