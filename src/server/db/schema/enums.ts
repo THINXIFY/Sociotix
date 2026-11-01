@@ -81,3 +81,10 @@ export const NOTIFICATION_CHANNEL = ["in_app", "email"] as const;
 export const OUTBOX_STATUS = ["queued", "sending", "sent", "failed"] as const;
 export const NOTE_TARGET = ["order", "customer", "deposit", "ticket", "referral", "referrer"] as const;
 export const AUDIT_ACTOR = ["customer", "staff", "system"] as const;
+
+/* Blog Management (admin-written posts). Scheduled = published with a future published_at. */
+export const BLOG_POST_STATUS = ["draft", "published"] as const;
+export const BLOG_AUTHOR_KIND = ["organization", "person"] as const;
+/** SVG is never accepted: it can carry scripts. */
+export const BLOG_MEDIA_MIME = ["image/jpeg", "image/png", "image/webp"] as const;
+export const BLOG_MEDIA_SOURCE = ["upload", "url"] as const;

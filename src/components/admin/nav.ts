@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   type LucideIcon,
+  Newspaper,
   Package,
   Plug,
   Settings,
@@ -101,6 +102,15 @@ export const ADMIN_SECONDARY: AdminSection[] = [
     built: true,
     icon: Sparkles,
     summary: "AI providers, keys, models, tool assignments, spending limits and usage.",
+    planned: [],
+  },
+  {
+    id: "blog",
+    label: "Blog Management",
+    href: "/admin/blog",
+    built: true,
+    icon: Newspaper,
+    summary: "Write, edit, preview, schedule and publish blog posts with built-in SEO settings.",
     planned: [],
   },
   {

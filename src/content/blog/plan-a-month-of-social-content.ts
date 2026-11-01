@@ -1,0 +1,33 @@
+import { type BlogArticle, SOCIOTIX_TEAM } from "@/lib/blog/types";
+
+export const article: BlogArticle = {
+  slug: "plan-a-month-of-social-content",
+  title: "Plan a Month of Social Content Without Burning Out",
+  description: "Build a sustainable content plan: choose a few content pillars, pick a rhythm you can keep, batch the work, leave room for the moment and review what's working.",
+  category: "growth",
+  tags: ["content planning", "content calendar", "consistency"],
+  author: SOCIOTIX_TEAM,
+  status: "draft",
+  insight: "A rhythm you can keep beats an ambitious plan you abandon after two weeks.",
+  cover: { tone: "lime", motif: "grid" },
+  coverAlt: "Abstract calendar-like grid artwork with violet and lime blocks",
+  body: [
+    { type: "p", text: "Posting consistently is one of the hardest parts of social media, mostly because it's easy to plan too much. A month-long plan that you can actually follow is worth far more than a perfect schedule you give up on. Here's how to build one." },
+    { type: "h2", text: "Pick three to five content pillars" },
+    { type: "p", text: "Content pillars are the recurring themes you post about. They make planning easier because you're filling familiar slots rather than starting from scratch. For a café, that might be new menu items, behind the scenes, community and tips." },
+    { type: "ul", items: ["Choose themes your audience cares about.", "Make sure you can create content for each without strain.", "Keep at least one pillar about your audience, not just you."] },
+    { type: "h2", text: "Choose a rhythm you can keep" },
+    { type: "p", text: "Decide how often you'll post on each platform, based on the time you really have. Three good posts a week that you can sustain are better than daily posts that stop after a fortnight. You can always add more later." },
+    { type: "quote", text: "Consistency is a promise you make to your audience. Make one you can keep." },
+    { type: "h2", text: "Batch your work" },
+    { type: "p", text: "Group similar tasks together: brainstorm a week's ideas in one session, write captions in another, and create visuals in a third. Switching between tasks less often saves more time than you might expect." },
+    { type: "h3", text: "A simple weekly flow" },
+    { type: "ol", items: ["Monday: review last week and pick this week's ideas.", "Tuesday: write captions and drafts.", "Wednesday: create or gather visuals.", "Rest of the week: post, reply and note new ideas."] },
+    { type: "h2", text: "Leave room for the moment" },
+    { type: "p", text: "Keep a few open slots each week for timely posts, news or something that simply happened. A plan should support you, not stop you from reacting to what's going on." },
+    { type: "tip", title: "Plan in your Sociotix workspace", text: "The Sociotix social workspace includes drafts with per-platform previews and a content calendar, so your whole month lives in one place." },
+    { type: "h2", text: "Review and adjust" },
+    { type: "p", text: "At the end of each month, look at which posts people responded to and which pillars felt easy or hard to fill. Keep what works, change what doesn't, and plan the next month with what you've learned." },
+    { type: "p", text: "Ready to start? [See what Social Management includes](/social-management)." },
+  ],
+};

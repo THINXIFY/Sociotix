@@ -64,9 +64,9 @@ describe("help SEO", () => {
     expect(titles.size).toBe(HELP_ARTICLES.length);
   });
 
-  it("every public help page is in the sitemap; nothing private is", () => {
+  it("every public help page is in the sitemap; nothing private is", async () => {
     process.env.APP_URL = "https://www.example.com";
-    const urls = sitemap().map((e) => e.url);
+    const urls = (await sitemap()).map((e) => e.url);
     expect(urls).toContain("https://www.example.com/help");
     for (const a of HELP_ARTICLES) expect(urls).toContain(`https://www.example.com/help/${a.slug}`);
     expect(urls.join()).not.toMatch(/dashboard|admin|support\?/);

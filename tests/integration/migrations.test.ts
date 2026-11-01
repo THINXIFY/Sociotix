@@ -51,16 +51,21 @@ describe("migrations", () => {
   it("applies cleanly and is idempotent", async () => {
     await runMigrations(url);
     const first = await inspect();
-    expect(first.tables).toBe(65);
+    expect(first.tables).toBe(69);
     expect(first.triggers).toBeGreaterThanOrEqual(25);
     expect(first.views).toBe(1);
-    expect(first.applied).toBe(17);
+    expect(first.applied).toBe(19);
     await runMigrations(url);
     expect(await inspect()).toEqual(first);
   });
 
   it("rolls back in reverse order and re-applies", async () => {
+    const latest = await inspect();
+    await runFile("drizzle/rollback/0018_blog_categories.down.sql");
+    expect(await inspect()).toEqual({ ...latest, tables: 68, applied: 18 }); // blog_categories
+    await runFile("drizzle/rollback/0017_blog_management.down.sql");
     const before = await inspect();
+    expect(before).toEqual({ ...latest, tables: 65, applied: 17 }); // blog_media, blog_posts, blog_slug_redirects
     await runFile("drizzle/rollback/0016_reports_5h.down.sql");
     expect(await inspect()).toEqual({ ...before, applied: 16 }); // indexes only
     await runFile("drizzle/rollback/0015_analytics_5h.down.sql");
@@ -135,6 +140,6 @@ describe("migrations", () => {
     expect(empty.tables).toBe(0);
     expect(empty.applied).toBe(0);
     await runMigrations(url);
-    expect(await inspect()).toEqual(before);
+    expect(await inspect()).toEqual(latest);
   });
 });

@@ -1,6 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AI_TOOL_BY_SLUG } from "./lib/ai/registry";
+import { getArticle } from "./lib/blog";
 import { HELP_ARTICLE_BY_SLUG } from "./lib/help/articles";
+import { resolvePublicSlug } from "./server/blog/posts";
+import { getDb } from "./server/db/client";
+import { EnvError } from "./server/env";
+import { AppError } from "./server/errors";
 
 /**
  * Optimistic routing only (Next.js 16 Proxy). It looks at whether a session
@@ -13,7 +18,22 @@ const CUSTOMER_COOKIES = ["sv_session", "__Host-sv_session"];
 const STAFF_COOKIES = ["sv_staff", "__Host-sv_staff"];
 const ADMIN_PUBLIC = /^\/admin\/(login|setup|mfa)(\/|$)/;
 
-export function proxy(request: NextRequest) {
+/** Blog: file articles first; otherwise a live admin post, or an old slug that permanently redirects to its post. */
+async function blogRoute(request: NextRequest, pathname: string) {
+  const [slug, ...rest] = pathname.slice("/blog/".length).split("/");
+  if (getArticle(slug)) return NextResponse.next();
+  try {
+    const found = await resolvePublicSlug(getDb(), slug);
+    if (found?.kind === "live") return NextResponse.next();
+    if (found?.kind === "redirect") return NextResponse.redirect(new URL(["/blog", found.slug, ...rest].join("/"), request.url), 308);
+  } catch (e) {
+    // No database configured means no admin posts; an outage shouldn't turn live posts into 404s (the page decides from its cache).
+    if (!(e instanceof EnvError || e instanceof AppError)) return NextResponse.next();
+  }
+  return NextResponse.rewrite(new URL("/__not-found", request.url));
+}
+
+export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   // Public AI pages: unknown tools are a real 404 (streamed pages can't change status later); known ones pass through untouched and stay indexable.
   if (pathname.startsWith("/ai-tools/")) {
@@ -26,6 +46,8 @@ export function proxy(request: NextRequest) {
     const slug = pathname.slice("/help/".length).split("/")[0];
     return Object.hasOwn(HELP_ARTICLE_BY_SLUG, slug) ? NextResponse.next() : NextResponse.rewrite(new URL("/__not-found", request.url));
   }
+  // Blog articles: same rule; file drafts count as unknown wherever they aren't previewable (production).
+  if (pathname.startsWith("/blog/")) return blogRoute(request, pathname);
   const has = (names: string[]) => names.some((n) => request.cookies.has(n));
 
   if (pathname.startsWith("/dashboard") && !has(CUSTOMER_COOKIES)) {
@@ -46,5 +68,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/ai-tools/:path+", "/help/:path+", "/dashboard/:path*", "/admin/:path*", "/api/account/:path*", "/api/admin/:path*", "/api/social/:path*", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/dev/:path*"],
+  matcher: ["/ai-tools/:path+", "/help/:path+", "/blog/:path+", "/dashboard/:path*", "/admin/:path*", "/api/account/:path*", "/api/admin/:path*", "/api/social/:path*", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/dev/:path*"],
 };

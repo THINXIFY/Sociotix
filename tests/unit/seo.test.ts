@@ -40,9 +40,9 @@ describe("canonical origin", () => {
 });
 
 describe("sitemap and robots", () => {
-  it("lists only canonical, indexable public pages on the configured origin", () => {
+  it("lists only canonical, indexable public pages on the configured origin", async () => {
     process.env.APP_URL = "https://www.example.com";
-    const urls = sitemap().map((e) => e.url);
+    const urls = (await sitemap()).map((e) => e.url);
     expect(urls).toEqual([
       "https://www.example.com/",
       "https://www.example.com/about",
@@ -147,7 +147,7 @@ describe("tool pages", () => {
 });
 
 describe("social management page (AI-06)", () => {
-  it("is indexable with a canonical, sized metadata and social cards; the private workspace stays out", () => {
+  it("is indexable with a canonical, sized metadata and social cards; the private workspace stays out", async () => {
     expect(socialMetadata.alternates?.canonical).toBe("/social-management");
     expect(socialMetadata.robots).toBeUndefined();
     const title = (socialMetadata.title as { absolute: string }).absolute;
@@ -157,7 +157,7 @@ describe("social management page (AI-06)", () => {
     expect(socialMetadata.twitter).toMatchObject({ card: "summary_large_image" });
     expect(`${title} ${socialMetadata.description}`).not.toMatch(/schedul|publish|auto-post|guarantee/i);
     process.env.APP_URL = "https://www.example.com";
-    expect(sitemap().map((e) => e.url).filter((u) => u.includes("social") && !u.includes("/help/"))).toEqual(["https://www.example.com/social-management"]);
+    expect((await sitemap()).map((e) => e.url).filter((u) => u.includes("social") && !u.includes("/help/"))).toEqual(["https://www.example.com/social-management"]);
   });
 });
 
@@ -213,12 +213,12 @@ describe("privacy policy (revised text published, effective 2026-11-01)", () => 
     expect(privacyPolicyPublished({ ...complete, status: "draft" })).toBe(false);
   });
 
-  it("uses the owner-approved details and is indexable and in the sitemap", () => {
+  it("uses the owner-approved details and is indexable and in the sitemap", async () => {
     process.env.APP_URL = "https://www.example.com";
     expect(PRIVACY_POLICY).toMatchObject({ status: "published", lastUpdated: "2026-11-01", controllerName: "Sociotix", controllerAddress: null, privacyEmail: "hello@sociotix.com", contactVerified: true, minimumAge: "none" });
     expect(privacyPolicyPublished()).toBe(true);
     expect(privacyMetadata.robots).toBeUndefined();
-    expect(sitemap().map((e) => e.url)).toContain("https://www.example.com/privacy");
+    expect((await sitemap()).map((e) => e.url)).toContain("https://www.example.com/privacy");
   });
 
   it("is served in production once published", () => {
@@ -242,12 +242,12 @@ describe("terms of service (published, effective 2026-11-01)", () => {
     expect(termsPublished({ ...complete, status: "draft" })).toBe(false);
   });
 
-  it("uses the owner-approved details and is indexable, in the sitemap and served in production", () => {
+  it("uses the owner-approved details and is indexable, in the sitemap and served in production", async () => {
     process.env.APP_URL = "https://www.example.com";
     expect(TERMS).toMatchObject({ status: "published", lastUpdated: "2026-11-01", governingLaw: expect.stringContaining("Pakistan"), liabilityCap: "the amount you paid Sociotix in the 12 months before the claim" });
     expect(termsPublished()).toBe(true);
     expect(termsMetadata.robots).toBeUndefined();
-    expect(sitemap().map((e) => e.url)).toContain("https://www.example.com/terms");
+    expect((await sitemap()).map((e) => e.url)).toContain("https://www.example.com/terms");
     process.env.APP_ENV = "production";
     expect(() => TermsPage()).not.toThrow();
   });

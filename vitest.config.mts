@@ -15,6 +15,8 @@ export default defineConfig({
       "@": r("./src"),
       // `server-only` throws outside React Server Components; tests run server code directly.
       "server-only": r("./tests/setup/server-only.ts"),
+      // Tagged caching (use cache, cacheTag, revalidateTag) needs the Next.js runtime.
+      "next/cache": r("./tests/setup/next-cache.ts"),
     },
   },
   test: {

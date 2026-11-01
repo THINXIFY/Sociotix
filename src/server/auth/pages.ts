@@ -72,6 +72,8 @@ export const SECTION_MODULE: Record<string, Module> = {
   analytics: "overview",
   reports: "overview",
   ai: "settings",
+  // Public site content: Settings View can read and preview posts, Settings Manage can write and publish.
+  blog: "settings",
   settings: "settings",
   staff: "staff",
 };

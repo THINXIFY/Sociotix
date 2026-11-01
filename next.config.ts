@@ -45,7 +45,11 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: SECURITY_HEADERS }];
+    return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
+      // Uploaded blog images: listed last so this stricter policy replaces the page CSP for them.
+      { source: "/media/blog/:id", headers: [{ key: "Content-Security-Policy", value: "default-src 'none'; img-src 'self'; sandbox" }] },
+    ];
   },
   // Help articles renamed with the SociVanta → Sociotix rebrand: old links land on the same article.
   async redirects() {

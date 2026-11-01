@@ -52,12 +52,12 @@ export const MAX_BODY_BYTES = 1_048_576;
 
 type Handler<C> = (request: Request, context: C & { requestId: string }) => Promise<Response>;
 
-/** Wraps a Route Handler with a request id and the shared error format. */
-export function route<C = unknown>(handler: Handler<C>) {
+/** Wraps a Route Handler with a request id and the shared error format. `maxBodyBytes` raises the limit for upload routes only. */
+export function route<C = unknown>(handler: Handler<C>, options: { maxBodyBytes?: number } = {}) {
   return async (request: Request, context: C): Promise<Response> => {
     const requestId = crypto.randomUUID();
     try {
-      if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) throw errors.payloadTooLarge();
+      if (Number(request.headers.get("content-length") ?? 0) > (options.maxBodyBytes ?? MAX_BODY_BYTES)) throw errors.payloadTooLarge();
       const res = await handler(request, { ...context, requestId });
       res.headers.set("x-request-id", requestId);
       return res;

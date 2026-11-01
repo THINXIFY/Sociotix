@@ -57,6 +57,27 @@ export function webApplication({ path, name, description, featureList }: { path:
   };
 }
 
+/**
+ * A published blog article. Only for articles with a real publication date; the author is the
+ * Organization (team credit) or a named person, exactly as shown on the page.
+ */
+export function blogPosting({ path, headline, description, datePublished, dateModified, image, author, keywords }: { path: string; headline: string; description: string; datePublished: string; dateModified?: string; image: string; author: { name: string; kind: "organization" | "person" }; keywords: string[] }): Thing {
+  return {
+    "@type": "BlogPosting",
+    "@id": `${absoluteUrl(path)}#article`,
+    mainEntityOfPage: { "@id": `${absoluteUrl(path)}#webpage` },
+    headline,
+    description,
+    datePublished,
+    dateModified: dateModified ?? datePublished,
+    image: [absoluteUrl(image)],
+    author: author.kind === "organization" ? { "@id": ORG_ID() } : { "@type": "Person", name: author.name },
+    publisher: { "@id": ORG_ID() },
+    keywords: keywords.join(", "),
+    inLanguage: "en",
+  };
+}
+
 /** One JSON-LD document for a page: a @graph of the given nodes. */
 export function graph(...nodes: Thing[]): Thing {
   return { "@context": "https://schema.org", "@graph": nodes };

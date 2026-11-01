@@ -118,7 +118,7 @@ describe("plans", () => {
 });
 
 describe("pricing page (SEO)", () => {
-  it("is indexable with a canonical, sized metadata and social cards, listed once in the sitemap", () => {
+  it("is indexable with a canonical, sized metadata and social cards, listed once in the sitemap", async () => {
     expect(pricingMetadata.alternates?.canonical).toBe("/pricing");
     expect(pricingMetadata.robots).toBeUndefined();
     expect((pricingMetadata.title as { absolute: string }).absolute).toBe(PRICING_TITLE);
@@ -128,8 +128,8 @@ describe("pricing page (SEO)", () => {
     expect(pricingMetadata.twitter).toMatchObject({ card: "summary_large_image" });
     expect(`${PRICING_TITLE} ${PRICING_DESCRIPTION}`).not.toMatch(/unlimited|guarantee|publish|auto-post/i);
     process.env.APP_URL = "https://www.example.com";
-    expect(sitemap().filter((e) => e.url.endsWith("/pricing"))).toHaveLength(1);
-    expect(sitemap().some((e) => e.url.includes("/dashboard"))).toBe(false);
+    expect((await sitemap()).filter((e) => e.url.endsWith("/pricing"))).toHaveLength(1);
+    expect((await sitemap()).some((e) => e.url.includes("/dashboard"))).toBe(false);
   });
 
   it("FAQ answers are direct and the page has no price markup", () => {

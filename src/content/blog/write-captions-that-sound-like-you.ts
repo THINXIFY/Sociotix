@@ -1,0 +1,33 @@
+import { type BlogArticle, SOCIOTIX_TEAM } from "@/lib/blog/types";
+
+export const article: BlogArticle = {
+  slug: "write-captions-that-sound-like-you",
+  title: "Write Captions That Sound Like You",
+  description: "A simple framework for captions with a consistent voice: define your voice in three words, lead with the point, write for each platform and use AI as a first draft.",
+  category: "ai-marketing",
+  tags: ["captions", "brand voice", "AI writing"],
+  author: SOCIOTIX_TEAM,
+  status: "draft",
+  insight: "Treat AI as a first draft, not the final word. Your edits are what make it sound like you.",
+  cover: { tone: "graphite", motif: "waves" },
+  coverAlt: "Abstract graphite artwork of flowing lines with a lime accent",
+  body: [
+    { type: "p", text: "A good caption does two jobs: it gives people a reason to stop, and it sounds like the person or brand behind it. The second part is harder, especially when you post often. Here's a framework that keeps your voice consistent without slowing you down." },
+    { type: "h2", text: "Define your voice in three words" },
+    { type: "p", text: "Pick three words that describe how you want to sound, such as \"warm, direct, playful\" or \"calm, expert, practical\". Write them somewhere you'll see them. Every caption should feel like at least two of the three." },
+    { type: "h2", text: "Lead with the point" },
+    { type: "p", text: "Most people only see the first line before deciding whether to keep reading. Put the most interesting part there: the news, the question or the benefit. Save the background for later." },
+    { type: "ul", items: ["Weak: \"We've been working on something for a while…\"", "Stronger: \"Our autumn menu is here, and the maple latte is back.\""] },
+    { type: "h2", text: "Write for the platform" },
+    { type: "p", text: "The same idea needs different wording on different platforms. A short, punchy line might suit one, while another rewards a bit more context. Adjust length, tone and hashtags for where the caption will live, rather than pasting the same text everywhere." },
+    { type: "h3", text: "Hashtags that help, not clutter" },
+    { type: "p", text: "Choose a few relevant tags that describe the topic and your audience. More isn't better if they're unrelated, and each platform has its own norms." },
+    { type: "h2", text: "Use AI as a first draft" },
+    { type: "p", text: "AI writing tools are great for getting past a blank page and suggesting angles you hadn't considered. They can't know your voice the way you do. Use their suggestions as a starting point, then edit with your three words in mind." },
+    { type: "tip", title: "Coming to Sociotix", text: "Sociotix AI's caption generator is coming soon. It's designed to shape drafts for each platform, with personal details removed before anything is sent to an AI model." },
+    { type: "quote", text: "The best captions sound like a person talking, not a template being filled in." },
+    { type: "h2", text: "A quick editing checklist" },
+    { type: "ol", items: ["Does the first line give a reason to keep reading?", "Does it sound like at least two of your three words?", "Is it the right length for this platform?", "Is there one clear next step, if you want one?", "Would you say it out loud?"] },
+    { type: "p", text: "Want to see what's planned? [Explore Sociotix AI tools](/ai-tools)." },
+  ],
+};

@@ -92,6 +92,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
         { label: "More Solutions", href: anchor("#more-solutions") },
         { label: "About Us", href: "/about" },
         { label: "Media Kit", href: "/media-kit" },
+        { label: "Blog", href: "/blog" },
       ],
     },
     {
