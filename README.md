@@ -1,37 +1,107 @@
-# Sociotix
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="public/brand/web/logo-dark.png">
+    <img src="public/brand/web/logo-light.png" alt="Sociotix" width="340">
+  </picture>
+</p>
 
-**Smarter Social. Bigger Impact.** Sociotix is an AI-powered social growth and marketing platform in development: a marketplace for social media services, customer and admin dashboards, AI-assisted tools, and a social account management workspace. It is built on one Next.js codebase with a PostgreSQL backend.
+<h3 align="center">Smarter Social. Bigger Impact.</h3>
 
-> **Rebrand note:** the platform was previously called **SociVanta**. All public, customer and admin interfaces now use Sociotix. Some internal identifiers keep the old name for compatibility: the local database names (`socivanta_dev`) and the project folder. The phase reports in `docs/` keep the old name as historical records. See [`docs/branding/SOCIOTIX_REBRANDING_REPORT.md`](docs/branding/SOCIOTIX_REBRANDING_REPORT.md). The intended domain is `sociotix.com`. It is used only once ownership and deployment are confirmed, through `APP_URL`.
+<p align="center">
+  An AI-powered social growth and marketing platform: a services marketplace, customer and admin dashboards, AI-assisted tools, a social account workspace and a blog, all in one Next.js codebase on PostgreSQL.
+</p>
 
-> **Status: in development, not live.** Sociotix isn't deployed, and it isn't production-ready. Real payments, AI generation, SMM provider fulfilment, external social publishing and monetary referral rewards are **disabled**, and each stays off until it's separately approved and configured. See [Activation limits](#activation-limits).
+<p align="center">
+  <img alt="Status: in development" src="https://img.shields.io/badge/status-in%20development-7047EB">
+  <img alt="Next.js 16" src="https://img.shields.io/badge/Next.js-16-202127?logo=nextdotjs">
+  <img alt="React 19" src="https://img.shields.io/badge/React-19-202127?logo=react">
+  <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-strict-202127?logo=typescript">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16%2B-202127?logo=postgresql">
+  <img alt="Tailwind CSS v4" src="https://img.shields.io/badge/Tailwind_CSS-v4-202127?logo=tailwindcss">
+</p>
+
+<p align="center">
+  <a href="#features">Features</a> ·
+  <a href="#getting-started">Getting started</a> ·
+  <a href="#commands">Commands</a> ·
+  <a href="#brand-assets">Brand assets</a> ·
+  <a href="#documentation">Documentation</a>
+</p>
+
+---
+
+> [!IMPORTANT]
+> **In development, not live.** Sociotix isn't deployed or production-ready. Real payments, AI generation, SMM provider fulfilment, external social publishing and monetary referral rewards are **disabled**, and each stays off until it's separately approved and configured. See [Activation limits](#activation-limits).
+
+> [!NOTE]
+> **Formerly SociVanta.** Every public, customer and admin interface uses Sociotix. A few internal identifiers keep the old name for compatibility: the local database names (`socivanta_dev`) and the project folder. Phase reports in `docs/` keep it as historical records. See [`docs/branding/SOCIOTIX_REBRANDING_REPORT.md`](docs/branding/SOCIOTIX_REBRANDING_REPORT.md). The intended domain, `sociotix.com`, is used only through `APP_URL` once ownership and deployment are confirmed.
 
 ## Features
 
-**Public website**
-- Homepage and marketplace: 118 services across 15 platforms.
-- AI tools hub with guided tool pages.
-- Social management overview, pricing and a Help Center.
-
-**Customer dashboard**
-- Overview, New Order, Orders, Wallet/Add Funds, Transactions and Service Finder.
-- AI workspace, plus Social workspace: accounts, publishing, calendar, automations, campaigns and activity.
-- Support tickets, referrals, profile, settings and sign-in security.
-
-**Admin dashboard**
-- Overview analytics, Reports with CSV export, Services & Pricing, and Orders.
-- Providers, Customers, Payments, Support and Referrals.
-- AI Management (AI Control Center), Platform Settings, and Staff & Account.
-
-**Backend**
-- **Auth:** email/password with Argon2id. Mandatory staff MFA (TOTP), role-based permissions, and re-authentication for sensitive changes.
-- **Money:** an append-only, trigger-enforced double-entry wallet ledger. Order and deposit workflows use idempotency keys.
-- **Jobs:** a PostgreSQL-backed job queue (pg-boss) and a separate worker process.
-- **Audit and security:** audit log, rate limiting, security headers and Content Security Policy.
+<table>
+  <tr>
+    <td valign="top" width="50%">
+      <h4>🌐 Public website</h4>
+      <ul>
+        <li>Homepage and marketplace: 118 services across 15 platforms</li>
+        <li>AI tools hub with guided tool pages</li>
+        <li>Social management overview, pricing and a Help Center</li>
+        <li>About, Media Kit, Privacy Policy and Terms of Service</li>
+      </ul>
+    </td>
+    <td valign="top" width="50%">
+      <h4>📰 Blog</h4>
+      <ul>
+        <li>Searchable listing with category tabs, featured and latest articles</li>
+        <li>Article pages with contents, reading progress and sharing</li>
+        <li><code>BlogPosting</code> schema and sitemap entries for published posts only</li>
+        <li>Drafts stay private and out of search engines</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>👤 Customer dashboard</h4>
+      <ul>
+        <li>Overview, New Order, Orders, Wallet/Add Funds, Transactions and Service Finder</li>
+        <li>AI workspace and Social workspace: accounts, publishing, calendar, automations, campaigns, activity</li>
+        <li>Support tickets, referrals, profile, settings and sign-in security</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h4>🛡️ Admin dashboard</h4>
+      <ul>
+        <li>Overview analytics, Reports with CSV export, Services &amp; Pricing, Orders</li>
+        <li>Providers, Customers, Payments, Support and Referrals</li>
+        <li>AI Management, <b>Blog Management</b>, Platform Settings, Staff &amp; Permissions</li>
+      </ul>
+    </td>
+  </tr>
+  <tr>
+    <td valign="top">
+      <h4>✍️ Blog Management</h4>
+      <ul>
+        <li>Rich-text editor (H2–H4, lists, quotes, links, images, undo/redo) with sanitised paste</li>
+        <li>Featured images by upload or URL import, validated and stored on Sociotix</li>
+        <li>SEO panel: keywords, title and description counters, search preview, social sharing, a writing checklist</li>
+        <li>Drafts, preview, scheduling, publishing, custom categories, and old URLs that redirect after a rename</li>
+      </ul>
+    </td>
+    <td valign="top">
+      <h4>⚙️ Backend</h4>
+      <ul>
+        <li><b>Auth:</b> Argon2id passwords, mandatory staff MFA (TOTP), role-based permissions, re-authentication for sensitive changes</li>
+        <li><b>Money:</b> append-only, trigger-enforced double-entry wallet ledger with idempotent order and deposit workflows</li>
+        <li><b>Jobs:</b> PostgreSQL-backed queue (pg-boss) and a separate worker</li>
+        <li><b>Security:</b> audit log, rate limiting, security headers and Content Security Policy</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 ## Activation limits
 
-These integrations are built to **fail closed**: until each is approved, its code path refuses work, and the UI says so honestly.
+These integrations are built to **fail closed**: until each is approved, its code path refuses work and the UI says so honestly.
 
 | Capability | State | What turns it on |
 |---|---|---|
@@ -85,6 +155,9 @@ Production prerequisites (backups, a trusted proxy with rate and body limits, mo
 
 In development, emails are captured in the in-app dev mailbox instead of being sent. The full guide is [`docs/backend/BACKEND_SETUP.md`](docs/backend/BACKEND_SETUP.md).
 
+> [!TIP]
+> Don't run `npm run build` while `npm run dev` is running: both use `.next/`, and the build pulls files out from under the dev server, which then keeps reloading the page. Stop the dev server first, or restart it after the build.
+
 ## Commands
 
 | Command | Purpose |
@@ -104,7 +177,7 @@ In development, emails are captured in the in-app dev mailbox instead of being s
 
 ## Database migrations
 
-- **Location:** migrations live in [`drizzle/`](drizzle/) (`0000`–`0016`), with matching rollback scripts in [`drizzle/rollback/`](drizzle/rollback/).
+- **Location:** migrations live in [`drizzle/`](drizzle/) (`0000`–`0018`, the latest two adding Blog Management and custom blog categories), with matching rollback scripts in [`drizzle/rollback/`](drizzle/rollback/).
 - **To change the schema:**
   1. Edit `src/server/db/schema`.
   2. Run `npm run db:generate -- --name <change>` and review the SQL.
@@ -116,23 +189,49 @@ In development, emails are captured in the in-app dev mailbox instead of being s
 
 ```
 src/
-  app/          routes: public site, (auth), dashboard, admin, api/*
-  components/   UI: site, dashboard, admin, ai, social, auth, ui primitives
-  lib/          shared types, catalog, SEO helpers, i18n, client utilities
+  app/          routes: public site, blog, (auth), dashboard, admin, api/*, media/
+  components/   UI: site, blog, dashboard, admin, ai, social, auth, ui primitives
+  content/      file-based blog articles
+  lib/          shared types, catalog, blog, SEO helpers, i18n, client utilities
   server/       backend: auth, db (schema + client), ledger, orders, payments,
-                providers, ai, social, support, referrals, analytics, jobs
+                providers, ai, social, support, referrals, analytics, blog, jobs
   worker/       background worker entry point
-  proxy.ts      request proxy (optimistic routing and no-store/noindex headers)
+  proxy.ts      request proxy (optimistic routing, real 404s, no-store/noindex headers)
+public/brand/   official logo collection (web-sized copies in public/brand/web/)
 drizzle/        SQL migrations, snapshots and rollbacks
 scripts/        database, auth and dev tooling
 tests/          unit/ and integration/ (Vitest)
 docs/           architecture, security, SEO standards and phase reports
 ```
 
+## Brand assets
+
+The official artwork lives in [`public/brand/`](public/brand/) and is offered for download on the site's Media Kit (`/media-kit`). Use the files as they are: don't recolour, stretch or redraw them.
+
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="public/brand/Sociotix_Light_theme_logo.png" alt="Sociotix primary logo" width="260"><br><sub><b>Primary logo</b> · light backgrounds<br><code>Sociotix_Light_theme_logo.png</code></sub></td>
+    <td align="center" width="50%"><img src="public/brand/Sociotix_light_mode_stacked_logo.png" alt="Sociotix stacked logo" width="130"><br><sub><b>Stacked logo</b> · square spaces<br><code>Sociotix_light_mode_stacked_logo.png</code></sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="public/brand/web/icon-violet-128.png" alt="Sociotix violet icon" width="72"><br><sub><b>Icon, violet</b> · favicon, app icons, avatars<br><code>Sociotix_icon_violet_favicon.png</code></sub></td>
+    <td align="center"><img src="public/brand/web/icon-black-128.png" alt="Sociotix black icon" width="72"><br><sub><b>Icon, black</b> · on violet or busy backgrounds<br><code>Sociotix_icon_black_favicon.png</code></sub></td>
+  </tr>
+</table>
+
+Also included: white-text versions of every logo for dark backgrounds (for example `Sociotix_dark_theme_logo.png`), plus wordmarks and monochrome versions. The site's favicon set (`src/app/favicon.ico`, `public/favicon-32x32.png`, `public/apple-touch-icon.png`, `public/icon-192.png`, `public/icon-512.png`) and the web manifest are generated from the violet icon.
+
+| Colour | Hex | Role |
+|---|---|---|
+| Electric Violet | `#7047EB` | Primary: actions, highlights and the icon |
+| Restrained Lime | `#C8FF52` | Accent, used sparingly |
+| Graphite | `#202127` | Text and dark surfaces |
+
 ## Security
 
 - **Secrets:** never commit secrets. `.env*` files are git-ignored, except `.env.example`, which holds variable names and safe placeholders only.
 - **Server-side checks:** the proxy is not the security boundary. Every page, server action and route handler checks the session and permissions against the database.
+- **Blog content:** posts are stored as validated structured content, never raw HTML; uploads are checked by file signature; URL imports refuse private and internal addresses.
 - **Reporting:** report security concerns privately to the repository owner rather than in a public issue.
 
 ## Documentation
@@ -143,3 +242,8 @@ docs/           architecture, security, SEO standards and phase reports
 - **SEO standards:** [`docs/seo/SEO_STANDARDS.md`](docs/seo/SEO_STANDARDS.md)
 - **Repository:** [github.com/THINXIFY/Sociotix](https://github.com/THINXIFY/Sociotix), the official development repository
 - **GitHub sync record (initial import):** [`docs/deployment/GITHUB_SYNC_REPORT.md`](docs/deployment/GITHUB_SYNC_REPORT.md)
+
+<p align="center">
+  <img src="public/brand/web/icon-violet-128.png" alt="" width="40"><br>
+  <sub>© Sociotix. All rights reserved.</sub>
+</p>
