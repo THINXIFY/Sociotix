@@ -642,11 +642,11 @@ function BrandingView({ v, set, e }: ViewProps<"branding">) {
         <Row label="Logo" tag="code" help="The approved Sociotix logo. Uploading a replacement needs file storage on a backend.">
           <div className="space-y-2">
             <div className="grid grid-cols-2 gap-2">
-              <div className="grid h-16 place-items-center rounded-xl border bg-white text-[#202127]">
-                <Logo className="scale-90" />
+              <div className="grid h-16 place-items-center rounded-xl border bg-white px-3">
+                <Logo surface="light" className="h-7" alt="Sociotix logo on a light background" />
               </div>
-              <div className="grid h-16 place-items-center rounded-xl border border-white/10 bg-graphite text-white">
-                <Logo className="scale-90" />
+              <div className="grid h-16 place-items-center rounded-xl border border-white/10 bg-graphite px-3">
+                <Logo surface="dark" className="h-7" alt="Sociotix logo on a dark background" />
               </div>
             </div>
             <button type="button" disabled aria-describedby="st-upload-note" className={cn(secondaryBtn, "w-full cursor-not-allowed opacity-55 hover:bg-card")}>
@@ -657,13 +657,13 @@ function BrandingView({ v, set, e }: ViewProps<"branding">) {
             </p>
           </div>
         </Row>
-        <Row label="Favicon" tag="code" help="Shown in browser tabs and bookmarks. The current file is the framework default; a Sociotix favicon hasn't been added yet.">
+        <Row label="Favicon" tag="code" help="Shown in browser tabs and bookmarks: the violet Sociotix icon, with app icons for phones and home screens.">
           <div className="flex items-center gap-3 sm:justify-end">
             {/* eslint-disable-next-line @next/next/no-img-element -- the live favicon file, shown as-is */}
             <img src="/favicon.ico" alt="Current favicon, 32 pixels" width={32} height={32} className="rounded-md border bg-white p-1" />
             {/* eslint-disable-next-line @next/next/no-img-element -- same file at tab size */}
             <img src="/favicon.ico" alt="Current favicon, 16 pixels" width={16} height={16} />
-            <span className="text-xs text-muted-foreground">Default · not branded</span>
+            <span className="text-xs text-muted-foreground">Sociotix icon</span>
           </div>
         </Row>
       </Group>

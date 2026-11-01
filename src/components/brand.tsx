@@ -94,23 +94,48 @@ export function PlatformTile({
   );
 }
 
-export function Logo({ className }: { className?: string }) {
+/** Web-sized copies of the approved artwork in public/brand (originals stay there for downloads). */
+export const LOGO_FILES = {
+  logoLight: { src: "/brand/web/logo-light.png", width: 505, height: 120 },
+  logoDark: { src: "/brand/web/logo-dark.png", width: 504, height: 120 },
+  iconViolet: { src: "/brand/web/icon-violet-128.png", width: 128, height: 128 },
+  iconBlack: { src: "/brand/web/icon-black-128.png", width: 128, height: 128 },
+} as const;
+
+type LogoVariant = "horizontal" | "icon" | "responsive";
+type LogoSurface = "auto" | "light" | "dark";
+
+/* eslint-disable @next/next/no-img-element -- small static brand files with fixed dimensions; no optimisation pipeline needed */
+function Art({ asset, className, alt }: { asset: (typeof LOGO_FILES)[keyof typeof LOGO_FILES]; className?: string; alt: string }) {
+  return <img src={asset.src} width={asset.width} height={asset.height} alt={alt} decoding="async" draggable={false} className={cn("block w-auto max-w-none select-none", className)} />;
+}
+
+/**
+ * The official Sociotix logo. `surface="auto"` follows the theme (dark-text logo on light, white logo on dark);
+ * `light`/`dark` pin it for fixed backgrounds. `icon` shows the violet mark alone; `responsive` uses the mark
+ * on phones and the full logo from 640px. Height comes from className (default h-8).
+ */
+export function Logo({ className, variant = "horizontal", surface = "auto", alt = "Sociotix" }: { className?: string; variant?: LogoVariant; surface?: LogoSurface; alt?: string }) {
+  const h = "h-full";
+  const horizontal =
+    surface === "auto" ? (
+      <>
+        <Art asset={LOGO_FILES.logoLight} alt={alt} className={cn(h, "dark:hidden")} />
+        <Art asset={LOGO_FILES.logoDark} alt={alt} className={cn(h, "hidden dark:block")} />
+      </>
+    ) : (
+      <Art asset={surface === "dark" ? LOGO_FILES.logoDark : LOGO_FILES.logoLight} alt={alt} className={h} />
+    );
+  const icon = <Art asset={LOGO_FILES.iconViolet} alt={alt} className={h} />;
   return (
-    <span className={cn("inline-flex items-center gap-2.5", className)}>
-      <svg viewBox="0 0 32 32" className="size-8 shrink-0" aria-hidden>
-        <rect width="32" height="32" rx="9" fill="#7047EB" />
-        <path
-          d="M20.6 10.4c-1.1-1-2.7-1.6-4.5-1.6-2.9 0-4.9 1.5-4.9 3.7 0 4.6 8.6 3 8.6 6.3 0 1.1-1.2 1.9-3 1.9-1.6 0-3-.6-4-1.6"
-          fill="none"
-          stroke="#fff"
-          strokeWidth="2.6"
-          strokeLinecap="round"
-        />
-        <circle cx="23" cy="22.5" r="2.6" fill="#C8FF52" />
-      </svg>
-      <span className="font-heading text-[1.15rem] font-extrabold tracking-tight">
-        Socio<span className="text-primary">tix</span>
-      </span>
+    <span className={cn("inline-flex h-8 shrink-0 items-center", className)}>
+      {variant === "icon" ? icon : variant === "horizontal" ? horizontal : (
+        <>
+          <span className="contents sm:hidden">{icon}</span>
+          <span className="hidden h-full sm:contents">{horizontal}</span>
+        </>
+      )}
     </span>
   );
 }
+/* eslint-enable @next/next/no-img-element */

@@ -146,7 +146,7 @@ export function Header({ page = "home", viewer = { kind: "guest" } }: { page?: "
       </a>
       <div className="mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8">
         <a href={home ? "#top" : "/"} aria-label="Sociotix home" className="-ms-1 shrink-0 rounded-lg p-1 outline-none transition-opacity duration-150 hover:opacity-85 focus-visible:ring-2 focus-visible:ring-primary/40">
-          <Logo className="gap-2 [&>span]:text-[1.1rem] [&>span]:tracking-[-0.03em] [&>svg]:size-[30px]" />
+          <Logo className="h-[30px]" />
         </a>
 
         {/* "More Solutions" opens a mega menu (hover or click); the other items stay section links. */}

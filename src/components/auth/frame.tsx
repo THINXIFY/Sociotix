@@ -129,8 +129,8 @@ function StaffFrame({ children }: { children: React.ReactNode }) {
       </div>
 
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
-        <Link href="/" className="flex items-center gap-2.5 rounded-lg focus-visible:ring-3 focus-visible:ring-primary/40 focus-visible:outline-none [&_span]:text-white">
-          <Logo />{" "}
+        <Link href="/" className="flex items-center gap-2.5 rounded-lg focus-visible:ring-3 focus-visible:ring-primary/40 focus-visible:outline-none">
+          <Logo surface="dark" />{" "}
           <span className="rounded-md border border-white/15 px-1.5 py-0.5 text-[0.65rem] font-bold tracking-[0.14em] text-white/70 uppercase">Admin</span>
           <span className="sr-only">, home page</span>
         </Link>

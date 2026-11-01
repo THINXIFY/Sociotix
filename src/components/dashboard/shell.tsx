@@ -91,11 +91,10 @@ function SidebarLogo({ collapsed }: { collapsed: boolean }) {
       href="/dashboard"
       aria-label={t("nav.home")}
       className={cn(
-        "rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none [&_.text-primary]:text-[#a48bff]",
-        collapsed && "[&>span>span]:hidden",
+        "inline-flex rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none",
       )}
     >
-      <Logo />
+      <Logo variant={collapsed ? "icon" : "horizontal"} surface="dark" />
     </Link>
   );
 }
@@ -517,8 +516,8 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
         <TopBar
           onOpenSearch={openSearch}
           mobileLogo={
-            <Link href="/dashboard" aria-label="Sociotix dashboard" className="[&>span>span]:hidden sm:[&>span>span]:inline">
-              <Logo />
+            <Link href="/dashboard" aria-label="Sociotix dashboard" className="inline-flex">
+              <Logo variant="responsive" className="h-7" />
             </Link>
           }
         />

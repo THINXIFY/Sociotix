@@ -2,20 +2,25 @@
 
 import * as React from "react";
 import { Check, Copy, Download, Ruler } from "lucide-react";
+import { brandAsset } from "@/lib/brand-assets";
 import { cn } from "@/lib/utils";
 
 /* Lightweight client islands for the Media Kit: logo playground, copy-to-clipboard and type tester. */
 
-const S_PATH = "M20.6 10.4c-1.1-1-2.7-1.6-4.5-1.6-2.9 0-4.9 1.5-4.9 3.7 0 4.6 8.6 3 8.6 6.3 0 1.1-1.2 1.9-3 1.9-1.6 0-3-.6-4-1.6";
+const DARK_TILES = new Set(["#202127", "#111111", "black"]);
 
-/** The real Sociotix mark (components/brand.tsx), with an optional graphite tile. */
-export function Mark({ tile = "#7047EB", className }: { tile?: string; className?: string }) {
+/**
+ * The official Sociotix icon (violet, or black for violet backgrounds). Any other `tile` colour only
+ * appears in the Media Kit's "don't recolour" example, shown by filtering the image, never the file.
+ * `large` loads the full-resolution artwork for big displays.
+ */
+export function Mark({ tile = "#7047EB", className, large = false, alt = "" }: { tile?: string; className?: string; large?: boolean; alt?: string }) {
+  const black = DARK_TILES.has(tile.toLowerCase());
+  const offBrand = !black && tile.toLowerCase() !== "#7047eb";
+  const src = large ? brandAsset(black ? "icon-black" : "icon").file : `/brand/web/icon-${black ? "black" : "violet"}-128.png`;
   return (
-    <svg viewBox="0 0 32 32" className={className} aria-hidden>
-      <rect width="32" height="32" rx="9" fill={tile} />
-      <path d={S_PATH} fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
-      <circle cx="23" cy="22.5" r="2.6" fill="#C8FF52" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element -- static brand artwork with fixed proportions
+    <img src={src} alt={alt} aria-hidden={alt ? undefined : true} width={128} height={128} decoding="async" draggable={false} className={cn("aspect-square h-auto select-none", offBrand && "hue-rotate-[140deg] saturate-150", className)} />
   );
 }
 
@@ -84,7 +89,7 @@ export function CopyText({ text, label }: { text: string; label: string }) {
 }
 
 type Surface = "light" | "dark" | "violet";
-type Variant = "logo" | "mark";
+type Variant = "logo" | "stacked" | "mark";
 
 const SURFACES: { id: Surface; label: string; bg: string; dot: string }[] = [
   { id: "light", label: "Light", bg: "#F8F9FC", dot: "#F8F9FC" },
@@ -92,11 +97,23 @@ const SURFACES: { id: Surface; label: string; bg: string; dot: string }[] = [
   { id: "violet", label: "Violet", bg: "#7047EB", dot: "#7047EB" },
 ];
 
-/** Which real file matches what's previewed. Violet backgrounds use the graphite mark only. */
+/** The official file shown for each background and variant (violet backgrounds use the black icon only). */
+function previewFor(surface: Surface, variant: Variant) {
+  if (surface === "violet") return brandAsset("icon-black");
+  if (variant === "mark") return brandAsset("icon");
+  const dark = surface === "dark" ? "-dark" : "";
+  return brandAsset(variant === "stacked" ? `stacked${dark}` : `logo${dark}`);
+}
+
+/** Downloads matching the preview, plus the related text-only and one-colour versions for the full logo. */
 function filesFor(surface: Surface, variant: Variant): { label: string; href: string }[] {
-  if (surface === "violet") return [{ label: "SVG", href: "/brand/sociotix-mark-graphite.svg" }, { label: "PNG", href: "/brand/sociotix-mark-graphite.png" }];
-  if (variant === "mark") return [{ label: "SVG", href: "/brand/sociotix-mark.svg" }, { label: "PNG", href: "/brand/sociotix-mark.png" }];
-  return [{ label: "PNG", href: surface === "dark" ? "/brand/sociotix-logo-reversed.png" : "/brand/sociotix-logo.png" }];
+  const main = previewFor(surface, variant);
+  const files = [{ label: main.label, href: main.file }];
+  if (surface !== "violet" && variant === "logo") {
+    const dark = surface === "dark";
+    files.push({ label: "Wordmark", href: brandAsset(dark ? "wordmark-dark" : "wordmark").file }, { label: "Monochrome", href: brandAsset(dark ? "mono-white" : "mono").file });
+  }
+  return files;
 }
 
 function Segmented<T extends string>({ name, legend, value, options, onChange }: { name: string; legend: string; value: T; options: { id: T; label: string; disabled?: boolean; swatch?: string }[]; onChange: (v: T) => void }) {
@@ -127,13 +144,14 @@ export function LogoPlayground() {
   const [surface, setSurface] = React.useState<Surface>("light");
   const [variantChoice, setVariant] = React.useState<Variant>("logo");
   const [guides, setGuides] = React.useState(false);
-  // The full logo isn't used on violet; the graphite mark is.
+  // The full logo isn't used on violet; the black icon is.
   const variant: Variant = surface === "violet" ? "mark" : variantChoice;
+  const preview = previewFor(surface, variant);
   const bg = SURFACES.find((s) => s.id === surface)!.bg;
   const files = filesFor(surface, variant);
   const onDark = surface !== "light";
   const caption =
-    surface === "violet" ? "On violet, use the graphite mark so it stays visible." : variant === "logo" ? (surface === "dark" ? "Reversed logo for dark backgrounds." : "Primary logo for light backgrounds.") : "The mark on its own, for small spaces and icons.";
+    surface === "violet" ? "On violet, use the black icon so it stays visible." : variant === "mark" ? "The icon on its own, for small spaces, app icons and favicons." : `${preview.label} for ${surface === "dark" ? "dark" : "light"} backgrounds.`;
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_20rem] lg:gap-8">
@@ -144,16 +162,14 @@ export function LogoPlayground() {
             {guides ? (
               <span className="pointer-events-none absolute -inset-[clamp(0.75rem,3vw,1.5rem)] rounded-xl border-2 border-dashed" style={{ borderColor: onDark ? "rgb(200 255 82 / 0.7)" : "rgb(112 71 235 / 0.6)" }} aria-hidden />
             ) : null}
-            {variant === "logo" ? (
-              <span className="flex items-center gap-[0.32em] text-[clamp(2.4rem,9vw,5.5rem)]">
-                <Mark className="size-[1em] shrink-0" />
-                <span className="font-heading text-[0.62em] leading-none font-extrabold tracking-tight" style={{ color: onDark ? "#F1F2F6" : "#202127" }}>
-                  Socio<span style={{ color: onDark ? "#9277F4" : "#7047EB" }}>tix</span>
-                </span>
-              </span>
-            ) : (
-              <Mark tile={surface === "violet" ? "#202127" : "#7047EB"} className="size-[clamp(6rem,22vw,11rem)] drop-shadow-[0_24px_40px_rgb(0_0_0/0.25)]" />
-            )}
+            {/* eslint-disable-next-line @next/next/no-img-element -- the approved file, shown exactly as downloaded */}
+            <img
+              src={preview.file}
+              alt={`${preview.label} on a ${surface} background`}
+              width={Number(preview.size.split(" × ")[0])}
+              height={Number(preview.size.split(" × ")[1])}
+              className={cn("block h-auto w-auto object-contain", variant === "logo" ? "max-h-[clamp(3.5rem,11vw,7rem)] max-w-[min(34rem,72vw)]" : variant === "stacked" ? "max-h-[clamp(8rem,26vw,14rem)]" : "max-h-[clamp(6rem,22vw,11rem)] drop-shadow-[0_24px_40px_rgb(0_0_0/0.25)]")}
+            />
           </div>
         </div>
         <figcaption className="relative flex items-center justify-between gap-3 border-t px-5 py-3.5 text-[0.85rem]" style={{ borderColor: onDark ? "rgb(255 255 255 / 0.1)" : "rgb(32 33 39 / 0.08)", color: onDark ? "rgb(255 255 255 / 0.75)" : "rgb(32 33 39 / 0.7)" }}>
@@ -171,7 +187,8 @@ export function LogoPlayground() {
           onChange={setVariant}
           options={[
             { id: "logo", label: "Full logo", disabled: surface === "violet" },
-            { id: "mark", label: "Mark" },
+            { id: "stacked", label: "Stacked", disabled: surface === "violet" },
+            { id: "mark", label: "Icon" },
           ]}
         />
         <label className="inline-flex cursor-pointer items-center gap-3 text-sm font-medium has-[:focus-visible]:[&>span:first-of-type]:ring-2 has-[:focus-visible]:[&>span:first-of-type]:ring-primary/45">
@@ -194,7 +211,7 @@ export function LogoPlayground() {
                 className="inline-flex h-10 items-center gap-2 rounded-[10px] bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_8px_20px_-10px_rgb(112_71_235/0.8)] transition-[background-color,transform] duration-150 hover:bg-primary/90 active:translate-y-px focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:outline-none motion-reduce:active:translate-y-0"
               >
                 <Download className="size-4" aria-hidden /> {f.label}
-                <span className="sr-only"> of the {variant === "logo" ? "full logo" : "mark"}</span>
+                <span className="sr-only"> (PNG)</span>
               </a>
             ))}
           </div>

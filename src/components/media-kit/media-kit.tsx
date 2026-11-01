@@ -1,8 +1,9 @@
 import { ArrowDown, ArrowUpRight, Check, Download, Handshake, Mail, Newspaper, Sparkles, X } from "lucide-react";
+import { Logo } from "@/components/brand";
 import { ColorCard, CopyText, LogoPlayground, Mark, TypeTester } from "@/components/media-kit/interactive";
 import { Parallax } from "@/components/site/about-parallax";
 import { Reveal } from "@/components/site/primitives";
-import { BRAND_ASSETS, BRAND_COLORS, MEDIA_CONTACT } from "@/lib/brand-assets";
+import { BRAND_ASSETS, BRAND_COLORS, brandAsset, MEDIA_CONTACT } from "@/lib/brand-assets";
 import { CATALOG_TOTALS } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +64,7 @@ function BrandScene() {
             <div className="ai-float relative">
               <div className="absolute -inset-[16%] rounded-[2.4rem] border border-white/70 bg-white/45 shadow-[0_40px_80px_-40px_rgb(112_71_235/0.6)] backdrop-blur-md dark:border-white/10 dark:bg-white/[0.04]" />
               <div className="about-pulse absolute inset-0 rounded-[28%] border-2 border-primary/40" />
-              <Mark className="relative w-full drop-shadow-[0_28px_40px_rgb(112_71_235/0.5)]" />
+              <Mark large className="relative w-full drop-shadow-[0_28px_40px_rgb(112_71_235/0.5)]" />
             </div>
           </div>
         </div>
@@ -74,14 +75,12 @@ function BrandScene() {
             <p className="text-[0.6rem] font-semibold tracking-[0.14em] text-muted-foreground uppercase">Logo</p>
             <div className="mt-2.5 flex items-center gap-2">
               <Mark className="size-6 sm:size-7" />
-              <Mark tile="#202127" className="size-6 sm:size-7" />
-              <span className="font-heading text-[0.8rem] font-extrabold tracking-tight sm:text-sm">
-                Socio<span className="text-primary">tix</span>
-              </span>
+              <Mark tile="#111111" className="size-6 sm:size-7" />
+              <Logo variant="horizontal" className="h-4 sm:h-[1.1rem]" alt="" />
             </div>
             <p className="grid grid-rows-[0fr] text-[0.68rem] text-muted-foreground transition-[grid-template-rows] duration-200 group-hover/card:grid-rows-[1fr] motion-reduce:transition-none">
               <span className="overflow-hidden">
-                <span className="block pt-2">3 variants · SVG + PNG</span>
+                <span className="block pt-2">{BRAND_ASSETS.length} official files · PNG</span>
               </span>
             </p>
           </div>
@@ -107,8 +106,8 @@ function BrandScene() {
               <Mark className="size-5" />
             </span>
             <span className="leading-tight">
-              <span className="block font-mono text-[0.68rem] font-semibold">sociotix-mark.svg</span>
-              <span className="block text-[0.62rem] text-muted-foreground">Vector · SVG</span>
+              <span className="block font-mono text-[0.68rem] font-semibold">Sociotix_icon_violet.png</span>
+              <span className="block text-[0.62rem] text-muted-foreground">Icon · PNG, transparent</span>
             </span>
             <span className="grid size-6 place-items-center rounded-full bg-primary text-white transition-colors duration-200 group-hover/card:bg-lime group-hover/card:text-graphite">
               <Download className="size-3 group-hover/card:hidden" />
@@ -183,7 +182,7 @@ function Hero() {
               Explore Brand Assets <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5 motion-reduce:transition-none" aria-hidden />
             </a>
             <a
-              href="/brand/sociotix-logo.png"
+              href={brandAsset("logo").file}
               download
               className="inline-flex h-12 items-center justify-center gap-2 rounded-full border bg-card/80 px-5 text-[0.95rem] font-semibold backdrop-blur transition-[border-color,background-color] duration-200 hover:border-primary/35 hover:bg-card focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none dark:bg-white/[0.04]"
             >
@@ -443,12 +442,13 @@ function Resources() {
         <h3 className="mt-16 font-heading text-[1.2rem] font-bold tracking-tight">Downloads</h3>
         <ul className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {BRAND_ASSETS.map((a) => {
-            const dark = a.id === "logo-reversed";
+            const dark = a.background === "dark";
+            const square = a.id.startsWith("icon") || a.id.startsWith("stacked");
             return (
               <li key={a.id} className="group overflow-hidden rounded-2xl border bg-card transition-colors duration-200 hover:border-primary/30 dark:bg-white/[0.03]">
                 <div className={cn("grid h-36 place-items-center p-6", dark ? "bg-[#0e0f13]" : "bg-[repeating-conic-gradient(rgb(128_128_128/0.08)_0%_25%,transparent_0%_50%)] bg-size-[18px_18px]")}>
                   {/* eslint-disable-next-line @next/next/no-img-element -- small static brand previews, shown as-is */}
-                  <img src={a.file} alt={`${a.label} preview`} width={a.id.startsWith("logo") ? 220 : 72} height={72} className={cn("max-h-20 w-auto object-contain transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none", a.id.startsWith("logo") ? "max-w-[85%]" : "")} loading="lazy" />
+                  <img src={a.file} alt={`${a.label} preview`} width={Number(a.size.split(" × ")[0])} height={Number(a.size.split(" × ")[1])} className={cn("h-auto w-auto object-contain transition-transform duration-300 group-hover:scale-105 motion-reduce:transition-none", square ? "max-h-24" : "max-h-14 max-w-[85%]")} loading="lazy" decoding="async" />
                 </div>
                 <div className="flex items-center justify-between gap-3 p-4">
                   <div className="min-w-0">
@@ -490,9 +490,9 @@ function Resources() {
               <Mark className="size-12" />
             </span>
           </GuideTile>
-          <GuideTile ok title="Use the graphite mark on violet">
+          <GuideTile ok title="Use the black icon on violet">
             <span className="grid size-24 place-items-center rounded-xl bg-[#7047EB]">
-              <Mark tile="#202127" className="size-12" />
+              <Mark tile="#111111" className="size-12" />
             </span>
           </GuideTile>
           <GuideTile ok={false} title="Don't stretch or squash it">
@@ -520,7 +520,7 @@ function Closing() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_80%_at_10%_0%,rgb(112_71_235/0.55),transparent_70%),radial-gradient(40%_60%_at_100%_100%,rgb(200_255_82/0.14),transparent_70%)]" aria-hidden />
         <div className="pointer-events-none absolute -right-16 -bottom-20 -z-10 hidden w-[24rem] rotate-12 opacity-90 lg:block xl:-right-8" aria-hidden>
           <div className="ai-float">
-            <Mark tile="#7047EB" className="w-full drop-shadow-[0_40px_60px_rgb(112_71_235/0.5)]" />
+            <Mark large tile="#7047EB" className="w-full drop-shadow-[0_40px_60px_rgb(112_71_235/0.5)]" />
           </div>
         </div>
         <Sparkles className="size-6 text-lime" aria-hidden />

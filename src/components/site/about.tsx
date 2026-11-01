@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PlatformTile } from "@/components/brand";
+import { Mark } from "@/components/media-kit/interactive";
 import { Parallax } from "@/components/site/about-parallax";
 import { Reveal } from "@/components/site/primitives";
 import { viewerFromSession } from "@/components/site/public-header";
@@ -138,10 +139,7 @@ function EcosystemOrbit() {
         {/* The core. */}
         <div className="about-pulse absolute inset-[39%] rounded-[30%] border-2 border-primary/40" />
         <div className="absolute inset-[39%] grid place-items-center rounded-[30%] bg-graphite shadow-[0_24px_50px_-18px_rgb(32_33_39/0.85),inset_0_1px_0_rgb(255_255_255/0.12)] ring-4 ring-background dark:bg-[#202127] dark:ring-white/10">
-          <svg viewBox="0 0 32 32" className="w-[46%]">
-            <path d="M20.6 10.4c-1.1-1-2.7-1.6-4.5-1.6-2.9 0-4.9 1.5-4.9 3.7 0 4.6 8.6 3 8.6 6.3 0 1.1-1.2 1.9-3 1.9-1.6 0-3-.6-4-1.6" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" />
-            <circle cx="23" cy="22.5" r="2.6" fill="#C8FF52" />
-          </svg>
+          <Mark tile="#111111" large className="size-full rounded-[30%]" />
         </div>
       </div>
 

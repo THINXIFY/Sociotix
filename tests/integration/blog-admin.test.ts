@@ -213,6 +213,9 @@ describe("posts", () => {
     expect(res.headers.get("location")).toBe(`${ORIGIN}/blog/${newSlug}`);
     expect((await proxy(new NextRequest(`${ORIGIN}/blog/${newSlug}`))).headers.get("x-middleware-next")).toBe("1");
     expect((await proxy(new NextRequest(`${ORIGIN}/blog/never-existed-${Date.now()}`))).headers.get("x-middleware-rewrite")).toContain("/__not-found");
+    // The blog index's social image is not an article slug.
+    expect((await proxy(new NextRequest(`${ORIGIN}/blog/opengraph-image`))).headers.get("x-middleware-next")).toBe("1");
+    expect((await proxy(new NextRequest(`${ORIGIN}/blog/opengraph-image/extra`))).headers.get("x-middleware-rewrite")).toContain("/__not-found");
     // Another post can't take the old address.
     const clash = await call(createPost, { method: "POST", json: draft({ slug: p.slug }) });
     expect(clash.status).toBe(400);

@@ -17,7 +17,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
-import { PlatformIcon, PlatformTile } from "@/components/brand";
+import { Logo, PlatformIcon, PlatformTile } from "@/components/brand";
 import { useCatalogFilters } from "@/components/providers";
 import { cn } from "@/lib/utils";
 import {
@@ -251,10 +251,7 @@ function OrderPreview() {
       <div className="rounded-[1.75rem] border bg-card/85 p-1.5 shadow-float backdrop-blur-xl">
         {/* App bar */}
         <div className="flex items-center gap-3 px-2.5 py-2 sm:px-3 sm:py-2.5">
-          <svg viewBox="0 0 32 32" className="size-7 shrink-0" aria-hidden>
-            <rect width="32" height="32" rx="9" fill="#7047EB" />
-            <circle cx="22.5" cy="22" r="3" fill="#C8FF52" />
-          </svg>
+          <Logo variant="icon" className="h-7" alt="" />
           <form
             role="search"
             className="flex h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border bg-background px-3 focus-within:border-primary/60 focus-within:ring-3 focus-within:ring-primary/15"

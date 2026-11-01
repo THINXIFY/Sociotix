@@ -166,11 +166,10 @@ function AdminLogo({ collapsed }: { collapsed?: boolean }) {
       // Icon-only when collapsed; otherwise the visible "Sociotix Admin" is the name.
       aria-label={collapsed ? "Sociotix Admin" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none [&_.text-primary]:text-[#a48bff]",
-        collapsed && "[&>span>span]:hidden",
+        "flex items-center gap-2 rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none",
       )}
     >
-      <Logo />
+      <Logo variant={collapsed ? "icon" : "horizontal"} surface="dark" className="h-7" />
       {collapsed ? null : " "}
       {collapsed ? null : (
         <span className="rounded-md bg-lime px-1.5 py-0.5 text-[0.6rem] font-extrabold tracking-wider text-graphite uppercase">Admin</span>

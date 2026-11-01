@@ -32,6 +32,14 @@ export const metadata: Metadata = {
   description:
     "Discover social media services across all major platforms. Explore solutions, manage orders, and track progress from one dashboard.",
   openGraph: { type: "website", siteName: SITE.name, locale: SITE.locale },
+  // favicon.ico (16/32/48) is picked up from this folder; these add sharper PNGs and the home-screen icon.
+  icons: {
+    icon: [
+      { url: "/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/icon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+  },
   twitter: { card: "summary_large_image" },
 };
 

@@ -12,7 +12,7 @@ const ORG_ID = () => `${absoluteUrl("/")}#organization`;
 const SITE_ID = () => `${absoluteUrl("/")}#website`;
 
 export function organization(): Thing {
-  return { "@type": "Organization", "@id": ORG_ID(), name: SITE.name, url: absoluteUrl("/"), description: SITE.description };
+  return { "@type": "Organization", "@id": ORG_ID(), name: SITE.name, url: absoluteUrl("/"), description: SITE.description, logo: { "@type": "ImageObject", url: absoluteUrl("/icon-512.png"), width: 512, height: 512 } };
 }
 
 export function website(): Thing {

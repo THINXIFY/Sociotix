@@ -21,7 +21,8 @@ const ADMIN_PUBLIC = /^\/admin\/(login|setup|mfa)(\/|$)/;
 /** Blog: file articles first; otherwise a live admin post, or an old slug that permanently redirects to its post. */
 async function blogRoute(request: NextRequest, pathname: string) {
   const [slug, ...rest] = pathname.slice("/blog/".length).split("/");
-  if (getArticle(slug)) return NextResponse.next();
+  // The blog index's own social image lives at /blog/opengraph-image.
+  if (getArticle(slug) || (slug === "opengraph-image" && !rest.length)) return NextResponse.next();
   try {
     const found = await resolvePublicSlug(getDb(), slug);
     if (found?.kind === "live") return NextResponse.next();

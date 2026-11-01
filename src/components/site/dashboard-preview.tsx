@@ -73,7 +73,7 @@ export function DashboardPreview() {
           <div className="flex overflow-hidden rounded-[1.4rem] border bg-background" aria-label="Dashboard preview with sample data" role="img">
             {/* Sidebar */}
             <aside className="hidden w-56 shrink-0 flex-col border-r bg-card p-4 md:flex">
-              <Logo className="scale-90 origin-left" />
+              <Logo className="h-7" alt="" />
               <ul className="mt-7 space-y-1">
                 {NAV.map((n, i) => (
                   <li
