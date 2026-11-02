@@ -22,19 +22,18 @@ const NOTES: Record<AiCategoryId, string> = {
   assist: "On the roadmap — help finding services, understanding orders and getting answers.",
 };
 
+/** Phones: a compact row (icon, name, status, one-line summary). From 640px: the full card. One badge, placed by the grid. */
 function ToolCard({ tool }: { tool: AiTool }) {
   return (
     <Link
       href={aiToolHref(tool)}
-      className="group flex h-full flex-col rounded-[1.25rem] border bg-card p-5 transition-[border-color,box-shadow] duration-200 hover:border-primary/35 hover:shadow-[0_18px_40px_-28px_rgb(112_71_235/0.55)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none motion-reduce:transition-none"
+      className="group grid h-full grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-x-3.5 gap-y-1 rounded-[1.25rem] border bg-card p-4 transition-[border-color,box-shadow] duration-200 hover:border-primary/35 hover:shadow-[0_18px_40px_-28px_rgb(112_71_235/0.55)] focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none motion-reduce:transition-none sm:grid-rows-[auto_auto_1fr_auto] sm:gap-x-3 sm:gap-y-0 sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
-        <ToolGlyph tool={tool} />
-        <LiveAvailabilityBadge tool={tool} />
-      </div>
-      <h4 className="mt-4 font-heading text-[1.05rem] leading-snug font-bold">{tool.name.replace(/^AI /, "")}</h4>
-      <p className="mt-1.5 flex-1 text-[0.92rem] leading-relaxed text-muted-foreground">{tool.tagline}</p>
-      <div className="mt-5 flex items-center justify-between border-t pt-3.5 text-[0.78rem] font-medium text-muted-foreground">
+      <ToolGlyph tool={tool} className="row-span-2 sm:row-span-1" />
+      <h4 className="col-start-2 row-start-1 self-center font-heading text-[1.02rem] leading-snug font-bold sm:col-span-3 sm:col-start-1 sm:row-start-2 sm:mt-4 sm:self-auto sm:text-[1.05rem]">{tool.name.replace(/^AI /, "")}</h4>
+      <LiveAvailabilityBadge tool={tool} className="col-start-3 row-start-1 justify-self-end" />
+      <p className="col-span-2 col-start-2 row-start-2 line-clamp-2 text-[0.88rem] leading-relaxed text-muted-foreground sm:col-span-3 sm:col-start-1 sm:row-start-3 sm:mt-1.5 sm:line-clamp-none sm:text-[0.92rem]">{tool.tagline}</p>
+      <div className="col-span-3 row-start-4 mt-5 hidden items-center justify-between border-t pt-3.5 text-[0.78rem] font-medium text-muted-foreground sm:flex">
         <span>{FAMILY[tool.category].name}</span>
         <span className="inline-flex items-center gap-1 text-foreground/70 transition-colors group-hover:text-primary group-focus-visible:text-primary">
           View tool <ArrowUpRight className="size-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 motion-reduce:transition-none" aria-hidden />
@@ -109,7 +108,7 @@ export function AiDirectory() {
                 </h3>
                 <p className="text-sm text-muted-foreground">{NOTES[c.id]}</p>
               </div>
-              <ul className={cn("mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2", c.id === "content" ? "xl:grid-cols-4" : "lg:grid-cols-3")}>
+              <ul className={cn("mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4", c.id === "content" ? "xl:grid-cols-4" : "lg:grid-cols-3")}>
                 {tools.map((t) => (
                   <li key={t.id}>
                     <ToolCard tool={t} />

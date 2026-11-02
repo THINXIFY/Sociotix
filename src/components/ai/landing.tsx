@@ -570,10 +570,11 @@ function FinalCta() {
       <div className={wrap}>
         <Reveal className="relative isolate overflow-hidden rounded-[2rem] border bg-card px-6 pt-12 pb-11 text-center sm:px-12 sm:pt-16">
           <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(70%_60%_at_50%_0%,rgb(112_71_235/0.12),transparent_70%)] dark:bg-[radial-gradient(70%_60%_at_50%_0%,rgb(112_71_235/0.26),transparent_70%)]" aria-hidden />
-          <ul className="mx-auto flex max-w-3xl flex-wrap justify-center gap-2" aria-label="All Sociotix AI tools">
+          {/* 7 + 6 icons on phones and small tablets (no orphan on the last row); one row from 768px. */}
+          <ul className="mx-auto flex max-w-[18rem] flex-wrap justify-center gap-1.5 sm:max-w-[21rem] sm:gap-2 md:max-w-3xl" aria-label="All Sociotix AI tools">
             {AI_TOOLS.map((t) => (
               <li key={t.id} title={t.name}>
-                <ToolGlyph tool={t} size="md" className={cn(t.category === "assist" && "opacity-70")} />
+                <ToolGlyph tool={t} size="md" className={cn("max-sm:size-9", t.category === "assist" && "opacity-70")} />
               </li>
             ))}
           </ul>
