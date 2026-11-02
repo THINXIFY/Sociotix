@@ -19,6 +19,7 @@ export const ur: Messages = {
   "nav.transactions": "لین دین",
   "nav.support": "سپورٹ",
   "nav.referrals": "ریفرلز اور انعامات",
+  "nav.digitalProducts": "میری ڈیجیٹل مصنوعات",
   "nav.settings": "ترتیبات",
   "nav.profile": "میری پروفائل",
   "nav.aiHome": "اے آئی ورک اسپیس",

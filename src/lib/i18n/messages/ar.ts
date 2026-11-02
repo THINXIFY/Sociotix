@@ -19,6 +19,7 @@ export const ar: Messages = {
   "nav.transactions": "المعاملات",
   "nav.support": "الدعم",
   "nav.referrals": "الإحالات والمكافآت",
+  "nav.digitalProducts": "منتجاتي الرقمية",
   "nav.settings": "الإعدادات",
   "nav.profile": "ملفي الشخصي",
   "nav.aiHome": "مساحة الذكاء الاصطناعي",

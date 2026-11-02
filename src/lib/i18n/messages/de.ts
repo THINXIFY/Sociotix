@@ -19,6 +19,7 @@ export const de: Messages = {
   "nav.transactions": "Transaktionen",
   "nav.support": "Support",
   "nav.referrals": "Empfehlungen & Prämien",
+  "nav.digitalProducts": "Meine digitalen Produkte",
   "nav.settings": "Einstellungen",
   "nav.profile": "Mein Profil",
   "nav.aiHome": "KI-Arbeitsbereich",

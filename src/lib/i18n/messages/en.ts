@@ -23,6 +23,7 @@ export const en = {
   "nav.transactions": "Transactions",
   "nav.support": "Support",
   "nav.referrals": "Referrals & Rewards",
+  "nav.digitalProducts": "My Digital Products",
   "nav.settings": "Settings",
   "nav.profile": "My Profile",
   "nav.aiHome": "AI workspace",

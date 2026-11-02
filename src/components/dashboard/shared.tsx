@@ -11,6 +11,7 @@ import {
   Clock3,
   Gift,
   LayoutDashboard,
+  Library,
   LifeBuoy,
   type LucideIcon,
   Package,
@@ -43,7 +44,8 @@ export type Destination =
   | "settings"
   | "profile"
   | "social"
-  | "ai";
+  | "ai"
+  | "digital-products";
 
 export interface NavItem {
   id: Destination;
@@ -62,6 +64,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { id: "add-funds", key: "nav.addFunds", icon: Wallet },
   { id: "transactions", key: "nav.transactions", icon: ArrowLeftRight },
   { id: "support", key: "nav.support", icon: LifeBuoy },
+  { id: "digital-products", key: "nav.digitalProducts", icon: Library },
 ];
 
 /** Sociotix AI areas that live inside the dashboard (AI-06): kept to one discreet group. */
@@ -89,6 +92,7 @@ export const ROUTES: Record<Destination, string> = {
   profile: "/dashboard/profile",
   social: "/dashboard/social",
   ai: "/dashboard/ai",
+  "digital-products": "/dashboard/digital-products",
 };
 
 export const ordersHref = (query?: Record<string, string>) => {

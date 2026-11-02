@@ -320,7 +320,7 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
 /* -------------------------------------------------------------------------- */
 
 const TAB_IDS: Destination[] = ["overview", "orders", "new-order", "add-funds"];
-const MORE_IDS: Destination[] = ["transactions", "support", "social", "referrals", "settings", "profile"];
+const MORE_IDS: Destination[] = ["transactions", "support", "digital-products", "social", "referrals", "settings", "profile"];
 const ALL_NAV = [...PRIMARY_NAV, ...AI_NAV, ...SECONDARY_NAV];
 const navItem = (id: Destination) => ALL_NAV.find((n) => n.id === id)!;
 

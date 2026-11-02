@@ -19,6 +19,7 @@ export const es: Messages = {
   "nav.transactions": "Transacciones",
   "nav.support": "Soporte",
   "nav.referrals": "Referidos y recompensas",
+  "nav.digitalProducts": "Mis productos digitales",
   "nav.settings": "Ajustes",
   "nav.profile": "Mi perfil",
   "nav.aiHome": "Espacio de IA",
