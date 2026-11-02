@@ -140,8 +140,8 @@ describe("scheduling", () => {
     const deps = { env: env(), adapters: { x: x.adapter, instagram: igA.adapter }, now: () => T0 };
     const when = at(60).toISOString().slice(0, 16);
     // Real build: nothing is activated.
-    expect(await codeOf(schedulePost(db, customer.id, d.id, { when, timezone: "UTC", connectionIds: [ok.id] }, { env: env("") }))).toBe("FEATURE_DISABLED");
-    expect(await codeOf(schedulePost(db, customer.id, d.id, { when, timezone: "UTC", connectionIds: [ok.id] }, { env: env() }))).toBe("FEATURE_DISABLED");
+    expect(await codeOf(schedulePost(db, customer.id, d.id, { when, timezone: "UTC", connectionIds: [ok.id] }, { env: env(""), now: () => T0 }))).toBe("FEATURE_DISABLED");
+    expect(await codeOf(schedulePost(db, customer.id, d.id, { when, timezone: "UTC", connectionIds: [ok.id] }, { env: env(), now: () => T0 }))).toBe("FEATURE_DISABLED");
     expect(await codeOf(schedulePost(db, customer.id, d.id, { when, timezone: "UTC", connectionIds: [noScope.id] }, deps))).toBe("CONFLICT");
     expect(await codeOf(schedulePost(db, customer.id, d.id, { when: at(2).toISOString().slice(0, 16), timezone: "UTC", connectionIds: [ok.id] }, deps))).toBe("VALIDATION_FAILED");
     expect(await codeOf(schedulePost(db, customer.id, d.id, { when: "2026-03-08T02:30", timezone: "America/New_York", connectionIds: [ok.id] }, deps))).toBe("VALIDATION_FAILED");
