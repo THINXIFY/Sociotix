@@ -3,6 +3,7 @@ import {
   CreditCard,
   Gift,
   LayoutDashboard,
+  LayoutGrid,
   LifeBuoy,
   type LucideIcon,
   Newspaper,
@@ -111,6 +112,15 @@ export const ADMIN_SECONDARY: AdminSection[] = [
     built: true,
     icon: Newspaper,
     summary: "Write, edit, preview, schedule and publish blog posts with built-in SEO settings.",
+    planned: [],
+  },
+  {
+    id: "digital-products",
+    label: "Digital Products",
+    href: "/admin/digital-products",
+    built: true,
+    icon: LayoutGrid,
+    summary: "Create, edit, preview and publish marketplace products with images, files, download links and SEO.",
     planned: [],
   },
   {

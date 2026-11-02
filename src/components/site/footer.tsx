@@ -68,6 +68,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
       title: "Marketplace",
       links: [
         { label: "All Services", onClick: () => explore() },
+        { label: "Digital Products", href: "/digital-products" },
         { label: "Instagram", onClick: () => explore({ platform: "instagram" }) },
         { label: "Facebook", onClick: () => explore({ platform: "facebook" }) },
         { label: "YouTube", onClick: () => explore({ platform: "youtube" }) },

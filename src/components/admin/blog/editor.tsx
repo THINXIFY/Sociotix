@@ -46,7 +46,7 @@ const fieldsOf = (p: AdminPost): PostFields => {
 
 type ApiError = Error & { field?: string; status?: number };
 
-function Counter({ value, min, max }: { value: number; min: number; max: number }) {
+export function Counter({ value, min, max }: { value: number; min: number; max: number }) {
   const tone = !value ? "text-muted-foreground" : value > max ? "text-destructive" : value < min ? "text-soon" : "text-ok";
   return (
     <span className={cn("text-xs font-semibold tabular-nums", tone)}>
@@ -56,7 +56,7 @@ function Counter({ value, min, max }: { value: number; min: number; max: number 
 }
 
 /** Small chip input for tags and keywords (Enter or comma adds). */
-function Chips({ id, values, onChange, max, maxLength, placeholder }: { id: string; values: string[]; onChange: (v: string[]) => void; max: number; maxLength: number; placeholder: string }) {
+export function Chips({ id, values, onChange, max, maxLength, placeholder }: { id: string; values: string[]; onChange: (v: string[]) => void; max: number; maxLength: number; placeholder: string }) {
   const [draft, setDraft] = React.useState("");
   const add = () => {
     const v = draft.trim().replace(/,+$/, "");
@@ -97,7 +97,7 @@ function Chips({ id, values, onChange, max, maxLength, placeholder }: { id: stri
   );
 }
 
-const CHECK_ICON: Record<CheckState, { Icon: typeof CircleCheck; className: string; label: string }> = {
+export const CHECK_ICON: Record<CheckState, { Icon: typeof CircleCheck; className: string; label: string }> = {
   good: { Icon: CircleCheck, className: "text-ok", label: "Good" },
   improve: { Icon: CircleAlert, className: "text-soon", label: "Could improve" },
   missing: { Icon: CircleDashed, className: "text-muted-foreground", label: "Missing" },

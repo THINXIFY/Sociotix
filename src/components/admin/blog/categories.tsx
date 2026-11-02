@@ -9,31 +9,43 @@ import { BLOG_CATEGORIES } from "@/lib/blog/types";
 import { Field, TextInput } from "../form";
 import { blogApi, ConfirmDialog } from "./shared";
 
-/* Blog categories in the admin: the six built-in ones plus custom categories admins add, rename and delete. */
+/* Categories in the admin: built-in ones plus custom categories admins add, rename and delete. Used by the blog and the Digital Products marketplace. */
 
-const BUILT_IN: AdminCategory[] = BLOG_CATEGORIES.map((c) => ({ id: c.id, key: null, name: c.name, description: "", builtIn: true, postCount: 0 }));
+export interface CategoryScope {
+  endpoint: string;
+  builtIn: AdminCategory[];
+  /** What a category holds, singular ("post" | "product"). */
+  noun: string;
+  /** Where custom categories show up publicly. */
+  where: string;
+}
+
+export const BLOG_CATEGORY_SCOPE: CategoryScope = { endpoint: "/api/admin/blog/categories", builtIn: BLOG_CATEGORIES.map((c) => ({ id: c.id, key: null, name: c.name, description: "", builtIn: true, postCount: 0 })), noun: "post", where: "the blog" };
+
+const plural = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
 
 /** The category list (built-in shown immediately; custom ones once loaded). */
-export function useCategories() {
-  const [categories, setCategories] = React.useState<AdminCategory[]>(BUILT_IN);
+export function useCategories(scope: CategoryScope = BLOG_CATEGORY_SCOPE) {
+  const { endpoint } = scope;
+  const [categories, setCategories] = React.useState<AdminCategory[]>(scope.builtIn);
   const [version, setVersion] = React.useState(0);
   React.useEffect(() => {
     let cancelled = false;
-    blogApi<{ categories: AdminCategory[] }>("/api/admin/blog/categories").then(
+    blogApi<{ categories: AdminCategory[] }>(endpoint).then(
       (r) => !cancelled && setCategories(r.categories),
       () => {},
     );
     return () => {
       cancelled = true;
     };
-  }, [version]);
+  }, [version, endpoint]);
   return { categories, reload: () => setVersion((v) => v + 1), add: (c: AdminCategory) => setCategories((xs) => [...xs, c]) };
 }
 
 type ApiError = Error & { field?: string };
 
 /** Small form to add a custom category; used by the manager and the editor. */
-function AddCategoryForm({ onAdded, autoFocus }: { onAdded: (c: AdminCategory) => void; autoFocus?: boolean }) {
+function AddCategoryForm({ scope, onAdded, autoFocus }: { scope: CategoryScope; onAdded: (c: AdminCategory) => void; autoFocus?: boolean }) {
   const [name, setName] = React.useState("");
   const [description, setDescription] = React.useState("");
   const [busy, setBusy] = React.useState(false);
@@ -44,7 +56,7 @@ function AddCategoryForm({ onAdded, autoFocus }: { onAdded: (c: AdminCategory) =
     setBusy(true);
     setError(null);
     try {
-      const { category } = await blogApi<{ category: AdminCategory }>("/api/admin/blog/categories", { method: "POST", body: JSON.stringify({ name, description }) });
+      const { category } = await blogApi<{ category: AdminCategory }>(scope.endpoint, { method: "POST", body: JSON.stringify({ name, description }) });
       setName("");
       setDescription("");
       onAdded(category);
@@ -60,7 +72,7 @@ function AddCategoryForm({ onAdded, autoFocus }: { onAdded: (c: AdminCategory) =
         <TextInput id="new-category-name" autoFocus={autoFocus} value={name} maxLength={60} onChange={(e) => setName(e.target.value)} placeholder="e.g. Case Studies" aria-invalid={error ? true : undefined} />
       </Field>
       <Field id="new-category-description" label="Description" optional>
-        <TextInput id="new-category-description" value={description} maxLength={200} onChange={(e) => setDescription(e.target.value)} placeholder="What posts in this category cover" />
+        <TextInput id="new-category-description" value={description} maxLength={200} onChange={(e) => setDescription(e.target.value)} placeholder={`What ${scope.noun}s in this category cover`} />
       </Field>
       <button type="submit" disabled={busy || !name.trim()} className="inline-flex h-10 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
         <Plus className="size-4" aria-hidden /> {busy ? "Adding…" : "Add category"}
@@ -70,21 +82,21 @@ function AddCategoryForm({ onAdded, autoFocus }: { onAdded: (c: AdminCategory) =
 }
 
 /** Quick "New category" from the editor: creates it and hands it back to be selected. */
-export function NewCategoryDialog({ open, onClose, onAdded }: { open: boolean; onClose: () => void; onAdded: (c: AdminCategory) => void }) {
+export function NewCategoryDialog({ open, onClose, onAdded, scope = BLOG_CATEGORY_SCOPE }: { open: boolean; onClose: () => void; onAdded: (c: AdminCategory) => void; scope?: CategoryScope }) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-md">
         <div>
           <DialogTitle className="font-heading text-lg font-bold">New category</DialogTitle>
-          <DialogDescription className="mt-1 text-sm text-muted-foreground">It appears on the blog once it has a published post.</DialogDescription>
+          <DialogDescription className="mt-1 text-sm text-muted-foreground">It appears on {scope.where} once it has a published {scope.noun}.</DialogDescription>
         </div>
-        <AddCategoryForm autoFocus onAdded={(c) => (onAdded(c), onClose())} />
+        <AddCategoryForm scope={scope} autoFocus onAdded={(c) => (onAdded(c), onClose())} />
       </DialogContent>
     </Dialog>
   );
 }
 
-function CategoryRow({ c, onChanged, onDelete }: { c: AdminCategory; onChanged: () => void; onDelete: (c: AdminCategory) => void }) {
+function CategoryRow({ scope, c, onChanged, onDelete }: { scope: CategoryScope; c: AdminCategory; onChanged: () => void; onDelete: (c: AdminCategory) => void }) {
   const [editing, setEditing] = React.useState(false);
   const [name, setName] = React.useState(c.name);
   const [busy, setBusy] = React.useState(false);
@@ -93,7 +105,7 @@ function CategoryRow({ c, onChanged, onDelete }: { c: AdminCategory; onChanged: 
     setBusy(true);
     setError(null);
     try {
-      await blogApi(`/api/admin/blog/categories/${c.key}`, { method: "PATCH", body: JSON.stringify({ name, description: c.description }) });
+      await blogApi(`${scope.endpoint}/${c.key}`, { method: "PATCH", body: JSON.stringify({ name, description: c.description }) });
       setEditing(false);
       onChanged();
     } catch (err) {
@@ -112,7 +124,7 @@ function CategoryRow({ c, onChanged, onDelete }: { c: AdminCategory; onChanged: 
             <p className="truncate text-sm font-semibold">{c.name}</p>
           )}
           <p className="mt-0.5 text-xs text-muted-foreground">
-            {c.postCount} post{c.postCount === 1 ? "" : "s"}
+            {plural(c.postCount, scope.noun)}
             {c.builtIn ? " · Built-in" : ""}
           </p>
         </div>
@@ -148,8 +160,8 @@ function CategoryRow({ c, onChanged, onDelete }: { c: AdminCategory; onChanged: 
 }
 
 /** Side panel listing every category, with add, rename and delete for custom ones. */
-export function CategoryManager({ open, onClose, canManage, onChanged }: { open: boolean; onClose: () => void; canManage: boolean; onChanged: () => void }) {
-  const { categories, reload } = useCategories();
+export function CategoryManager({ open, onClose, canManage, onChanged, scope = BLOG_CATEGORY_SCOPE }: { open: boolean; onClose: () => void; canManage: boolean; onChanged: () => void; scope?: CategoryScope }) {
+  const { categories, reload } = useCategories(scope);
   const [pending, setPending] = React.useState<AdminCategory | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -164,7 +176,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
     setBusy(true);
     setError(null);
     try {
-      await blogApi(`/api/admin/blog/categories/${pending.key}`, { method: "DELETE" });
+      await blogApi(`${scope.endpoint}/${pending.key}`, { method: "DELETE" });
       setPending(null);
       changed();
     } catch (err) {
@@ -180,7 +192,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
         <div className="flex items-start gap-3 border-b px-5 py-4">
           <div className="min-w-0 flex-1">
             <SheetTitle className="font-heading text-lg font-bold">Categories</SheetTitle>
-            <SheetDescription className="mt-0.5 text-sm text-muted-foreground">Custom categories appear on the blog once they have a published post.</SheetDescription>
+            <SheetDescription className="mt-0.5 text-sm text-muted-foreground">Custom categories appear on {scope.where} once they have a published {scope.noun}.</SheetDescription>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
             <X className="size-4" aria-hidden />
@@ -192,7 +204,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
               <h3 id="add-category-title" className="mb-3 text-sm font-bold">
                 Add a category
               </h3>
-              <AddCategoryForm onAdded={changed} />
+              <AddCategoryForm scope={scope} onAdded={changed} />
             </section>
           ) : null}
           <section aria-labelledby="custom-categories-title">
@@ -201,7 +213,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
             </h3>
             {custom.length ? (
               <ul className="divide-y rounded-2xl border">
-                {custom.map((c) => (canManage ? <CategoryRow key={c.key} c={c} onChanged={changed} onDelete={(x) => (setError(null), setPending(x))} /> : <CategoryRow key={c.key} c={{ ...c, builtIn: true }} onChanged={changed} onDelete={() => {}} />))}
+                {custom.map((c) => (canManage ? <CategoryRow key={c.key} scope={scope} c={c} onChanged={changed} onDelete={(x) => (setError(null), setPending(x))} /> : <CategoryRow key={c.key} scope={scope} c={{ ...c, builtIn: true }} onChanged={changed} onDelete={() => {}} />))}
               </ul>
             ) : (
               <p className="rounded-2xl border border-dashed px-4 py-5 text-center text-sm text-muted-foreground">No custom categories yet.</p>
@@ -215,7 +227,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
               {categories
                 .filter((c) => c.builtIn)
                 .map((c) => (
-                  <CategoryRow key={c.id} c={c} onChanged={changed} onDelete={() => {}} />
+                  <CategoryRow key={c.id} scope={scope} c={c} onChanged={changed} onDelete={() => {}} />
                 ))}
             </ul>
           </section>
@@ -227,7 +239,7 @@ export function CategoryManager({ open, onClose, canManage, onChanged }: { open:
         error={error}
         danger
         title="Delete this category?"
-        description={pending?.postCount ? <>“{pending.name}” is used by {pending.postCount} post{pending.postCount === 1 ? "" : "s"}. Move {pending.postCount === 1 ? "it" : "them"} to another category first.</> : <>“{pending?.name}” will be removed. This can&apos;t be undone.</>}
+        description={pending?.postCount ? <>“{pending.name}” is used by {plural(pending.postCount, scope.noun)}. Move {pending.postCount === 1 ? "it" : "them"} to another category first.</> : <>“{pending?.name}” will be removed. This can&apos;t be undone.</>}
         confirmLabel="Delete category"
         onConfirm={remove}
         onClose={() => setPending(null)}

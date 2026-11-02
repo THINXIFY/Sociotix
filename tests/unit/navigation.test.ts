@@ -48,7 +48,7 @@ describe("More Solutions mega menu", async () => {
 
   it("is two compact groups: Explore Solutions and Your Workspace, on existing routes", () => {
     expect(SOLUTION_GROUPS.map((g) => [g.title, g.items.map((i) => `${i.label} ${i.href}`)])).toEqual([
-      ["Explore Solutions", ["SMM Marketplace /#services", "AI Tools /ai-tools", "Social Management /social-management"]],
+      ["Explore Solutions", ["SMM Marketplace /#services", "AI Tools /ai-tools", "Social Management /social-management", "Digital Products /digital-products"]],
       ["Your Workspace", ["Social Workspace /dashboard/social", "AI Workspace /dashboard/ai", "Automations /dashboard/social/automations"]],
     ]);
   });

@@ -1,9 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AI_TOOL_BY_SLUG } from "./lib/ai/registry";
 import { getArticle } from "./lib/blog";
+import { PREVIEW_PRODUCTS } from "./lib/digital-products";
 import { HELP_ARTICLE_BY_SLUG } from "./lib/help/articles";
 import { resolvePublicSlug } from "./server/blog/posts";
 import { getDb } from "./server/db/client";
+import { resolvePublicProductSlug } from "./server/digital-products/products";
 import { EnvError } from "./server/env";
 import { AppError } from "./server/errors";
 
@@ -34,6 +36,21 @@ async function blogRoute(request: NextRequest, pathname: string) {
   return NextResponse.rewrite(new URL("/__not-found", request.url));
 }
 
+/** Digital products: a published product, or a concept page while nothing real is published yet. */
+async function productRoute(request: NextRequest, pathname: string) {
+  const [slug, ...rest] = pathname.slice("/digital-products/".length).split("/");
+  // The marketplace's own social image lives at /digital-products/opengraph-image.
+  if (slug === "opengraph-image" && !rest.length) return NextResponse.next();
+  try {
+    if (await resolvePublicProductSlug(getDb(), slug)) return NextResponse.next();
+  } catch (e) {
+    // No database configured: only the concept pages exist. An outage shouldn't turn live products into 404s.
+    if (!(e instanceof EnvError || e instanceof AppError)) return NextResponse.next();
+    if (PREVIEW_PRODUCTS.some((p) => p.id === slug)) return NextResponse.next();
+  }
+  return NextResponse.rewrite(new URL("/__not-found", request.url));
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
   // Public AI pages: unknown tools are a real 404 (streamed pages can't change status later); known ones pass through untouched and stay indexable.
@@ -49,6 +66,8 @@ export async function proxy(request: NextRequest) {
   }
   // Blog articles: same rule; file drafts count as unknown wherever they aren't previewable (production).
   if (pathname.startsWith("/blog/")) return blogRoute(request, pathname);
+  // Digital product pages: same rule; deeper paths (its opengraph-image) are resolved by Next itself.
+  if (pathname.startsWith("/digital-products/")) return productRoute(request, pathname);
   const has = (names: string[]) => names.some((n) => request.cookies.has(n));
 
   if (pathname.startsWith("/dashboard") && !has(CUSTOMER_COOKIES)) {
@@ -69,5 +88,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/ai-tools/:path+", "/help/:path+", "/blog/:path+", "/dashboard/:path*", "/admin/:path*", "/api/account/:path*", "/api/admin/:path*", "/api/social/:path*", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/dev/:path*"],
+  matcher: ["/ai-tools/:path+", "/help/:path+", "/blog/:path+", "/digital-products/:path+", "/dashboard/:path*", "/admin/:path*", "/api/account/:path*", "/api/admin/:path*", "/api/social/:path*", "/login", "/register", "/forgot-password", "/reset-password", "/verify-email", "/dev/:path*"],
 };

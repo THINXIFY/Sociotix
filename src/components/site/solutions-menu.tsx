@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Accordion } from "@base-ui/react/accordion";
 import { NavigationMenu } from "@base-ui/react/navigation-menu";
 import { motion } from "motion/react";
-import { ArrowRight, ChevronDown, LayoutGrid, Lock, type LucideIcon, Share2, Sparkles, Store, Wand2, Workflow } from "lucide-react";
+import { ArrowRight, ChevronDown, LayoutGrid, Lock, type LucideIcon, Package, Share2, Sparkles, Store, Wand2, Workflow } from "lucide-react";
 import { NAV_INDICATOR_ID, navIndicator, navIndicatorTransition, navItem, navItemActive, navItemIdle } from "@/components/site/nav-styles";
 import { popupSurface } from "@/components/ui/menu";
 import { CATALOG_TOTALS } from "@/lib/catalog";
@@ -28,6 +28,7 @@ export const SOLUTION_GROUPS: { title: string; items: Solution[] }[] = [
       { label: "SMM Marketplace", description: "Services for every major platform", href: "/#services", icon: Store, hint: `Browse ${CATALOG_TOTALS.services} services across ${CATALOG_TOTALS.platforms} platforms` },
       { label: "AI Tools", description: "Plan and write social content", href: "/ai-tools", icon: Sparkles, hint: "Free tool pages and guides · generation opens at launch" },
       { label: "Social Management", description: "Manage your social presence", href: "/social-management", icon: Share2, hint: "See everything the social workspace includes" },
+      { label: "Digital Products", description: "Templates, prompts and toolkits", href: "/digital-products", icon: Package, hint: "A preview of the marketplace · buying opens later" },
     ],
   },
   {

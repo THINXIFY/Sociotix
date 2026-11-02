@@ -48,7 +48,7 @@ function ToolButton({ label, onClick, active, disabled, children }: { label: str
 
 const Sep = () => <span className="mx-1 h-6 w-px shrink-0 bg-border" aria-hidden />;
 
-export function RichEditor({ initial, onChange, invalid, describedBy }: { initial: RichBlock[]; onChange: (blocks: RichBlock[]) => void; invalid?: boolean; describedBy?: string }) {
+export function RichEditor({ initial, onChange, invalid, describedBy, label = "Post content" }: { initial: RichBlock[]; onChange: (blocks: RichBlock[]) => void; invalid?: boolean; describedBy?: string; label?: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const saved = React.useRef<Range | null>(null);
   const [active, setActive] = React.useState<{ block: string; marks: Record<Cmd, boolean> }>({ block: "p", marks: { bold: false, italic: false, underline: false, insertUnorderedList: false, insertOrderedList: false } });
@@ -281,7 +281,7 @@ export function RichEditor({ initial, onChange, invalid, describedBy }: { initia
         id="post-content"
         role="textbox"
         aria-multiline="true"
-        aria-label="Post content"
+        aria-label={label}
         aria-invalid={invalid || undefined}
         aria-describedby={describedBy}
         contentEditable

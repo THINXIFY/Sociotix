@@ -27,7 +27,8 @@ const SOLUTIONS: Solution[] = [
     icon: Package,
     title: "Digital Products Marketplace",
     body: "Templates, guides and assets for social media work.",
-    status: "Planned",
+    status: "Preview",
+    href: "/digital-products",
   },
 ];
 

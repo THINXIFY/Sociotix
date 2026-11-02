@@ -28,6 +28,14 @@ export interface SeoInput {
   category: string;
 }
 
+/** What kind of page is being checked. Defaults are the blog's. */
+export interface SeoKind {
+  titleSuffix: string;
+  minWords: number;
+  noun: string;
+}
+export const BLOG_SEO: SeoKind = { titleSuffix: " | Sociotix Blog", minWords: 300, noun: "post" };
+
 const norm = (s: string) =>
   s
     .toLowerCase()
@@ -38,8 +46,8 @@ const norm = (s: string) =>
 const contains = (hay: string, needle: string) => !!needle && ` ${norm(hay)} `.includes(` ${norm(needle)} `);
 const words = (s: string) => norm(s).split(" ").filter(Boolean);
 
-/** The title search engines will show: the SEO title, or the post title with the blog suffix. */
-export const effectiveSeoTitle = (title: string, seoTitle: string) => seoTitle.trim() || (title.trim() ? `${title.trim()} | Sociotix Blog` : "");
+/** The title search engines will show: the SEO title, or the page title with the section's suffix. */
+export const effectiveSeoTitle = (title: string, seoTitle: string, suffix = BLOG_SEO.titleSuffix) => seoTitle.trim() || (title.trim() ? `${title.trim()}${suffix}` : "");
 
 export function wordCount(blocks: RichBlock[]) {
   return words(richPlainText(blocks)).length;
@@ -52,9 +60,9 @@ function sentences(text: string) {
     .filter((s) => words(s).length > 0);
 }
 
-export function seoChecklist(input: SeoInput): SeoCheck[] {
+export function seoChecklist(input: SeoInput, kind: SeoKind = BLOG_SEO): SeoCheck[] {
   const kw = input.focusKeyword.trim();
-  const title = effectiveSeoTitle(input.title, input.seoTitle);
+  const title = effectiveSeoTitle(input.title, input.seoTitle, kind.titleSuffix);
   const desc = input.metaDescription.trim();
   const paragraphs = input.blocks.filter((b): b is Extract<RichBlock, { runs: unknown }> => b.type === "p");
   const intro = paragraphs[0] ? runsText(paragraphs[0].runs) : "";
@@ -90,7 +98,7 @@ export function seoChecklist(input: SeoInput): SeoCheck[] {
         ? { id: "kw-desc", label: "Keyword in meta description", state: "good", hint: "The description mentions the keyword." }
         : { id: "kw-desc", label: "Keyword in meta description", state: "improve", hint: "Mention the keyword once in the description if it fits." },
     !kw || !intro
-      ? { id: "kw-intro", label: "Keyword in introduction", state: "missing", hint: !intro ? "Start the post with an introductory paragraph." : "Add a focus keyword to check this." }
+      ? { id: "kw-intro", label: "Keyword in introduction", state: "missing", hint: !intro ? `Start the ${kind.noun} with an introductory paragraph.` : "Add a focus keyword to check this." }
       : contains(intro, kw)
         ? { id: "kw-intro", label: "Keyword in introduction", state: "good", hint: "The first paragraph introduces the topic." }
         : { id: "kw-intro", label: "Keyword in introduction", state: "improve", hint: "Mention the topic in your first paragraph." },
@@ -104,12 +112,12 @@ export function seoChecklist(input: SeoInput): SeoCheck[] {
       : desc.length >= SEO_LIMITS.description.min && desc.length <= SEO_LIMITS.description.max
         ? { id: "desc-length", label: "Meta description length", state: "good", hint: `${desc.length} characters.` }
         : { id: "desc-length", label: "Meta description length", state: "improve", hint: `${desc.length} characters. ${SEO_LIMITS.description.min}–${SEO_LIMITS.description.max} usually displays in full.` },
-    total < 300
-      ? { id: "length", label: "Content length", state: total ? "improve" : "missing", hint: `${total} words. Most helpful guides run 300 words or more.` }
+    total < kind.minWords
+      ? { id: "length", label: "Content length", state: total ? "improve" : "missing", hint: kind.noun === "post" ? `${total} words. Most helpful guides run 300 words or more.` : `${total} words. A description of ${kind.minWords}+ words helps visitors decide.` }
       : { id: "length", label: "Content length", state: "good", hint: `${total} words.` },
     headings >= (total > 600 ? 2 : 1)
       ? { id: "headings", label: "Subheadings", state: "good", hint: `${headings} subheading${headings === 1 ? "" : "s"} break up the text.` }
-      : { id: "headings", label: "Subheadings", state: "improve", hint: "Use H2 subheadings so readers can scan the post." },
+      : { id: "headings", label: "Subheadings", state: "improve", hint: `Use H2 subheadings so readers can scan the ${kind.noun}.` },
     !sents.length
       ? { id: "readability", label: "Readability", state: "missing", hint: "Write some paragraphs to check readability." }
       : avgSentence <= 22 && !longParagraphs
