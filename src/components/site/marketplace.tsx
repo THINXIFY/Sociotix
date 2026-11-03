@@ -116,7 +116,8 @@ export function Marketplace() {
     preview({
       title: s.name,
       description: `${p.name} · ${CATEGORY_META[s.category].label}. ${s.description} You can set up the order details now; ordering opens once pricing for this service is verified.`,
-      action: { label: "Configure order", href: `/dashboard/new-order?service=${s.id}` },
+      action: { label: "Get Started", href: `/dashboard/new-order?service=${s.id}` },
+      service: { platformId: s.platformId, category: CATEGORY_META[s.category].label, description: s.description, price: formatPrice(s) },
     });
   };
 

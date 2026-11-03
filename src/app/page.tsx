@@ -12,6 +12,7 @@ import { MoreSolutions } from "@/components/site/more-solutions";
 import { Faq } from "@/components/site/faq";
 import { FinalCta } from "@/components/site/final-cta";
 import { Footer } from "@/components/site/footer";
+import { ActivityToast } from "@/components/site/activity-toast";
 import { CATALOG_TOTALS } from "@/lib/catalog";
 import { graph, organization, webPage, website } from "@/lib/seo/schema";
 import { SITE } from "@/lib/seo/site";
@@ -44,6 +45,7 @@ export default function HomePage() {
         <FinalCta />
       </main>
       <Footer />
+      <ActivityToast />
       <JsonLd data={graph(organization(), website(), webPage({ path: "/", name: TITLE, description: DESCRIPTION }))} />
     </>
   );
