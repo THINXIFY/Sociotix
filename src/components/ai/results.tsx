@@ -169,46 +169,89 @@ export function CaptionResults({ result }: { result: CaptionResult }) {
 /* ── Hashtags ─────────────────────────────────────────────────────────── */
 
 const GROUP_NOTE: Record<string, string> = { Broad: "Wide reach, general topic", Specific: "Clearly about your topic", "Niche & community": "Smaller, focused communities" };
+/** Broad to niche, shown as a fading violet marker so the groups read as one scale. */
+const GROUP_DOT: Record<string, string> = { Broad: "bg-primary/35", Specific: "bg-primary/65", "Niche & community": "bg-primary" };
 
 export function HashtagResults({ result }: { result: HashtagResult }) {
   const all = result.groups.flatMap((g) => g.tags);
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs text-muted-foreground">Suggestions only — no search volume, popularity or trend data. Select a tag to copy it.</p>
+    <div className="space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3">
+        <p className="text-sm">
+          <span className="font-heading font-extrabold tabular-nums">{all.length}</span> <span className="text-muted-foreground">hashtags ·</span>{" "}
+          <span className="font-heading font-extrabold tabular-nums">{result.keywords.length}</span> <span className="text-muted-foreground">keywords</span>
+        </p>
         <CopyButton text={all.join(" ")} label={`Copy all ${all.length} hashtags`}>
-          Copy all {all.length}
+          Copy all hashtags
         </CopyButton>
       </div>
+      <p className="text-xs text-muted-foreground">Suggestions only — no search volume, popularity or trend data. Select a tag to copy it.</p>
       {result.groups.map((g) => (
-        <div key={g.group} className="rounded-2xl border bg-card p-4">
-          <SectionTitle action={<CopyButton text={g.tags.join(" ")} label={`Copy group: ${g.group} hashtags`}>Copy group</CopyButton>}>{g.group}</SectionTitle>
-          {GROUP_NOTE[g.group] ? <p className="mt-0.5 text-xs text-muted-foreground">{GROUP_NOTE[g.group]}</p> : null}
-          <ul className="mt-3 flex flex-wrap gap-1.5">
+        <section key={g.group} aria-label={`${g.group} hashtags`}>
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold">
+              <span className={cn("size-2 rounded-full", GROUP_DOT[g.group] ?? "bg-primary")} aria-hidden />
+              {g.group}
+              {GROUP_NOTE[g.group] ? <span className="hidden font-normal text-muted-foreground sm:inline">· {GROUP_NOTE[g.group]}</span> : null}
+            </h3>
+            <CopyButton text={g.tags.join(" ")} label={`Copy group: ${g.group} hashtags`}>
+              Copy
+            </CopyButton>
+          </div>
+          <ul className="mt-2.5 flex flex-wrap gap-1.5">
             {g.tags.map((t) => (
               <li key={t}>
                 <TagChip tag={t} />
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       ))}
-      <ListWithCopy title="Keywords" items={result.keywords} kind="keyword" />
+      <section aria-label="Keywords" className="border-t pt-5">
+        <div className="flex items-center justify-between gap-3">
+          <h3 className="text-sm font-semibold">
+            Keywords <span className="font-normal text-muted-foreground">· search terms for your caption or bio</span>
+          </h3>
+          <CopyButton text={result.keywords.join("\n")} label="Copy all keywords">
+            Copy all
+          </CopyButton>
+        </div>
+        <ul className="mt-2.5 flex flex-wrap gap-1.5">
+          {result.keywords.map((k, i) => (
+            <li key={i}>
+              <TagChip tag={k} keyword />
+            </li>
+          ))}
+        </ul>
+      </section>
     </div>
   );
 }
 
-function TagChip({ tag }: { tag: string }) {
+function TagChip({ tag, keyword = false }: { tag: string; keyword?: boolean }) {
   const [done, setDone] = React.useState(false);
+  const hash = !keyword && tag.startsWith("#");
   return (
     <button
       type="button"
       onClick={() => copyText(tag).then((ok) => ok && (setDone(true), window.setTimeout(() => setDone(false), 1200)))}
       aria-label={`Copy ${tag}`}
-      className={cn("inline-flex h-8 items-center gap-1 rounded-full border px-3 text-sm font-medium transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none", done ? "border-primary bg-primary/10 text-primary" : "bg-background hover:border-primary/40 dark:bg-white/[0.03]")}
+      className={cn(
+        "relative inline-flex h-9 items-center gap-0.5 rounded-lg border px-2.5 text-[0.88rem] font-medium transition-[border-color,background-color,transform] duration-150 after:absolute after:-inset-y-1 after:inset-x-0 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none motion-reduce:transition-none motion-reduce:active:scale-100",
+        done ? "border-primary bg-primary/10 text-primary" : keyword ? "border-dashed bg-background hover:border-primary/40 dark:bg-white/[0.03]" : "bg-background hover:border-primary/40 hover:bg-primary/[0.04] dark:bg-white/[0.03]",
+      )}
     >
-      {tag}
-      {done ? <Check className="size-3" aria-hidden /> : null}
+      {hash ? (
+        <>
+          <span className="text-primary/70" aria-hidden>
+            #
+          </span>
+          <span aria-hidden>{tag.slice(1)}</span>
+        </>
+      ) : (
+        tag
+      )}
+      {done ? <Check className="ms-1 size-3" aria-hidden /> : null}
       <span className="sr-only" aria-live="polite">
         {done ? "Copied" : ""}
       </span>

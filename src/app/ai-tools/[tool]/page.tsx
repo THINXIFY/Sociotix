@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ChevronRight } from "lucide-react";
 import { LiveAvailabilityBadge } from "@/components/ai/live-badge";
 import { FAMILY, ToolGlyph } from "@/components/ai/parts";
-import { RelatedToolsSection, ToolGuideSection } from "@/components/ai/tool-guide";
+import { StudioGuide, StudioRelated } from "@/components/ai/studio-guide";
 import { AssistantChat } from "@/components/ai/assistant-chat";
 import { OrderExplainer } from "@/components/ai/order-explanation";
 import { ServiceSearch } from "@/components/ai/service-search";
@@ -42,12 +42,19 @@ export async function generateMetadata({ params }: { params: Promise<{ tool: str
     alternates: { canonical: path },
     // Tools without a guide are thin "coming soon" pages: keep them out of the index (links still followed) until they offer real value.
     robots: isIndexableTool(tool.id) ? undefined : { index: false, follow: true },
-    openGraph: { type: "website", url: path, siteName: SITE.name, title, description },
+    openGraph: {
+      type: "website",
+      url: path,
+      siteName: SITE.name,
+      title,
+      description,
+    },
     twitter: { card: "summary_large_image", title, description },
   };
 }
 
-const wrap = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
+/** The studio layout: wide enough for the brief and results side by side. */
+const shell = "mx-auto w-full max-w-[86rem] px-4 sm:px-6 lg:px-8";
 
 /**
  * Tool pages block rather than stream: every known tool is fully prerendered
@@ -74,9 +81,14 @@ export default async function AiToolPage({ params }: { params: Promise<{ tool: s
         {/* Compact tool header: just enough to orient, then straight into the tool. */}
         <section className="relative isolate" aria-labelledby="tool-title">
           <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-72 overflow-hidden" aria-hidden>
-            <div className={cn("absolute -top-40 left-1/2 h-80 w-[56rem] -translate-x-1/2 rounded-full", tool.category === "growth" ? "bg-[radial-gradient(closest-side,rgb(200_255_82/0.14),transparent)]" : "bg-[radial-gradient(closest-side,rgb(112_71_235/0.13),transparent)] dark:bg-[radial-gradient(closest-side,rgb(112_71_235/0.26),transparent)]")} />
+            <div
+              className={cn(
+                "absolute -top-40 left-1/2 h-80 w-[56rem] -translate-x-1/2 rounded-full",
+                tool.category === "growth" ? "bg-[radial-gradient(closest-side,rgb(200_255_82/0.14),transparent)]" : "bg-[radial-gradient(closest-side,rgb(112_71_235/0.13),transparent)] dark:bg-[radial-gradient(closest-side,rgb(112_71_235/0.26),transparent)]",
+              )}
+            />
           </div>
-          <div className={cn(wrap, "pt-5 pb-6 sm:pt-7 sm:pb-8")}>
+          <div className={cn(shell, "pt-4 pb-4 sm:pt-6 sm:pb-7")}>
             <nav aria-label="Breadcrumb">
               <ol className="flex flex-wrap items-center gap-1 text-[0.8rem] text-muted-foreground">
                 <li>
@@ -96,14 +108,14 @@ export default async function AiToolPage({ params }: { params: Promise<{ tool: s
                 </li>
               </ol>
             </nav>
-            <div className="mt-4 flex flex-col gap-4 sm:mt-5 md:flex-row md:items-end md:justify-between md:gap-8">
-              <div className="flex items-center gap-4">
-                <ToolGlyph tool={tool} size="lg" className="sm:size-14 sm:rounded-[1.1rem]" />
+            <div className={"mt-3 flex flex-col gap-3 sm:mt-5 sm:gap-4 md:flex-row md:items-center md:justify-between md:gap-8"}>
+              <div className={"flex items-start gap-3 sm:items-center sm:gap-5"}>
+                <ToolGlyph tool={tool} size="lg" className="mt-0.5 size-10 rounded-xl shadow-[0_10px_28px_-12px_rgb(112_71_235/0.6)] ring-4 ring-primary/[0.07] sm:mt-0 sm:size-16 sm:rounded-[1.25rem] [&_svg]:size-[1.1rem] sm:[&_svg]:size-[1.35rem]" />
                 <div className="min-w-0">
-                  <h1 id="tool-title" className="font-heading text-[1.85rem] leading-[1.05] font-extrabold tracking-[-0.035em] text-balance sm:text-[2.5rem]">
+                  <h1 id="tool-title" className={"font-heading text-[1.6rem] leading-[1.08] font-extrabold tracking-[-0.03em] text-balance sm:text-[2.75rem] sm:leading-[1.05] sm:tracking-[-0.035em]"}>
                     {tool.name}
                   </h1>
-                  <p className="mt-1.5 text-[0.98rem] leading-relaxed text-muted-foreground sm:text-[1.05rem]">{tool.tagline}</p>
+                  <p className={"mt-1 max-w-xl text-[0.94rem] leading-snug text-muted-foreground sm:mt-2 sm:text-[1.1rem] sm:leading-relaxed"}>{tool.tagline}</p>
                 </div>
               </div>
               <ul className="flex flex-wrap items-center gap-2 md:justify-end" aria-label="About this tool">
@@ -117,7 +129,7 @@ export default async function AiToolPage({ params }: { params: Promise<{ tool: s
           </div>
         </section>
 
-        <div className={cn(wrap, "pb-16 sm:pb-24")}>
+        <div className={cn(shell, "pb-16 sm:pb-24")}>
           {tool.id === "assistant" || tool.id === "support-assistant" ? (
             <AssistantChat tool={tool} examples={examples} />
           ) : tool.id === "order-explanation" ? (
@@ -128,15 +140,19 @@ export default async function AiToolPage({ params }: { params: Promise<{ tool: s
             <AiWorkspace tool={tool} examples={examples} />
           )}
 
-          {guide ? <ToolGuideSection tool={tool} guide={guide} /> : null}
+          {guide ? <StudioGuide tool={tool} guide={guide} /> : null}
 
-          <RelatedToolsSection tool={tool} guide={guide} others={familyTools} />
+          <StudioRelated tool={tool} guide={guide} others={familyTools} />
         </div>
       </main>
       <Footer page="ai" />
       <JsonLd
         data={graph(
-          webPage({ path, name: guide?.seoTitle ?? tool.name, description: guide?.metaDescription ?? tool.description }),
+          webPage({
+            path,
+            name: guide?.seoTitle ?? tool.name,
+            description: guide?.metaDescription ?? tool.description,
+          }),
           breadcrumbs([
             { name: SITE.name, path: "/" },
             { name: SITE.aiName, path: "/ai-tools" },
@@ -144,10 +160,18 @@ export default async function AiToolPage({ params }: { params: Promise<{ tool: s
           ]),
           ...(guide ? [faqPage(guide.faqs)] : []),
           // Only a tool that genuinely works is described as an application.
-          ...(guide && live ? [webApplication({ path, name: tool.name, description: guide.metaDescription, featureList: guide.options.map((o) => `${o.name}: ${o.detail}`) })] : []),
+          ...(guide && live
+            ? [
+                webApplication({
+                  path,
+                  name: tool.name,
+                  description: guide.metaDescription,
+                  featureList: guide.options.map((o) => `${o.name}: ${o.detail}`),
+                }),
+              ]
+            : []),
         )}
       />
     </>
   );
 }
-

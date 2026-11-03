@@ -32,10 +32,11 @@ export const EXAMPLE_EVENT = "sociotix:ai-example";
 
 const control =
   "w-full rounded-xl border bg-background px-3.5 text-[0.95rem] transition-[border-color,box-shadow] outline-none placeholder:text-muted-foreground/70 hover:border-foreground/20 focus-visible:border-primary/60 focus-visible:ring-4 focus-visible:ring-primary/15 disabled:cursor-not-allowed disabled:opacity-75 aria-invalid:border-destructive/60 dark:bg-white/[0.03]";
+/** Option chips keep the platform's own icon colour and show a check when picked. */
 const chip =
-  "inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-full border px-3.5 text-[0.85rem] font-medium transition-colors select-none has-focus-visible:ring-4 has-focus-visible:ring-primary/20 has-disabled:cursor-not-allowed has-disabled:opacity-60";
-const chipOn = "border-primary bg-primary text-primary-foreground shadow-[0_6px_16px_-10px_rgb(112_71_235/0.9)]";
-const chipOff = "bg-background text-foreground/80 hover:border-foreground/25 hover:text-foreground dark:bg-white/[0.03]";
+  "group/chip inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-xl border px-3.5 text-[0.88rem] font-semibold transition-[border-color,background-color,box-shadow,transform] duration-150 select-none active:scale-[0.98] has-focus-visible:ring-4 has-focus-visible:ring-primary/20 has-disabled:cursor-not-allowed has-disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100";
+const chipOn = "border-primary/60 bg-primary/[0.07] text-foreground shadow-[0_0_0_1px_var(--color-primary)] dark:bg-primary/15";
+const chipOff = "bg-background text-foreground/80 hover:border-primary/35 hover:bg-primary/[0.03] dark:bg-white/[0.03]";
 
 /** Mirrors the server's input rules so mistakes are caught before a run is spent. */
 function validate(fields: AiField[], values: Values) {
@@ -62,7 +63,48 @@ function validate(fields: AiField[], values: Values) {
   return errs;
 }
 
-const NOUN: Record<string, string> = { "caption-generator": "captions", "hashtag-finder": "hashtags", "post-ideas": "post ideas", "content-calendar": "content plan", "growth-advisor": "strategy", "growth-roadmap": "roadmap", "service-recommender": "recommendations", "order-assistant": "order plan" };
+const NOUN: Record<string, string> = {
+  "caption-generator": "captions",
+  "hashtag-finder": "hashtags",
+  "post-ideas": "post ideas",
+  "content-calendar": "content plan",
+  "growth-advisor": "strategy",
+  "growth-roadmap": "roadmap",
+  "service-recommender": "recommendations",
+  "order-assistant": "order plan",
+};
+
+/** Studio headings per tool: the brief as a question, and what the results panel holds. */
+const STUDIO_COPY: Record<string, { brief: string; results: string; short?: string; long?: string }> = {
+  "caption-generator": {
+    brief: "What's your post about?",
+    results: "Captions",
+  },
+  "hashtag-finder": {
+    brief: "What's your post about?",
+    results: "Hashtags & keywords",
+    short: "Describe your topic in a sentence or two.",
+    long: "Describe your topic or niche in a sentence or two, pick where you'll post, and get hashtags and search terms grouped from broad to niche.",
+  },
+  "post-ideas": { brief: "Tell us about your brand", results: "Post ideas" },
+  "content-calendar": {
+    brief: "What are you planning for?",
+    results: "Content plan",
+  },
+  "growth-advisor": {
+    brief: "What's getting in the way?",
+    results: "Your strategy",
+  },
+  "growth-roadmap": { brief: "Where do you want to grow?", results: "Roadmap" },
+  "service-recommender": {
+    brief: "What are you trying to achieve?",
+    results: "Recommendations",
+  },
+  "order-assistant": {
+    brief: "What do you want to order?",
+    results: "Order plan",
+  },
+};
 
 function Results({ tool, output }: { tool: AiTool; output: unknown }) {
   switch (tool.id) {
@@ -130,7 +172,10 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
       if (toolId !== tool.id) return;
       applyExample(fill, title);
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      rootRef.current?.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
+      rootRef.current?.scrollIntoView({
+        behavior: reduce ? "auto" : "smooth",
+        block: "start",
+      });
       window.setTimeout(() => document.getElementById(`${formId}-${(primary ?? tool.fields[0])?.id}`)?.focus({ preventScroll: true }), reduce ? 0 : 400);
     };
     window.addEventListener(EXAMPLE_EVENT, onExample);
@@ -145,12 +190,22 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
     setNotice(null);
     setRun({ kind: "loading", started: Date.now() });
     try {
-      const res = await api<{ output: unknown; usage: { used: number; allowance: number } }>(`/api/ai/tools/${tool.id}/run`, { method: "POST", body: JSON.stringify(input), signal: controller.signal });
+      const res = await api<{
+        output: unknown;
+        usage: { used: number; allowance: number };
+      }>(`/api/ai/tools/${tool.id}/run`, {
+        method: "POST",
+        body: JSON.stringify(input),
+        signal: controller.signal,
+      });
       setRun({ kind: "result", output: res.output, key: Date.now() });
       setStatus((s) => (s ? { ...s, usage: res.usage } : s));
     } catch (e) {
       if (controller.signal.aborted) return setRun({ kind: "idle" });
-      setRun({ kind: "error", message: e instanceof ApiError ? e.message : "Something went wrong. Please try again." });
+      setRun({
+        kind: "error",
+        message: e instanceof ApiError ? e.message : "Something went wrong. Please try again.",
+      });
     } finally {
       if (inflight.current === controller) inflight.current = null;
     }
@@ -180,6 +235,10 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
   };
 
   const noun = NOUN[tool.id] ?? "results";
+  const copy = STUDIO_COPY[tool.id] ?? {
+    brief: primary?.label ?? "Your brief",
+    results: "Results",
+  };
   const has = (id: string) => {
     const v = values[id];
     return Array.isArray(v) ? v.length > 0 : Boolean(v);
@@ -199,29 +258,49 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
     window.setTimeout(() => document.getElementById(`${formId}-${(primary ?? tool.fields[0])?.id}`)?.focus(), 0);
   };
   const remaining = usage ? Math.max(0, usage.allowance - usage.used) : null;
-  const field = (f: AiField) => <Field key={f.id} field={f} id={`${formId}-${f.id}`} value={values[f.id]} error={fieldErrors[f.id]} primary={f === primary} onChange={(v) => setValue(f.id, v)} />;
+  const field = (f: AiField) => <Field key={f.id} field={f} id={`${formId}-${f.id}`} value={values[f.id]} error={fieldErrors[f.id]} onChange={(v) => setValue(f.id, v)} />;
 
   return (
-    <div ref={rootRef} id="workspace" className="scroll-mt-20 overflow-hidden rounded-[1.75rem] border bg-card shadow-[0_1px_2px_rgb(32_33_39/0.05),0_24px_60px_-40px_rgb(64_38_160/0.35)] dark:shadow-[0_24px_60px_-36px_rgb(0_0_0/0.75)] print:border-none print:shadow-none">
+    <div
+      ref={rootRef}
+      id="workspace"
+      className={cn(
+        "scroll-mt-20 overflow-hidden border bg-card print:border-none print:shadow-none",
+        "rounded-[1.75rem] shadow-[0_1px_2px_rgb(32_33_39/0.05),0_40px_90px_-48px_rgb(64_38_160/0.5)] ring-1 ring-primary/[0.06] sm:rounded-[2rem] dark:shadow-[0_40px_90px_-40px_rgb(0_0_0/0.85)] dark:ring-white/[0.04]",
+      )}
+    >
       {tool.fields.length ? (
         <WorkflowSteps
           steps={[
             { label: "Brief", state: briefDone ? "done" : "current" },
-            { label: "Customize", state: customized ? "done" : briefDone ? "current" : "upcoming", hint: "Optional" },
-            { label: "Generate", state: run.kind === "result" ? "done" : run.kind === "loading" ? "current" : locked ? "locked" : briefDone ? "current" : "upcoming" },
-            { label: "Results", state: run.kind === "result" ? "done" : "upcoming" },
+            {
+              label: "Customize",
+              state: customized ? "done" : briefDone ? "current" : "upcoming",
+              hint: "Optional",
+            },
+            {
+              label: "Generate",
+              state: run.kind === "result" ? "done" : run.kind === "loading" ? "current" : locked ? "locked" : briefDone ? "current" : "upcoming",
+            },
+            {
+              label: "Results",
+              state: run.kind === "result" ? "done" : "upcoming",
+            },
           ]}
         />
       ) : null}
-      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)]">
+      <div className={cn("grid grid-cols-1", "lg:grid-cols-2")}>
         {/* ── Brief ─────────────────────────────────────────────────────── */}
-        <section aria-labelledby={`${formId}-in`} className="border-b p-5 sm:p-7 lg:border-r lg:border-b-0 print:hidden">
+        <section aria-labelledby={`${formId}-in`} className={cn("border-b lg:border-r lg:border-b-0 print:hidden", "p-5 sm:p-8 xl:p-10")}>
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h2 id={`${formId}-in`} className="font-heading text-lg font-bold tracking-tight">
-                Your brief
+              <h2 id={`${formId}-in`} className={cn("font-heading font-bold tracking-tight", "text-[1.45rem] leading-tight font-extrabold sm:text-[1.65rem]")}>
+                {copy.brief}
               </h2>
-              <p className="mt-0.5 text-sm text-muted-foreground">A sentence or two is enough.</p>
+              <p className={cn("mt-0.5 text-muted-foreground", "mt-1.5 max-w-md text-[0.95rem] leading-relaxed")}>
+                <span className="sm:hidden">{copy.short ?? "A sentence or two is enough."}</span>
+                <span className="hidden sm:inline">{copy.long ?? tool.description}</span>
+              </p>
             </div>
             {locked ? (
               <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
@@ -278,19 +357,18 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 submit();
               }}
             >
-              {primary ? <fieldset disabled={formLocked}>{field(primary)}</fieldset> : null}
-              {/* Outside the locked fieldset: examples stay usable in the preview to show what a good brief looks like. */}
-              {primary && examples.length ? (
-                <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                  <span className="mr-0.5 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
-                    <Wand2 className="size-3.5" aria-hidden /> Try an example:
-                  </span>
-                  {examples.map((ex) => (
-                    <button key={ex.title} type="button" disabled={run.kind === "loading"} onClick={() => applyExample(ex.fill, ex.title)} className="inline-flex h-11 items-center rounded-full border border-dashed px-3 text-xs font-medium text-foreground/80 transition-colors sm:h-7 sm:px-2.5 hover:border-primary/50 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50">
-                      {ex.title}
-                    </button>
-                  ))}
-                </div>
+              {primary ? (
+                <Composer
+                  field={primary}
+                  id={`${formId}-${primary.id}`}
+                  value={typeof values[primary.id] === "string" ? (values[primary.id] as string) : ""}
+                  error={fieldErrors[primary.id]}
+                  disabled={formLocked}
+                  examples={examples}
+                  examplesDisabled={run.kind === "loading"}
+                  onChange={(v) => setValue(primary.id, v)}
+                  onExample={applyExample}
+                />
               ) : null}
               <fieldset disabled={formLocked} className={cn("space-y-5", primary && "mt-5")}>
                 {primary && rest.length ? <legend className="mb-3 text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">Customize</legend> : null}
@@ -299,7 +377,13 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
               {/* The toggle stays usable in the preview, so visitors can see every option the tool will ask for. */}
               {advanced.length ? (
                 <div className="mt-5 rounded-xl border">
-                  <button type="button" aria-expanded={moreOpen} aria-controls={`${formId}-more`} onClick={() => setMoreOpen((o) => !o)} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none">
+                  <button
+                    type="button"
+                    aria-expanded={moreOpen}
+                    aria-controls={`${formId}-more`}
+                    onClick={() => setMoreOpen((o) => !o)}
+                    className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none"
+                  >
                     <span>
                       More options <span className="font-normal text-muted-foreground">· {advanced.map((f) => f.label.replace(/\?$/, "").toLowerCase()).join(", ")}</span>
                     </span>
@@ -337,14 +421,23 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                     type="submit"
                     disabled={!canRun}
                     aria-describedby={`${formId}-cost`}
-                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-primary text-[0.95rem] font-semibold text-primary-foreground shadow-[0_12px_28px_-14px_rgb(112_71_235/0.95)] transition-[background-color,transform] hover:bg-primary/90 focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:outline-none active:translate-y-px disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none"
+                    className={cn(
+                      "inline-flex w-full items-center justify-center gap-2 rounded-full bg-primary font-semibold",
+                      "h-14 text-base",
+                      "text-primary-foreground shadow-[0_12px_28px_-14px_rgb(112_71_235/0.95)] transition-[background-color,transform] hover:bg-primary/90 focus-visible:ring-4 focus-visible:ring-primary/30 focus-visible:outline-none active:translate-y-px disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
+                    )}
                   >
                     {locked ? <Clock3 className="size-4" aria-hidden /> : <Sparkles className="size-4" aria-hidden />}
                     {locked ? "Coming soon" : run.kind === "result" ? "Generate again" : "Generate"}
                   </button>
                 )}
                 {filled || run.kind === "result" ? (
-                  <button type="button" onClick={reset} disabled={run.kind === "loading"} className="mt-2 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50 sm:h-9">
+                  <button
+                    type="button"
+                    onClick={reset}
+                    disabled={run.kind === "loading"}
+                    className="mt-2 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50 sm:h-9"
+                  >
                     <RotateCcw className="size-3.5" aria-hidden /> Reset
                   </button>
                 ) : null}
@@ -357,10 +450,17 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
         </section>
 
         {/* ── Results ───────────────────────────────────────────────────── */}
-        <section aria-labelledby={`${formId}-out`} aria-busy={run.kind === "loading" || undefined} className="flex min-w-0 flex-col bg-subtle/50 p-5 sm:p-7 dark:bg-white/[0.015] print:bg-transparent print:p-0">
+        <section
+          aria-labelledby={`${formId}-out`}
+          aria-busy={run.kind === "loading" || undefined}
+          className={cn(
+            "flex min-w-0 flex-col print:bg-transparent print:p-0",
+            "relative isolate bg-[radial-gradient(40rem_22rem_at_100%_0%,rgb(112_71_235/0.07),transparent_70%)] bg-subtle/60 p-5 sm:p-8 xl:p-10 dark:bg-[radial-gradient(40rem_22rem_at_100%_0%,rgb(112_71_235/0.16),transparent_70%)] dark:bg-white/[0.015]",
+          )}
+        >
           <div className="flex items-center justify-between gap-3 print:hidden">
-            <h2 id={`${formId}-out`} className="font-heading text-lg font-bold tracking-tight">
-              Results
+            <h2 id={`${formId}-out`} className={cn("font-heading font-bold tracking-tight", "text-[1.2rem]")}>
+              {copy.results}
             </h2>
             <button
               type="button"
@@ -368,7 +468,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
               onClick={() => last && void generate(last)}
               aria-label="Regenerate with the same brief"
               title="Regenerate with the same brief (uses one run)"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold text-foreground/80 transition-colors hover:border-primary/40 hover:text-primary disabled:pointer-events-none disabled:opacity-40"
+              className={cn("inline-flex h-9 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold text-foreground/80 transition-colors hover:border-primary/40 hover:text-primary disabled:pointer-events-none disabled:opacity-40", "relative after:absolute after:-inset-1")}
             >
               <RefreshCw className="size-3.5" aria-hidden /> <span className="hidden sm:inline">Regenerate</span>
             </button>
@@ -397,6 +497,8 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 </p>
                 <Results key={run.key} tool={tool} output={run.output} />
               </div>
+            ) : tool.id === "hashtag-finder" ? (
+              <StudioEmpty tool={tool} locked={locked} />
             ) : (
               <EmptyState tool={tool} locked={locked} noun={noun} />
             )}
@@ -418,9 +520,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
           </span>
         </p>
         {/* Usage appears here once the tool is live; while it isn't, the header already shows the planned allowance. */}
-        {live && tool.free ? (
-          <p className="shrink-0 tabular-nums">{usage ? `${usage.used} of ${usage.allowance} free runs used today · resets at midnight UTC` : `${tool.free.signedInPerDay} free runs a day with a Sociotix account`}</p>
-        ) : null}
+        {live && tool.free ? <p className="shrink-0 tabular-nums">{usage ? `${usage.used} of ${usage.allowance} free runs used today · resets at midnight UTC` : `${tool.free.signedInPerDay} free runs a day with a Sociotix account`}</p> : null}
       </div>
     </div>
   );
@@ -432,32 +532,174 @@ type StepState = "done" | "current" | "upcoming" | "locked";
 
 /** Brief → Customize → Generate → Results, following what the visitor has actually done. */
 function WorkflowSteps({ steps }: { steps: { label: string; state: StepState; hint?: string }[] }) {
+  const reached = steps.filter((st) => st.state === "done").length;
   return (
-    <ol aria-label="How this tool works" className="grid grid-cols-4 gap-1 border-b bg-subtle/40 px-3 py-2.5 sm:px-6 dark:bg-white/[0.015] print:hidden">
-      {steps.map((st, i) => (
-        <li key={st.label} aria-current={st.state === "current" ? "step" : undefined} className="flex min-w-0 flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-start">
-          <span
-            className={cn(
-              "grid size-6 shrink-0 place-items-center rounded-full text-[0.7rem] font-bold tabular-nums transition-colors duration-300 motion-reduce:transition-none",
-              st.state === "done" && "bg-primary text-primary-foreground",
-              st.state === "current" && "bg-card text-primary ring-2 ring-primary",
-              st.state === "upcoming" && "bg-card text-muted-foreground ring-1 ring-border",
-              st.state === "locked" && "bg-muted text-muted-foreground",
-            )}
-            aria-hidden
-          >
-            {st.state === "done" ? <Check className="size-3.5" strokeWidth={3} /> : st.state === "locked" ? <Lock className="size-3" /> : i + 1}
-          </span>
-          <span className="w-full min-w-0">
-            <span className={cn("block truncate text-[0.7rem] font-semibold sm:text-[0.8rem]", st.state === "upcoming" && "text-muted-foreground")}>{st.label}</span>
-            <span className="hidden truncate text-[0.68rem] text-muted-foreground sm:block">
-              {st.state === "done" ? "Done" : st.state === "locked" ? "Not open yet" : st.state === "current" ? (st.hint ?? "Now") : (st.hint ?? "Next")}
+    <div className="border-b px-5 py-4 sm:px-8 xl:px-10 print:hidden">
+      <ol aria-label="How this tool works" className="relative grid grid-cols-4">
+        {/* The track fills as steps are completed */}
+        <span className="absolute top-[0.6875rem] right-[12.5%] left-[12.5%] h-px bg-border" aria-hidden />
+        <span className="absolute top-[0.6875rem] left-[12.5%] h-px bg-primary transition-[width] duration-500 motion-reduce:transition-none" style={{ width: `${Math.min(reached, 3) * 25}%` }} aria-hidden />
+        {steps.map((st, i) => (
+          <li key={st.label} aria-current={st.state === "current" ? "step" : undefined} className="relative flex min-w-0 flex-col items-center gap-1.5 text-center">
+            <span
+              className={cn(
+                "grid size-[1.375rem] place-items-center rounded-full text-[0.65rem] font-bold tabular-nums ring-4 ring-card transition-colors duration-300 motion-reduce:transition-none",
+                st.state === "done" && "bg-primary text-primary-foreground",
+                st.state === "current" && "bg-card text-primary shadow-[inset_0_0_0_1.5px_var(--color-primary)]",
+                st.state === "upcoming" && "bg-muted text-muted-foreground",
+                st.state === "locked" && "bg-muted text-muted-foreground",
+              )}
+              aria-hidden
+            >
+              {st.state === "done" ? <Check className="size-3" strokeWidth={3.5} /> : st.state === "locked" ? <Lock className="size-2.5" /> : i + 1}
+            </span>
+            <span className={cn("w-full truncate text-[0.72rem] font-semibold sm:text-[0.78rem]", st.state === "current" ? "text-primary dark:text-[#c9bcff]" : st.state === "done" ? "text-foreground" : "text-muted-foreground")}>
+              {st.label}
+              <span className="hidden font-normal text-muted-foreground sm:inline">{st.state === "locked" ? " · not open yet" : st.hint && st.state !== "done" ? ` · ${st.hint.toLowerCase()}` : ""}</span>
             </span>
             <span className="sr-only">{st.state === "done" ? ", done" : st.state === "locked" ? ", not open yet" : st.state === "current" ? ", current step" : ""}</span>
-          </span>
-        </li>
-      ))}
-    </ol>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+/* ── Composer and hashtag empty state ───────────────────────────────────── */
+
+/** The brief as one composer: a roomy, borderless textarea with the examples and character count in its own footer. */
+function Composer({
+  field: f,
+  id,
+  value,
+  error,
+  disabled,
+  examples,
+  examplesDisabled,
+  onChange,
+  onExample,
+}: {
+  field: AiField;
+  id: string;
+  value: string;
+  error?: string;
+  disabled: boolean;
+  examples: WorkspaceExample[];
+  examplesDisabled: boolean;
+  onChange: (v: string) => void;
+  onExample: (fill: Values, title: string) => void;
+}) {
+  const errId = error ? `${id}-error` : undefined;
+  const near = Boolean(f.maxLength && value.length > f.maxLength * 0.9);
+  return (
+    <div>
+      <label htmlFor={id} className="sr-only">
+        {f.label}
+      </label>
+      <div
+        className={cn(
+          "group/composer overflow-hidden rounded-2xl border bg-background shadow-[0_1px_2px_rgb(32_33_39/0.04),inset_0_1px_0_rgb(255_255_255/0.6)] transition-[border-color,box-shadow] duration-200 focus-within:border-primary/55 focus-within:shadow-[0_0_0_4px_rgb(112_71_235/0.1),0_14px_34px_-20px_rgb(112_71_235/0.55)] motion-reduce:transition-none dark:bg-white/[0.03] dark:shadow-none",
+          error && "border-destructive/60",
+          disabled && "bg-muted/30",
+        )}
+      >
+        <textarea
+          id={id}
+          rows={5}
+          maxLength={f.maxLength}
+          required={f.required}
+          disabled={disabled}
+          placeholder={f.placeholder}
+          value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={errId}
+          onChange={(e) => onChange(e.target.value)}
+          className="block min-h-[8.5rem] w-full resize-none bg-transparent px-5 pt-5 pb-3 text-[1.08rem] leading-relaxed outline-none placeholder:text-muted-foreground/60 disabled:cursor-not-allowed sm:min-h-[9.5rem]"
+        />
+        {/* Phones: one sideways-scrolling row of examples beside the counter, instead of a stack of wrapped chips. */}
+        <div className="flex items-center justify-between gap-x-3 gap-y-2 border-t border-dashed px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2.5">
+          {examples.length ? (
+            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain [mask-image:linear-gradient(to_right,black_82%,transparent)] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:[mask-image:none] [&::-webkit-scrollbar]:hidden">
+              <span className="inline-flex shrink-0 items-center gap-1 text-[0.75rem] font-medium text-muted-foreground">
+                <Wand2 className="size-3.5" aria-hidden /> Try
+              </span>
+              {examples.map((ex) => (
+                <button
+                  key={ex.title}
+                  type="button"
+                  disabled={examplesDisabled}
+                  onClick={() => onExample(ex.fill, ex.title)}
+                  className="inline-flex h-11 shrink-0 items-center rounded-full bg-secondary/60 px-3 whitespace-nowrap text-[0.78rem] font-semibold text-secondary-foreground transition-[background-color,transform] duration-150 hover:bg-secondary active:scale-[0.97] focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100 sm:h-8 dark:bg-primary/15 dark:text-[#d6ccff]"
+                >
+                  {ex.title}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <span />
+          )}
+          {f.maxLength ? <span className={cn("ms-auto shrink-0 text-[0.72rem] tabular-nums", near ? "text-destructive" : "text-muted-foreground")}>{`${value.length}/${f.maxLength}`}</span> : null}
+        </div>
+      </div>
+      {error ? (
+        <p id={errId} className="mt-1.5 flex items-center gap-1 text-xs font-medium text-destructive">
+          <AlertCircle className="size-3.5" aria-hidden /> {error}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+/** Results before a run: what will come back and how to get the best of it — guidance, never sample output. */
+function StudioEmpty({ tool, locked }: { tool: AiTool; locked: boolean }) {
+  const shapes = [
+    { label: "Broad", widths: ["w-16", "w-12", "w-20", "w-14"] },
+    { label: "Specific", widths: ["w-20", "w-16", "w-24"] },
+    { label: "Niche & community", widths: ["w-24", "w-16", "w-20"] },
+  ];
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="rounded-2xl border border-dashed bg-background/70 p-4 sm:p-5 dark:bg-white/[0.015]" aria-hidden>
+        <div className="space-y-3.5">
+          {shapes.map((g, gi) => (
+            <div key={g.label}>
+              <p className="flex items-center gap-2 text-[0.75rem] font-semibold text-muted-foreground">
+                <span className={cn("size-1.5 rounded-full", gi === 0 ? "bg-primary/35" : gi === 1 ? "bg-primary/65" : "bg-primary")} />
+                {g.label}
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {g.widths.map((w, i) => (
+                  <span key={i} className={cn("h-7 rounded-lg border bg-card", w, !locked && "ai-sheen")} />
+                ))}
+              </div>
+            </div>
+          ))}
+          <div className="border-t border-dashed pt-3">
+            <p className="text-[0.75rem] font-semibold text-muted-foreground">Keywords</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {["w-28", "w-24", "w-32"].map((w, i) => (
+                <span key={i} className={cn("h-7 rounded-lg border border-dashed bg-card", w)} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-start gap-3">
+        <ToolGlyph tool={tool} size="sm" />
+        <div className="min-w-0">
+          <p className="font-heading font-bold">Your hashtags will appear here</p>
+          <ul className="mt-2 space-y-1.5 text-sm text-muted-foreground">
+            <li className="flex gap-2">
+              <span className="font-semibold text-foreground/80">Hashtags</span>— grouped from broad to niche, ready to copy one by one or all at once
+            </li>
+            <li className="flex gap-2">
+              <span className="font-semibold text-foreground/80">Keywords</span>— phrases people might search for, for your caption or bio
+            </li>
+          </ul>
+          <p className="mt-3 text-xs text-muted-foreground">{locked ? "This is how results will be organised. No sample output is shown — nothing has been generated." : "Fill in your brief and generate. You can copy everything."}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -640,7 +882,8 @@ function Loading({ tool, started, long }: { tool: AiTool; started: number; long:
 
 /* ── Fields ─────────────────────────────────────────────────────────────── */
 
-function Field({ field: f, id, value, error, primary = false, onChange }: { field: AiField; id: string; value: string | string[] | undefined; error?: string; primary?: boolean; onChange: (v: string | string[]) => void }) {
+function Field({ field: f, id, value, error, onChange }: { field: AiField; id: string; value: string | string[] | undefined; error?: string; onChange: (v: string | string[]) => void }) {
+  const [cOn, cOff, cBase] = [chipOn, chipOff, chip];
   const helpId = f.help ? `${id}-help` : undefined;
   const errId = error ? `${id}-error` : undefined;
   const describedBy = [helpId, errId].filter(Boolean).join(" ") || undefined;
@@ -678,10 +921,11 @@ function Field({ field: f, id, value, error, primary = false, onChange }: { fiel
           {f.options!.map((o) => {
             const on = picked.includes(o);
             return (
-              <label key={o} className={cn(chip, on ? chipOn : chipOff)}>
+              <label key={o} className={cn(cBase, on ? cOn : cOff)}>
                 <input type="checkbox" className="sr-only" checked={on} disabled={!on && full ? true : undefined} onChange={(e) => onChange(e.target.checked ? [...picked, o] : picked.filter((x) => x !== o))} />
-                <AiPlatformIcon name={o} className="size-3.5" />
+                <AiPlatformIcon name={o} className={"size-4"} />
                 {o}
+                {on ? <Check className="size-3.5 text-primary" strokeWidth={3} aria-hidden /> : null}
               </label>
             );
           })}
@@ -703,7 +947,7 @@ function Field({ field: f, id, value, error, primary = false, onChange }: { fiel
           {f.options!.map((o) => {
             const on = str === o;
             return (
-              <label key={o} className={cn(chip, on ? chipOn : chipOff)}>
+              <label key={o} className={cn(cBase, on ? cOn : cOff)}>
                 <input
                   type="radio"
                   name={id}
@@ -727,7 +971,12 @@ function Field({ field: f, id, value, error, primary = false, onChange }: { fiel
     );
   }
 
-  const common = { id, "aria-describedby": describedBy, "aria-invalid": error ? true : undefined, required: f.required };
+  const common = {
+    id,
+    "aria-describedby": describedBy,
+    "aria-invalid": error ? true : undefined,
+    required: f.required,
+  };
 
   // Numbers: a stepper around a real number input.
   if (f.kind === "number") {
@@ -743,7 +992,17 @@ function Field({ field: f, id, value, error, primary = false, onChange }: { fiel
             <button type="button" onClick={() => step(-1)} aria-label={`Decrease ${f.label.toLowerCase()}`} className="grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
               <Minus className="size-4" aria-hidden />
             </button>
-            <input {...common} type="number" inputMode="numeric" min={f.min} max={f.max} placeholder={f.placeholder} value={str} onChange={(e) => onChange(e.target.value)} className="h-9 w-12 bg-transparent text-center text-[0.95rem] font-semibold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none" />
+            <input
+              {...common}
+              type="number"
+              inputMode="numeric"
+              min={f.min}
+              max={f.max}
+              placeholder={f.placeholder}
+              value={str}
+              onChange={(e) => onChange(e.target.value)}
+              className="h-9 w-12 bg-transparent text-center text-[0.95rem] font-semibold tabular-nums outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            />
             <button type="button" onClick={() => step(1)} aria-label={`Increase ${f.label.toLowerCase()}`} className="grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground">
               <Plus className="size-4" aria-hidden />
             </button>
@@ -762,7 +1021,7 @@ function Field({ field: f, id, value, error, primary = false, onChange }: { fiel
         {label}
       </label>
       {f.kind === "textarea" ? (
-        <textarea {...common} rows={primary ? 5 : 3} maxLength={f.maxLength} placeholder={f.placeholder} value={str} onChange={(e) => onChange(e.target.value)} className={cn(control, "mt-2 resize-y py-3 leading-relaxed", primary && "min-h-[8.5rem] text-base")} />
+        <textarea {...common} rows={3} maxLength={f.maxLength} placeholder={f.placeholder} value={str} onChange={(e) => onChange(e.target.value)} className={cn(control, "mt-2 resize-y py-3 leading-relaxed")} />
       ) : (
         <input {...common} type="text" maxLength={f.maxLength} placeholder={f.placeholder} value={str} onChange={(e) => onChange(e.target.value)} className={cn(control, "mt-2 h-12")} />
       )}
