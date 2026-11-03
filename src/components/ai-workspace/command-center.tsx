@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, ArrowUpRight, BarChart3, CalendarClock, FilePen, Gauge, Inbox, Layers3, Link2, Settings2, Sparkles, Workflow } from "lucide-react";
+import { ArrowRight, ArrowUpRight, BarChart3, CalendarClock, FilePen, Gauge, Inbox, Layers3, Link2, Search, Settings2, Sparkles, Workflow, X } from "lucide-react";
 import { socialApi, When } from "@/components/social/parts";
 import {
   AI_ROUTES,
@@ -34,6 +34,7 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
       />
       <div className="mt-7 flex flex-col gap-8 sm:mt-9 sm:gap-10">
         <QuickActions data={data} />
+        <Discover data={data} />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-12 lg:gap-7">
           <div className="min-w-0 lg:col-span-7">
             <ForYou data={data} />
@@ -42,7 +43,6 @@ export function CommandCenter({ data }: { data: CommandCenterData }) {
             <MyWorkspace data={data} />
           </div>
         </div>
-        <Discover data={data} />
         <AccountLinks data={data} />
       </div>
     </div>
@@ -72,7 +72,7 @@ function StatusStrip({ data }: { data: CommandCenterData }) {
 
 function QuickActions({ data }: { data: CommandCenterData }) {
   return (
-    <section aria-labelledby="quick-title" className="relative overflow-hidden rounded-[1.75rem] border bg-card p-4 shadow-soft sm:p-6 lg:p-7">
+    <section aria-labelledby="quick-title" className="relative overflow-hidden rounded-2xl border bg-card p-4 shadow-soft sm:p-6 lg:p-7">
       {/* A quiet wash of brand colour behind the actions; decoration only. */}
       <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_22rem_at_0%_0%,rgb(112_71_235/0.10),transparent_60%),radial-gradient(30rem_16rem_at_100%_100%,rgb(200_255_82/0.16),transparent_65%)] dark:bg-[radial-gradient(60rem_22rem_at_0%_0%,rgb(112_71_235/0.22),transparent_60%),radial-gradient(30rem_16rem_at_100%_100%,rgb(200_255_82/0.06),transparent_65%)]" />
       <div className="relative grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-8">
@@ -86,7 +86,7 @@ function QuickActions({ data }: { data: CommandCenterData }) {
               : "The AI tools are launching soon. Open any of them to see what it will ask for and how results are organised. Nothing runs until a tool is live."}
           </p>
         </div>
-        <ul className="grid min-w-0 grid-cols-2 gap-2 sm:gap-2.5 lg:col-span-8 lg:grid-cols-4">
+        <ul className="grid min-w-0 grid-cols-2 gap-2 sm:gap-2.5 lg:col-span-8 lg:grid-cols-4 lg:self-center">
           {QUICK_ACTION_IDS.map((id) => {
             const d = DESTINATION_BY_ID[id];
             const state = destinationAvailability(d, data.tools);
@@ -157,7 +157,7 @@ function ForYou({ data }: { data: CommandCenterData }) {
           </Link>
         </div>
       ) : (
-        <div className="relative overflow-hidden rounded-[1.5rem] bg-graphite p-5 text-white sm:p-6 dark:bg-[#17181d] dark:ring-1 dark:ring-white/10">
+        <div className="relative overflow-hidden rounded-2xl bg-graphite p-5 text-white sm:p-6 dark:bg-[#17181d] dark:ring-1 dark:ring-white/10">
           <div aria-hidden className="pointer-events-none absolute -top-20 -right-16 size-56 rounded-full bg-primary/40 blur-3xl" />
           <div aria-hidden className="pointer-events-none absolute -bottom-24 left-10 size-48 rounded-full bg-lime/15 blur-3xl" />
           <div className="relative">
@@ -171,7 +171,7 @@ function ForYou({ data }: { data: CommandCenterData }) {
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Link
                 href={AI_ROUTES.welcome}
-                className="inline-flex h-10 items-center gap-2 rounded-full bg-lime px-4.5 text-sm font-bold text-graphite transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none"
+                className="inline-flex h-11 items-center gap-2 rounded-full bg-lime px-4.5 text-sm font-bold text-graphite transition-[filter] hover:brightness-95 focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none"
               >
                 Personalize my workspace <ArrowRight className="size-4" aria-hidden />
               </Link>
@@ -180,7 +180,7 @@ function ForYou({ data }: { data: CommandCenterData }) {
                   type="button"
                   onClick={skip}
                   disabled={pending}
-                  className="inline-flex h-10 items-center rounded-full px-4 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-3 focus-visible:ring-white/30 focus-visible:outline-none disabled:opacity-60"
+                  className="inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold text-white/75 transition-colors hover:bg-white/10 hover:text-white focus-visible:ring-3 focus-visible:ring-white/30 focus-visible:outline-none disabled:opacity-60"
                 >
                   {pending ? "Saving…" : "Not now"}
                 </button>
@@ -195,8 +195,8 @@ function ForYou({ data }: { data: CommandCenterData }) {
         </div>
       )}
 
+      {personalised ? (
       <div>
-        {!personalised ? <h3 className="mb-2.5 text-sm font-semibold text-muted-foreground">Good places to start</h3> : null}
         <ul className="grid gap-2.5 sm:grid-cols-2">
           {picks.map(({ destination: d, reasons }) => (
             <li key={d.id}>
@@ -224,6 +224,7 @@ function ForYou({ data }: { data: CommandCenterData }) {
           ))}
         </ul>
       </div>
+      ) : null}
     </section>
   );
 }
@@ -236,7 +237,7 @@ function MyWorkspace({ data }: { data: CommandCenterData }) {
   const w = data.workspace;
   const empty = w.drafts.total === 0 && w.planned.total === 0 && w.automations.total === 0 && w.accounts.connected === 0;
   return (
-    <section aria-labelledby="mine-title" className="flex flex-col rounded-[1.5rem] border bg-card shadow-soft">
+    <section aria-labelledby="mine-title" className="flex flex-col rounded-2xl border bg-card shadow-soft">
       <div className="flex items-center justify-between gap-3 px-5 pt-5 sm:px-6">
         <h2 id="mine-title" className={sectionTitle}>
           My workspace
@@ -323,6 +324,10 @@ function Stat({ href, icon: Icon, label, value, detail, className }: { href: str
 
 function Discover({ data }: { data: CommandCenterData }) {
   const [group, setGroup] = React.useState<DestinationGroup>("content");
+  const [query, setQuery] = React.useState("");
+  const q = query.trim().toLowerCase();
+  // Searching looks across every group; otherwise the selected tab decides.
+  const list = q ? DESTINATIONS.filter((d) => [d.name, d.blurb, d.note ?? ""].some((v) => v.toLowerCase().includes(q))) : DESTINATIONS.filter((d) => d.group === group);
   const tabs = React.useRef<(HTMLButtonElement | null)[]>([]);
   const current = DESTINATION_GROUPS.find((g) => g.id === group)!;
 
@@ -336,20 +341,42 @@ function Discover({ data }: { data: CommandCenterData }) {
   };
 
   return (
-    <section aria-labelledby="discover-title" className="rounded-[1.75rem] border bg-surface p-4 sm:p-6 lg:p-7">
+    <section aria-labelledby="discover-title" className="rounded-2xl border bg-surface p-4 sm:p-6 lg:p-7">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 id="discover-title" className={sectionTitle}>
-            Discover more
+            Explore AI tools
           </h2>
-          <p className="mt-1.5 text-sm text-muted-foreground">Everything in Sociotix AI, grouped by what it helps with.</p>
+          <p className="mt-1.5 text-sm text-muted-foreground">Every tool and workspace, grouped by what it helps with. Search or pick a category.</p>
         </div>
         <Link href="/ai-tools" className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline focus-visible:underline focus-visible:outline-none dark:text-[#c4b5ff]">
           Browse the AI tools directory <ArrowUpRight className="size-4" aria-hidden />
         </Link>
       </div>
 
-      <div role="tablist" aria-label="Tool groups" className="-mx-1 mt-5 flex gap-1.5 overflow-x-auto px-1 pb-1">
+      <div className="relative mt-5 sm:max-w-sm" role="search">
+        <label htmlFor="discover-search" className="sr-only">
+          Search Sociotix AI
+        </label>
+        <Search className="pointer-events-none absolute top-1/2 start-3.5 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
+        <input
+          id="discover-search"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Search tools and workspaces"
+          autoComplete="off"
+          maxLength={60}
+          className="h-11 w-full rounded-full border bg-card ps-10 pe-11 text-sm outline-none transition-colors placeholder:text-muted-foreground hover:border-foreground/20 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
+        />
+        {query ? (
+          <button type="button" onClick={() => setQuery("")} aria-label="Clear search" className="absolute top-1/2 end-1 grid size-9 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none">
+            <X className="size-4" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+
+      <div role="tablist" aria-label="Tool groups" hidden={Boolean(q)} className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-1">
         {DESTINATION_GROUPS.map((g, i) => {
           const on = g.id === group;
           return (
@@ -367,7 +394,7 @@ function Discover({ data }: { data: CommandCenterData }) {
               onClick={() => setGroup(g.id)}
               onKeyDown={(e) => onKey(e, i)}
               className={cn(
-                "inline-flex h-9 shrink-0 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+                "inline-flex h-11 shrink-0 items-center rounded-full px-3.5 text-sm font-semibold whitespace-nowrap sm:h-9 transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
                 on ? "bg-card text-foreground shadow-soft ring-1 ring-border" : "text-muted-foreground hover:text-foreground",
               )}
             >
@@ -377,10 +404,11 @@ function Discover({ data }: { data: CommandCenterData }) {
         })}
       </div>
 
-      <div role="tabpanel" id={`panel-${group}`} aria-labelledby={`tab-${group}`} key={group} className="mt-4 animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
-        <p className="mb-3 text-sm text-muted-foreground">{current.description}</p>
+      <div role={q ? undefined : "tabpanel"} id={`panel-${group}`} aria-labelledby={q ? undefined : `tab-${group}`} key={q ? "search" : group} className="mt-4 animate-in duration-300 fade-in slide-in-from-bottom-1 motion-reduce:animate-none">
+        <p className="mb-3 text-sm text-muted-foreground" aria-live="polite">{q ? `${list.length} result${list.length === 1 ? "" : "s"} for “${query.trim()}”` : current.description}</p>
+        {q && !list.length ? <p className="rounded-2xl border border-dashed bg-card px-4 py-8 text-center text-sm text-muted-foreground">Nothing matches. Try captions, growth, orders or automation.</p> : null}
         <ul className="grid gap-2 md:grid-cols-2">
-          {DESTINATIONS.filter((d) => d.group === group).map((d) => (
+          {list.map((d) => (
             <li key={d.id}>
               <Link href={d.href} className="group flex items-center gap-3.5 rounded-2xl border bg-card p-3 transition-colors hover:border-primary/30 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:p-3.5">
                 <DestinationGlyph icon={d.icon} group={d.group} />

@@ -110,7 +110,8 @@ export const DESTINATIONS: AiDestination[] = [
 export const DESTINATION_BY_ID = Object.fromEntries(DESTINATIONS.map((d) => [d.id, d])) as Record<string, AiDestination>;
 
 /** The eight Command Center quick actions, in display order. */
-export const QUICK_ACTION_IDS = ["caption-generator", "hashtag-finder", "post-ideas", "content-calendar", "growth-advisor", "growth-roadmap", "service-recommender", "social"] as const;
+/** At most four: the rest are one search away in Explore AI tools. */
+export const QUICK_ACTION_IDS = ["caption-generator", "hashtag-finder", "growth-advisor", "social"] as const;
 
 /** A destination's state right now: an AI tool follows its live availability; workspace areas work today. */
 export function destinationAvailability(d: AiDestination, tools: Record<string, AiAvailability>): AiAvailability {

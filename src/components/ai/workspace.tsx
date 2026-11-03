@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { AlertCircle, ChevronDown, Clock3, Info, Lock, LogIn, MailCheck, Minus, Plus, RefreshCw, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
+import { AlertCircle, Check, ChevronDown, Clock3, Info, Lock, LogIn, MailCheck, Minus, Plus, RefreshCw, RotateCcw, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
 import type { AiField, AiTool } from "@/lib/ai/registry";
 import { api, ApiError } from "@/lib/live-account";
 import { cn } from "@/lib/utils";
@@ -180,11 +180,39 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
   };
 
   const noun = NOUN[tool.id] ?? "results";
+  const has = (id: string) => {
+    const v = values[id];
+    return Array.isArray(v) ? v.length > 0 : Boolean(v);
+  };
+  const filled = Object.keys(values).some(has);
+  const briefDone = has((primary ?? tool.fields[0])?.id ?? "");
+  const customized = [...rest, ...advanced].some((f) => has(f.id));
+  /** Clears the brief and any result, so the next run starts clean. Nothing was stored to undo. */
+  const reset = () => {
+    inflight.current?.abort();
+    setValues({});
+    setFieldErrors({});
+    setNotice(null);
+    setMoreOpen(false);
+    setLast(null);
+    setRun({ kind: "idle" });
+    window.setTimeout(() => document.getElementById(`${formId}-${(primary ?? tool.fields[0])?.id}`)?.focus(), 0);
+  };
   const remaining = usage ? Math.max(0, usage.allowance - usage.used) : null;
   const field = (f: AiField) => <Field key={f.id} field={f} id={`${formId}-${f.id}`} value={values[f.id]} error={fieldErrors[f.id]} primary={f === primary} onChange={(v) => setValue(f.id, v)} />;
 
   return (
     <div ref={rootRef} id="workspace" className="scroll-mt-20 overflow-hidden rounded-[1.75rem] border bg-card shadow-[0_1px_2px_rgb(32_33_39/0.05),0_24px_60px_-40px_rgb(64_38_160/0.35)] dark:shadow-[0_24px_60px_-36px_rgb(0_0_0/0.75)] print:border-none print:shadow-none">
+      {tool.fields.length ? (
+        <WorkflowSteps
+          steps={[
+            { label: "Brief", state: briefDone ? "done" : "current" },
+            { label: "Customize", state: customized ? "done" : briefDone ? "current" : "upcoming", hint: "Optional" },
+            { label: "Generate", state: run.kind === "result" ? "done" : run.kind === "loading" ? "current" : locked ? "locked" : briefDone ? "current" : "upcoming" },
+            { label: "Results", state: run.kind === "result" ? "done" : "upcoming" },
+          ]}
+        />
+      ) : null}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,0.86fr)_minmax(0,1.14fr)]">
         {/* ── Brief ─────────────────────────────────────────────────────── */}
         <section aria-labelledby={`${formId}-in`} className="border-b p-5 sm:p-7 lg:border-r lg:border-b-0 print:hidden">
@@ -258,28 +286,30 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                     <Wand2 className="size-3.5" aria-hidden /> Try an example:
                   </span>
                   {examples.map((ex) => (
-                    <button key={ex.title} type="button" disabled={run.kind === "loading"} onClick={() => applyExample(ex.fill, ex.title)} className="rounded-full border border-dashed px-2.5 py-1 text-xs font-medium text-foreground/80 transition-colors hover:border-primary/50 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50">
+                    <button key={ex.title} type="button" disabled={run.kind === "loading"} onClick={() => applyExample(ex.fill, ex.title)} className="inline-flex h-11 items-center rounded-full border border-dashed px-3 text-xs font-medium text-foreground/80 transition-colors sm:h-7 sm:px-2.5 hover:border-primary/50 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50">
                       {ex.title}
                     </button>
                   ))}
                 </div>
               ) : null}
               <fieldset disabled={formLocked} className={cn("space-y-5", primary && "mt-5")}>
+                {primary && rest.length ? <legend className="mb-3 text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">Customize</legend> : null}
                 {rest.map(field)}
-                {advanced.length ? (
-                  <div className="rounded-xl border">
-                    <button type="button" aria-expanded={moreOpen} aria-controls={`${formId}-more`} onClick={() => setMoreOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none">
-                      <span>
-                        More options <span className="font-normal text-muted-foreground">· {advanced.map((f) => f.label.replace(/\?$/, "").toLowerCase()).join(", ")}</span>
-                      </span>
-                      <ChevronDown className={cn("size-4 text-muted-foreground transition-transform motion-reduce:transition-none", moreOpen && "rotate-180")} aria-hidden />
-                    </button>
-                    <div id={`${formId}-more`} hidden={!moreOpen} className="space-y-5 border-t px-3.5 pt-4 pb-4">
-                      {advanced.map(field)}
-                    </div>
-                  </div>
-                ) : null}
               </fieldset>
+              {/* The toggle stays usable in the preview, so visitors can see every option the tool will ask for. */}
+              {advanced.length ? (
+                <div className="mt-5 rounded-xl border">
+                  <button type="button" aria-expanded={moreOpen} aria-controls={`${formId}-more`} onClick={() => setMoreOpen((o) => !o)} className="flex min-h-11 w-full items-center justify-between gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-semibold transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none">
+                    <span>
+                      More options <span className="font-normal text-muted-foreground">· {advanced.map((f) => f.label.replace(/\?$/, "").toLowerCase()).join(", ")}</span>
+                    </span>
+                    <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform motion-reduce:transition-none", moreOpen && "rotate-180")} aria-hidden />
+                  </button>
+                  <fieldset id={`${formId}-more`} hidden={!moreOpen} disabled={formLocked} className="space-y-5 border-t px-3.5 pt-4 pb-4">
+                    {advanced.map(field)}
+                  </fieldset>
+                </div>
+              ) : null}
 
               {notice ? (
                 <p role="status" className="mt-4 flex items-start gap-2 rounded-xl bg-lime/30 px-3.5 py-2.5 text-[0.82rem] text-graphite dark:bg-lime/10 dark:text-foreground">
@@ -313,6 +343,11 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                     {locked ? "Coming soon" : run.kind === "result" ? "Generate again" : "Generate"}
                   </button>
                 )}
+                {filled || run.kind === "result" ? (
+                  <button type="button" onClick={reset} disabled={run.kind === "loading"} className="mt-2 inline-flex h-11 w-full items-center justify-center gap-1.5 rounded-full text-sm font-semibold text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/25 focus-visible:outline-none disabled:opacity-50 sm:h-9">
+                    <RotateCcw className="size-3.5" aria-hidden /> Reset
+                  </button>
+                ) : null}
                 <p id={`${formId}-cost`} className="mt-2.5 text-center text-xs text-muted-foreground">
                   {locked ? `${tool.status} Nothing is generated yet.` : "Each run uses one of today's free runs. Failed runs don't count."}
                 </p>
@@ -388,6 +423,41 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
         ) : null}
       </div>
     </div>
+  );
+}
+
+/* ── Workflow ───────────────────────────────────────────────────────────── */
+
+type StepState = "done" | "current" | "upcoming" | "locked";
+
+/** Brief → Customize → Generate → Results, following what the visitor has actually done. */
+function WorkflowSteps({ steps }: { steps: { label: string; state: StepState; hint?: string }[] }) {
+  return (
+    <ol aria-label="How this tool works" className="grid grid-cols-4 gap-1 border-b bg-subtle/40 px-3 py-2.5 sm:px-6 dark:bg-white/[0.015] print:hidden">
+      {steps.map((st, i) => (
+        <li key={st.label} aria-current={st.state === "current" ? "step" : undefined} className="flex min-w-0 flex-col items-center gap-1 text-center sm:flex-row sm:gap-2 sm:text-start">
+          <span
+            className={cn(
+              "grid size-6 shrink-0 place-items-center rounded-full text-[0.7rem] font-bold tabular-nums transition-colors duration-300 motion-reduce:transition-none",
+              st.state === "done" && "bg-primary text-primary-foreground",
+              st.state === "current" && "bg-card text-primary ring-2 ring-primary",
+              st.state === "upcoming" && "bg-card text-muted-foreground ring-1 ring-border",
+              st.state === "locked" && "bg-muted text-muted-foreground",
+            )}
+            aria-hidden
+          >
+            {st.state === "done" ? <Check className="size-3.5" strokeWidth={3} /> : st.state === "locked" ? <Lock className="size-3" /> : i + 1}
+          </span>
+          <span className="w-full min-w-0">
+            <span className={cn("block truncate text-[0.7rem] font-semibold sm:text-[0.8rem]", st.state === "upcoming" && "text-muted-foreground")}>{st.label}</span>
+            <span className="hidden truncate text-[0.68rem] text-muted-foreground sm:block">
+              {st.state === "done" ? "Done" : st.state === "locked" ? "Not open yet" : st.state === "current" ? (st.hint ?? "Now") : (st.hint ?? "Next")}
+            </span>
+            <span className="sr-only">{st.state === "done" ? ", done" : st.state === "locked" ? ", not open yet" : st.state === "current" ? ", current step" : ""}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }
 

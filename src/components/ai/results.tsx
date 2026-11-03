@@ -51,29 +51,29 @@ async function copyText(text: string) {
 }
 
 export function CopyButton({ text, label, children, className }: { text: string; label: string; children?: React.ReactNode; className?: string }) {
-  const [done, setDone] = React.useState(false);
+  const [state, setState] = React.useState<"idle" | "done" | "failed">("idle");
+  const done = state === "done";
   return (
     <button
       type="button"
       onClick={() =>
         copyText(text).then((ok) => {
-          if (!ok) return;
-          setDone(true);
-          window.setTimeout(() => setDone(false), 1500);
+          setState(ok ? "done" : "failed");
+          window.setTimeout(() => setState("idle"), ok ? 1500 : 3000);
         })
       }
       aria-label={label}
       title={label}
       className={cn(
-        "inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
+        "relative inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full text-muted-foreground transition-colors after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-1/2 after:rounded-full hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none",
         children ? "h-8 border bg-card px-3 text-xs font-semibold text-foreground" : "size-8",
         className,
       )}
     >
       {done ? <Check className="size-3.5 text-primary" aria-hidden /> : <Copy className="size-3.5" aria-hidden />}
-      {children}
+      {children ? (done ? "Copied" : state === "failed" ? "Couldn't copy" : children) : null}
       <span className="sr-only" aria-live="polite">
-        {done ? "Copied" : ""}
+        {done ? "Copied" : state === "failed" ? "Couldn't copy. Select the text to copy it." : ""}
       </span>
     </button>
   );
@@ -290,6 +290,7 @@ export function CalendarResults({ result }: { result: CalendarResult }) {
   const [view, setView] = React.useState<"list" | "calendar">("list");
   const edit = (index: number, key: "topic" | "notes", value: string) => setPosts((ps) => ps.map((p, i) => (i === index ? { ...p, [key]: value } : p)));
 
+  const [saved, setSaved] = React.useState(false);
   const download = () => {
     // BOM so spreadsheet apps read UTF-8 (emoji, accents) correctly.
     const blob = new Blob(["﻿", calendarCsv(weeks, posts)], { type: "text/csv;charset=utf-8" });
@@ -299,6 +300,8 @@ export function CalendarResults({ result }: { result: CalendarResult }) {
     a.download = `sociotix-content-calendar-${result.days}-days.csv`;
     a.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 2000);
   };
   const print = () => {
     document.body.classList.add("ai-printing");
@@ -333,10 +336,11 @@ export function CalendarResults({ result }: { result: CalendarResult }) {
           <CopyButton text={calendarText(weeks, posts)} label="Copy the plan as text">
             Copy
           </CopyButton>
-          <button type="button" onClick={download} className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold hover:bg-muted">
-            <Download className="size-3.5" aria-hidden /> CSV
+          <button type="button" onClick={download} className="relative inline-flex h-8 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold transition-colors after:absolute after:-inset-y-1.5 after:inset-x-0 hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
+            {saved ? <Check className="size-3.5 text-primary" aria-hidden /> : <Download className="size-3.5" aria-hidden />} {saved ? "Downloaded" : "CSV"}
+            <span className="sr-only" aria-live="polite">{saved ? "CSV downloaded" : ""}</span>
           </button>
-          <button type="button" onClick={print} className="inline-flex h-8 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold hover:bg-muted">
+          <button type="button" onClick={print} className="relative inline-flex h-8 items-center gap-1.5 rounded-full border bg-card px-3 text-xs font-semibold transition-colors after:absolute after:-inset-y-1.5 after:inset-x-0 hover:bg-muted focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
             <Printer className="size-3.5" aria-hidden /> Print
           </button>
         </div>
