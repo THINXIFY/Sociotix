@@ -293,6 +293,7 @@ export const ownOrdersQuery = z.object({
   status: z.enum(["open", "attention", "completed", "closed"]).optional(),
   page: z.coerce.number().int().min(1).max(1000).optional().default(1),
   pageSize: z.coerce.number().int().min(1).max(50).optional().default(10),
+  sort: z.enum(["newest", "oldest"]).optional().default("newest"),
 });
 
 export async function listOwnOrders(db: Executor, customerId: string, raw: z.input<typeof ownOrdersQuery>) {
@@ -308,7 +309,7 @@ export async function listOwnOrders(db: Executor, customerId: string, raw: z.inp
   }
   const where = and(...conds);
   const [{ total }] = await db.select({ total: count() }).from(orders).where(where);
-  const rows = await db.select().from(orders).where(where).orderBy(desc(orders.placedAt)).limit(q.pageSize).offset((q.page - 1) * q.pageSize);
+  const rows = await db.select().from(orders).where(where).orderBy(q.sort === "oldest" ? asc(orders.placedAt) : desc(orders.placedAt)).limit(q.pageSize).offset((q.page - 1) * q.pageSize);
   const evs = rows.length ? await db.select().from(orderEvents).where(inArray(orderEvents.orderId, rows.map((r) => r.id))).orderBy(asc(orderEvents.at)) : [];
   return {
     items: rows.map((r) => toCustomer(r, evs.filter((e) => e.orderId === r.id))),

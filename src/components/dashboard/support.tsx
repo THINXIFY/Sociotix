@@ -163,7 +163,7 @@ export function SupportCenter() {
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
       <header className={cn("flex flex-wrap items-end justify-between gap-4", e[0].className)} style={e[0].style}>
         <div className="min-w-0">
-          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Support Center</h1>
+          <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Support Center</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">
             Get help with your orders, payments, or account—all in one place.
           </p>
@@ -511,7 +511,7 @@ function ContactCard() {
   return (
     <section
       aria-labelledby="contact-title"
-      className="relative isolate overflow-hidden rounded-3xl bg-graphite p-5 text-white shadow-float dark:bg-[#17181e] dark:ring-1 dark:ring-white/10"
+      className="relative isolate overflow-hidden rounded-2xl bg-graphite p-5 text-white shadow-float dark:bg-[#17181e] dark:ring-1 dark:ring-white/10"
     >
       <div className="pointer-events-none absolute -top-20 -end-16 -z-10 size-48 rounded-full bg-primary/35 blur-3xl" aria-hidden />
       <span className="grid size-10 place-items-center rounded-xl bg-white/10">

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { DemoGate } from "@/components/dashboard/demo-gate";
-import { LiveTransactions } from "@/components/dashboard/live-views";
+import { LiveWallet } from "@/components/dashboard/live-wallet";
 import { Transactions } from "@/components/dashboard/transactions";
 
 export const metadata: Metadata = { title: "Transactions" };
 
 function Fallback() {
-  const block = "animate-pulse rounded-3xl bg-muted motion-reduce:animate-none";
+  const block = "animate-pulse rounded-2xl bg-muted motion-reduce:animate-none";
   return (
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8" aria-busy="true">
       <span className="sr-only">Loading transactions…</span>
@@ -25,7 +25,11 @@ function Fallback() {
 export default function TransactionsPage() {
   // Filters and the open transaction live in the URL (?type=, ?tx=), which needs a Suspense boundary.
   return (
-    <DemoGate area="Transactions" live={<LiveTransactions />}>
+    <DemoGate area="Transactions" live={
+        <Suspense fallback={<Fallback />}>
+          <LiveWallet />
+        </Suspense>
+      }>
       <Suspense fallback={<Fallback />}>
         <Transactions />
       </Suspense>

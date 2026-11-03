@@ -3,15 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
   CircleAlert,
+  CircleCheck,
   Clock3,
+  Compass,
   Heart,
-  Info,
+  History,
   Lock,
   Pencil,
   Repeat,
@@ -55,9 +57,9 @@ import {
 } from "./demo-store";
 import { useLiveAccount } from "./live-account";
 import { FavoriteButton } from "./favorite-button";
-import { FINDER_QUERY_KEY, FinderPrompt } from "./service-finder";
+import { FINDER_QUERY_KEY } from "./service-finder";
 import { FxNote } from "./region";
-import { DemoTag, FINDER_ROUTE, ordersHref, Panel, ROUTES, useHydrated } from "./shared";
+import { dashButton, DemoTag, FINDER_ROUTE, ordersHref, Panel, ROUTES, useHydrated } from "./shared";
 import { Select } from "@/components/ui/select";
 
 /* -------------------------------------------------------------------------- */
@@ -272,10 +274,10 @@ export function NewOrderSkeleton() {
   return (
     <div className="mx-auto max-w-[90rem] px-3 pt-4 sm:px-6 sm:pt-7 lg:px-8" aria-busy="true">
       <span className="sr-only">Loading New Order…</span>
-      <div className="h-24 animate-pulse rounded-3xl bg-muted motion-reduce:animate-none" />
+      <div className="h-24 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
       <div className="mt-6 grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
-        <div className="h-[28rem] animate-pulse rounded-3xl bg-muted motion-reduce:animate-none" />
-        <div className="hidden h-96 animate-pulse rounded-3xl bg-muted motion-reduce:animate-none xl:block" />
+        <div className="h-[28rem] animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
+        <div className="hidden h-96 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none xl:block" />
       </div>
     </div>
   );
@@ -324,6 +326,7 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
   };
   // Set when the step changes; the next step's heading takes focus once it mounts.
   const focusPending = React.useRef(false);
+  const reduceMotion = useReducedMotion();
 
   const platform = platformId ? PLATFORM_BY_ID[platformId] : null;
   const service = serviceId ? SERVICE_BY_ID[serviceId] : null;
@@ -398,33 +401,34 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
   };
 
   return (
-    <div className="mx-auto max-w-[90rem] px-3 pt-4 pb-6 sm:px-6 sm:pt-7 lg:px-8">
-      <header className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+    <div className="mx-auto max-w-[90rem] px-3 pt-4 pb-6 sm:px-6 sm:pt-6 lg:px-8">
+      <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
+        <div className="min-w-0">
           <Link
             href={backLink.href}
             className="inline-flex items-center gap-1.5 rounded-full text-sm font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
           >
-            <ArrowLeft className="size-4" aria-hidden /> {backLink.label}
+            <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden /> {backLink.label}
           </Link>
-          <h1 className="mt-2 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">New Order</h1>
-          <p className="mt-1 text-[0.95rem] text-muted-foreground">
-            Choose from {CATALOG_TOTALS.services} services across {CATALOG_TOTALS.platforms} platforms.
-          </p>
+          <h1 className="mt-1.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">New Order</h1>
         </div>
-        <Stepper ctx={ctx} reachable={reachable} />
+        <p className="text-sm text-muted-foreground">
+          {CATALOG_TOTALS.services} services across {CATALOG_TOTALS.platforms} platforms
+        </p>
       </header>
 
-      <div className="mt-5 grid grid-cols-1 items-start gap-5 sm:mt-7 xl:grid-cols-[minmax(0,1fr)_22rem] xl:gap-6">
+      <Stepper ctx={ctx} reachable={reachable} />
+
+      <div className="mt-4 grid grid-cols-1 items-start gap-5 sm:mt-5 xl:grid-cols-[minmax(0,1fr)_21rem] xl:gap-6">
         <section aria-labelledby="step-title" className="min-w-0">
           {reorder ? <ReorderBanner ctx={ctx} reorder={reorder} onStartFresh={startFresh} /> : null}
           {initial.aiDraft && serviceId === initial.serviceId ? <AiDraftNotice /> : null}
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={step}
-              initial={{ opacity: 0, y: 8 }}
+              initial={reduceMotion ? false : { opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
+              exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
               transition={{ duration: 0.18, ease: "easeOut" }}
             >
               {step === 0 ? <PlatformStep ctx={ctx} /> : null}
@@ -435,7 +439,7 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
           </AnimatePresence>
         </section>
 
-        <aside className="sticky top-24 hidden xl:block" aria-label="Order summary">
+        <aside className="sticky top-20 hidden xl:block" aria-label="Order summary">
           <SummaryCard ctx={ctx} />
         </aside>
       </div>
@@ -566,20 +570,23 @@ function ReorderBanner({ ctx, reorder, onStartFresh }: { ctx: FlowContext; reord
 /* -------------------------------------------------------------------------- */
 
 function Stepper({ ctx, reachable }: { ctx: FlowContext; reachable: (s: Step) => boolean }) {
-  const detail = [ctx.platform?.short, ctx.service?.name, ctx.formValid ? "Details added" : null, null];
+  const detail = [ctx.platform?.name, ctx.service?.name, ctx.formValid ? "Details added" : null, null];
   const stepLabel = (i: number) => {
     const state = i < ctx.step ? ", completed" : i === ctx.step ? ", current step" : "";
     return `Step ${i + 1}: ${STEPS[i]}${state}`;
   };
 
   return (
-    <nav aria-label="Order progress" className="w-full lg:w-auto">
-      {/* Phones: a segmented bar with the current step named above it */}
-      <div className="sm:hidden">
+    <nav aria-label="Order progress" className="mt-4 sm:mt-5">
+      {/* Phones: the current step named above a segmented bar */}
+      <div className="rounded-2xl border bg-card px-3.5 pt-3 pb-1.5 shadow-soft sm:hidden">
         <div className="flex items-baseline justify-between gap-3">
-          <p className="text-sm font-semibold">{STEPS[ctx.step]}</p>
-          <p className="text-xs font-medium text-muted-foreground">
-            Step {ctx.step + 1} of {STEPS.length}
+          <p className="min-w-0 truncate text-sm">
+            <span className="font-semibold">{STEPS[ctx.step]}</span>
+            {ctx.step > 0 && detail[ctx.step - 1] ? <span className="text-muted-foreground"> · {detail[ctx.step - 1]}</span> : null}
+          </p>
+          <p className="shrink-0 text-xs font-medium text-muted-foreground tabular-nums">
+            {ctx.step + 1} / {STEPS.length}
           </p>
         </div>
         <ol className="mt-1 grid grid-cols-4 gap-1.5">
@@ -594,9 +601,9 @@ function Stepper({ ctx, reachable }: { ctx: FlowContext; reachable: (s: Step) =>
                   disabled={!canGo}
                   aria-current={ctx.step === s ? "step" : undefined}
                   aria-label={stepLabel(i)}
-                  className="block w-full rounded-full py-2 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:cursor-default"
+                  className="block w-full rounded-full py-2.5 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:cursor-default"
                 >
-                  <span className={cn("block h-1.5 rounded-full transition-colors", i <= ctx.step ? "bg-primary" : "bg-border")} />
+                  <span className={cn("block h-1.5 rounded-full transition-colors duration-300", i <= ctx.step ? "bg-primary" : "bg-border")} />
                 </button>
               </li>
             );
@@ -604,56 +611,43 @@ function Stepper({ ctx, reachable }: { ctx: FlowContext; reachable: (s: Step) =>
         </ol>
       </div>
 
-      {/* Tablet & desktop: labelled steps */}
-      <ol className="hidden items-center sm:flex">
+      {/* Tablet & desktop: four labelled segments, each showing what was chosen */}
+      <ol className="hidden grid-cols-4 gap-1 rounded-2xl border bg-card p-1.5 shadow-soft sm:grid">
         {STEPS.map((label, i) => {
           const s = i as Step;
           const current = ctx.step === s;
           const done = ctx.step > s;
           const canGo = !current && reachable(s);
+          const sub = done ? detail[i] : current ? "In progress" : reachable(s) ? "Ready" : "Not started";
           return (
-            <li key={label} className={cn("flex items-center", i < STEPS.length - 1 && "flex-1 lg:flex-none")}>
+            <li key={label} className="min-w-0">
               <button
                 type="button"
                 onClick={() => ctx.goTo(s)}
                 disabled={!canGo}
                 aria-current={current ? "step" : undefined}
                 className={cn(
-                  "flex shrink-0 items-center gap-2.5 rounded-full p-1 pe-1 text-start transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none md:pe-3",
+                  "flex w-full min-w-0 items-center gap-2.5 rounded-xl px-2.5 py-2 text-start transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none lg:px-3",
+                  current && "bg-secondary/70 dark:bg-secondary/40",
                   canGo ? "hover:bg-muted" : "cursor-default",
                 )}
               >
                 <span
                   className={cn(
-                    "grid size-8 shrink-0 place-items-center rounded-full text-[0.8rem] font-bold tabular-nums transition-all",
-                    current && "bg-primary text-primary-foreground ring-4 ring-primary/15",
-                    done && "bg-primary/12 text-primary ring-1 ring-primary/30 ring-inset dark:bg-primary/20",
+                    "grid size-7 shrink-0 place-items-center rounded-full text-[0.78rem] font-bold tabular-nums transition-colors duration-300",
+                    current && "bg-primary text-primary-foreground",
+                    done && "bg-primary/12 text-primary dark:bg-primary/25",
                     !current && !done && "border bg-card text-muted-foreground",
                   )}
                 >
-                  {done ? <Check className="size-4" strokeWidth={3} aria-hidden /> : i + 1}
+                  {done ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : i + 1}
                 </span>
-                <span className={cn("min-w-0", !current && "max-md:sr-only")}>
-                  <span
-                    className={cn(
-                      "block text-sm leading-tight",
-                      current ? "font-semibold text-foreground" : done ? "font-medium text-foreground" : "font-medium text-muted-foreground",
-                    )}
-                  >
-                    {label}
-                  </span>
-                  {done && detail[i] ? (
-                    <span className="block max-w-28 truncate text-[0.7rem] leading-tight text-muted-foreground">{detail[i]}</span>
-                  ) : null}
+                <span className="min-w-0">
+                  <span className={cn("block text-sm leading-tight font-semibold", !current && !done && "text-muted-foreground")}>{label}</span>
+                  <span className="block truncate text-[0.72rem] leading-tight text-muted-foreground">{sub}</span>
                 </span>
                 {current || done ? <span className="sr-only">{current ? ", current step" : ", completed"}</span> : null}
               </button>
-              {i < STEPS.length - 1 ? (
-                <span
-                  className={cn("mx-1.5 h-0.5 min-w-4 flex-1 rounded-full transition-colors lg:w-8 lg:flex-none", done ? "bg-primary/60" : "bg-border")}
-                  aria-hidden
-                />
-              ) : null}
             </li>
           );
         })}
@@ -689,12 +683,12 @@ function StepHeading({
   }, [claimFocus]);
 
   return (
-    <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
       <div className="min-w-0">
-        <h2 id="step-title" ref={ref} tabIndex={-1} className="text-xl font-bold outline-none sm:text-[1.35rem]">
+        <h2 id="step-title" ref={ref} tabIndex={-1} className="font-heading text-lg font-bold tracking-tight outline-none sm:text-xl">
           {title}
         </h2>
-        <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+        <div className="mt-0.5 text-sm text-muted-foreground">{description}</div>
       </div>
       {action}
     </div>
@@ -719,7 +713,7 @@ function SearchField({
       <label htmlFor={id} className="sr-only">
         {label}
       </label>
-      <Search className="pointer-events-none absolute top-1/2 start-4 size-[1.1rem] -translate-y-1/2 text-muted-foreground" aria-hidden />
+      <Search className="pointer-events-none absolute top-1/2 start-3.5 size-[1.05rem] -translate-y-1/2 text-muted-foreground" aria-hidden />
       <input
         id={id}
         type="search"
@@ -727,13 +721,13 @@ function SearchField({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoComplete="off"
-        className="h-12 w-full scroll-mt-24 scroll-mb-36 rounded-2xl border bg-card pe-11 ps-11 text-[0.95rem] shadow-xs transition-colors outline-none placeholder:text-muted-foreground hover:border-foreground/20 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
+        className="h-11 w-full scroll-mt-24 scroll-mb-36 rounded-xl border bg-card pe-11 ps-10 text-[0.92rem] shadow-xs transition-colors outline-none placeholder:text-muted-foreground hover:border-foreground/20 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
       />
       {value ? (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="absolute top-1/2 end-3 grid size-7 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+          className="absolute top-1/2 end-1.5 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
           aria-label="Clear search"
         >
           <X className="size-4" aria-hidden />
@@ -743,20 +737,16 @@ function SearchField({
   );
 }
 
-function Empty({ title, hint, onReset }: { title: string; hint: string; onReset: () => void }) {
+function Empty({ title, hint, onReset, resetLabel = "Clear search" }: { title: string; hint: string; onReset: () => void; resetLabel?: string }) {
   return (
-    <div className="rounded-3xl border border-dashed px-6 py-12 text-center">
-      <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted text-muted-foreground">
+    <div className="rounded-2xl border border-dashed px-6 py-10 text-center">
+      <span className="mx-auto grid size-10 place-items-center rounded-xl bg-muted text-muted-foreground">
         <SearchX className="size-5" aria-hidden />
       </span>
       <p className="mt-3 font-semibold">{title}</p>
       <p className="mt-1 text-sm text-muted-foreground">{hint}</p>
-      <button
-        type="button"
-        onClick={onReset}
-        className="mt-3 inline-flex h-8 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-secondary"
-      >
-        Clear search
+      <button type="button" onClick={onReset} className={cn(dashButton.ghost, "mt-2 h-9")}>
+        {resetLabel}
       </button>
     </div>
   );
@@ -776,12 +766,52 @@ function PricingPending({ className }: { className?: string }) {
   );
 }
 
+/** A small uppercase label above a group of options. */
+function GroupLabel({ children, className }: { children: React.ReactNode; className?: string }) {
+  return <p className={cn("flex items-center gap-1.5 text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase", className)}>{children}</p>;
+}
+
+const chipClass =
+  "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium whitespace-nowrap transition-colors hover:border-foreground/25 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:h-9";
+const chipOnClass = "border-foreground bg-foreground text-background hover:border-foreground";
+
+/** Two-way switch (All / Favorites) styled as one segmented control. */
+function Segmented<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: React.ReactNode }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <div role="group" aria-label={label} className="inline-flex h-11 shrink-0 items-center gap-1 rounded-xl bg-muted p-1">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            "inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg px-3 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+            value === o.value ? "bg-card text-foreground shadow-xs" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Step 1 · Platform                                                         */
 /* -------------------------------------------------------------------------- */
 
 const SERVICE_COUNT = Object.fromEntries(PLATFORMS.map((p) => [p.id, SERVICES.filter((s) => s.platformId === p.id).length]));
-const POPULAR = SERVICES.filter((s) => s.featured);
 
 /** Favorites first, in the order they were when the list opened, so cards don't jump when a heart is toggled. */
 function useFavoritesFirst() {
@@ -793,14 +823,27 @@ function useFavoritesFirst() {
   );
 }
 
-const chipClass =
-  "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-medium whitespace-nowrap transition-colors hover:border-foreground/25 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none";
-const chipOnClass = "border-foreground bg-foreground text-background hover:border-foreground";
+/** Services from this account's own orders, newest first. Empty for accounts without orders. */
+function useRecentServices(limit = 4) {
+  const { orders } = useDemoOrders();
+  return React.useMemo(() => {
+    const seen = new Set<string>();
+    const list: Service[] = [];
+    for (const o of orders) {
+      const s = SERVICE_BY_ID[o.serviceId];
+      if (!s || seen.has(s.id)) continue;
+      seen.add(s.id);
+      list.push(s);
+      if (list.length === limit) break;
+    }
+    return list;
+  }, [orders, limit]);
+}
 
 function FavoritesEmpty({ title, hint, action }: { title: string; hint: string; action?: React.ReactNode }) {
   return (
-    <div className="rounded-3xl border border-dashed px-6 py-10 text-center">
-      <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-secondary text-primary">
+    <div className="rounded-2xl border border-dashed px-6 py-10 text-center">
+      <span className="mx-auto grid size-10 place-items-center rounded-xl bg-secondary text-primary">
         <Heart className="size-5" aria-hidden />
       </span>
       <p className="mt-3 font-semibold">{title}</p>
@@ -810,11 +853,60 @@ function FavoritesEmpty({ title, hint, action }: { title: string; hint: string; 
   );
 }
 
+/** Opens the AI Service Finder: shown beside the step title. */
+function FinderLink() {
+  return (
+    <Link
+      href={FINDER_ROUTE}
+      className="group inline-flex h-10 items-center gap-2 rounded-full border border-primary/25 bg-secondary/60 ps-1.5 pe-3.5 text-sm font-semibold text-secondary-foreground transition-colors hover:border-primary/45 hover:bg-secondary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none dark:bg-primary/15"
+    >
+      <span className="grid size-7 place-items-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+        <Compass className="size-3.5 transition-transform duration-300 group-hover:-rotate-[25deg] motion-reduce:transition-none" />
+      </span>
+      Not sure? Find my service
+    </Link>
+  );
+}
+
+/** One row of quick service shortcuts; scrolls sideways on phones. */
+function QuickRow({ label, services, onPick, tag }: { label: React.ReactNode; services: Service[]; onPick: (s: Service) => void; tag?: React.ReactNode }) {
+  if (!services.length) return null;
+  return (
+    <div>
+      <GroupLabel>
+        {label}
+        {tag}
+      </GroupLabel>
+      <ul className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:flex-wrap sm:px-0">
+        {services.map((s) => {
+          const p = PLATFORM_BY_ID[s.platformId];
+          return (
+            <li key={s.id} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => onPick(s)}
+                className="inline-flex h-10 items-center gap-2 rounded-full border bg-card ps-1.5 pe-3.5 text-sm font-medium whitespace-nowrap transition-[border-color,background-color] hover:border-primary/40 hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:h-9"
+              >
+                <span className="grid size-7 place-items-center rounded-full sm:size-6" style={{ backgroundColor: p.color, color: p.ink }} aria-hidden>
+                  <PlatformIcon icon={p.icon} className="size-3.5" />
+                </span>
+                {s.name}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 function PlatformStep({ ctx }: StepProps) {
   const [query, setQuery] = React.useState("");
   const [view, setView] = React.useState<BrowseView>(ctx.initialView);
   const favorites = useFavorites();
   const favoritesFirst = useFavoritesFirst();
+  const recent = useRecentServices();
+  const live = useLiveAccount();
   const q = query.trim().toLowerCase();
   const browsing = view === "browse";
   const platforms = !browsing
@@ -825,44 +917,51 @@ function PlatformStep({ ctx }: StepProps) {
   const services = browsing && q ? favoritesFirst(SERVICES.filter((s) => matchesQuery(s, q))) : [];
   const saved = favorites.ids.map((id) => SERVICE_BY_ID[id]).filter((s): s is Service => Boolean(s));
   const savedShown = saved.filter((s) => matchesQuery(s, q));
+  const pick = (s: Service) => ctx.chooseService(s, true);
 
   return (
     <Panel className="@container p-4 sm:p-6">
-      <StepHeading
-        ctx={ctx}
-        title="Choose a platform"
-        description="Where would you like to grow? Or search for a service directly."
-      />
-      <div className="mt-5">
-        <SearchField
-          id="platform-search"
-          label={browsing ? "Search platforms or services" : "Search your favorites"}
-          value={query}
-          onChange={setQuery}
-          placeholder={browsing ? "Search platforms or services, e.g. “YouTube views”" : "Search your favorites"}
-        />
-      </div>
+      <StepHeading ctx={ctx} title="Choose a platform" description="Where would you like to grow? Pick a platform, or search for a service." action={<FinderLink />} />
 
-      <div className="mt-3 flex gap-2" role="group" aria-label="Show">
-        <button type="button" aria-pressed={browsing} onClick={() => setView("browse")} className={cn(chipClass, browsing && chipOnClass)}>
-          All services
-        </button>
-        <button type="button" aria-pressed={!browsing} onClick={() => setView("favorites")} className={cn(chipClass, !browsing && chipOnClass)}>
-          <Heart className={cn("size-3.5", saved.length && "fill-current", browsing && saved.length && "text-primary")} aria-hidden />
-          Favorites <span className="text-xs tabular-nums">{saved.length}</span>
-        </button>
+      <div className="mt-4 flex flex-col gap-2 @lg:flex-row">
+        <div className="min-w-0 flex-1">
+          <SearchField
+            id="platform-search"
+            label={browsing ? "Search platforms or services" : "Search your favorites"}
+            value={query}
+            onChange={setQuery}
+            placeholder={browsing ? "Search platforms or services" : "Search your favorites"}
+          />
+        </div>
+        <Segmented<BrowseView>
+          label="Show"
+          value={view}
+          onChange={setView}
+          options={[
+            { value: "browse", label: "All services" },
+            {
+              value: "favorites",
+              label: (
+                <>
+                  <Heart className={cn("size-3.5", saved.length && "fill-current text-primary")} aria-hidden />
+                  Favorites <span className="text-xs tabular-nums opacity-70">{saved.length}</span>
+                </>
+              ),
+            },
+          ]}
+        />
       </div>
 
       {!browsing ? (
         <div className="mt-5">
           {savedShown.length ? (
-            <ul className="grid grid-cols-1 gap-2 lg:grid-cols-2" aria-label="Favorite services">
+            <ServiceList label="Favorite services">
               {savedShown.map((s) => (
                 <li key={s.id}>
-                  <CompactService service={s} onSelect={() => ctx.chooseService(s, true)} />
+                  <ServiceRow service={s} showPlatform onSelect={() => pick(s)} />
                 </li>
               ))}
-            </ul>
+            </ServiceList>
           ) : saved.length ? (
             <Empty title={`No favorites match “${query.trim()}”`} hint="Try another word." onReset={() => setQuery("")} />
           ) : (
@@ -870,12 +969,8 @@ function PlatformStep({ ctx }: StepProps) {
               title="Your favorites will appear here."
               hint="Save services you use often for faster ordering."
               action={
-                <button
-                  type="button"
-                  onClick={() => setView("browse")}
-                  className="mt-4 inline-flex h-10 items-center gap-1.5 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
-                >
-                  Explore Services <ArrowRight className="size-4" aria-hidden />
+                <button type="button" onClick={() => setView("browse")} className={cn(dashButton.primary, "mt-4 px-4")}>
+                  Explore Services <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />
                 </button>
               }
             />
@@ -883,37 +978,23 @@ function PlatformStep({ ctx }: StepProps) {
         </div>
       ) : null}
 
-      {browsing && !q ? <FinderPrompt className="mt-4" /> : null}
-
       {browsing && !q ? (
-        <div className="mt-4">
-          <p className="text-xs font-bold tracking-wider text-muted-foreground uppercase">Popular services</p>
-          <div className="-mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:flex-wrap sm:px-0">
-            {POPULAR.map((s) => {
-              const p = PLATFORM_BY_ID[s.platformId];
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  onClick={() => ctx.chooseService(s, true)}
-                  className="inline-flex h-9 shrink-0 items-center gap-2 rounded-full border bg-card pe-3.5 ps-1.5 text-sm font-medium transition-colors hover:border-primary/40 hover:bg-secondary/40 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-                >
-                  <span className="grid size-6 place-items-center rounded-full" style={{ backgroundColor: p.color, color: p.ink }}>
-                    <PlatformIcon icon={p.icon} className="size-3.5" />
-                  </span>
-                  {s.name}
-                </button>
-              );
-            })}
-          </div>
+        <div className="mt-5 space-y-4">
+          <QuickRow
+            label={<><History className="size-3.5" aria-hidden /> Recently used</>}
+            tag={live ? null : <DemoTag className="ms-1 h-4 px-1.5 text-[0.55rem] text-muted-foreground" />}
+            services={recent}
+            onPick={pick}
+          />
+          <QuickRow label={<><Heart className="size-3.5" aria-hidden /> Favorites</>} services={saved.slice(0, 4)} onPick={pick} />
         </div>
       ) : null}
 
       {platforms.length ? (
         <>
-          {q ? <p className="mt-6 text-xs font-bold tracking-wider text-muted-foreground uppercase">Platforms</p> : null}
-          {/* Columns follow the panel width, so they adapt when the checkout panel or sidebar takes space */}
-          <ul className={cn("grid grid-cols-2 gap-2 @xl:grid-cols-3 @xl:gap-3 @4xl:grid-cols-4", q ? "mt-2" : "mt-6")}>
+          <GroupLabel className={q ? "mt-5" : "mt-6"}>{q ? "Platforms" : `All ${PLATFORMS.length} platforms`}</GroupLabel>
+          {/* Columns follow the panel width, so they adapt when the summary or sidebar takes space */}
+          <ul className="mt-2 grid grid-cols-3 gap-2 @xl:grid-cols-4 @3xl:grid-cols-5 @3xl:gap-2.5">
             {platforms.map((p) => (
               <li key={p.id}>
                 <PlatformCard platform={p} selected={ctx.platform?.id === p.id} onSelect={() => ctx.choosePlatform(p.id)} />
@@ -925,19 +1006,17 @@ function PlatformStep({ ctx }: StepProps) {
 
       {q && services.length ? (
         <>
-          <p className="mt-6 text-xs font-bold tracking-wider text-muted-foreground uppercase">
+          <GroupLabel className="mt-6">
             Services · {services.length} match{services.length === 1 ? "" : "es"}
-          </p>
-          <ul className="mt-2 grid grid-cols-1 gap-2 lg:grid-cols-2">
+          </GroupLabel>
+          <ServiceList className="mt-2">
             {services.slice(0, 8).map((s) => (
               <li key={s.id}>
-                <CompactService service={s} onSelect={() => ctx.chooseService(s, true)} />
+                <ServiceRow service={s} showPlatform onSelect={() => pick(s)} />
               </li>
             ))}
-          </ul>
-          {services.length > 8 ? (
-            <p className="mt-3 text-xs text-muted-foreground">Showing 8 of {services.length}. Add a word to narrow it down.</p>
-          ) : null}
+          </ServiceList>
+          {services.length > 8 ? <p className="mt-3 text-xs text-muted-foreground">Showing 8 of {services.length}. Add a word to narrow it down.</p> : null}
         </>
       ) : null}
 
@@ -950,9 +1029,6 @@ function PlatformStep({ ctx }: StepProps) {
   );
 }
 
-/** Near-black brand colours glow violet instead, so the accent stays visible. */
-const accentOf = (p: Platform) => (/^#(0|1|2)[0-9a-f]{5}$/i.test(p.color) ? "#7047EB" : p.color);
-
 function PlatformCard({ platform, selected, onSelect }: { platform: Platform; selected: boolean; onSelect: () => void }) {
   const total = SERVICE_COUNT[platform.id];
   return (
@@ -960,71 +1036,120 @@ function PlatformCard({ platform, selected, onSelect }: { platform: Platform; se
       type="button"
       onClick={onSelect}
       aria-pressed={selected}
-      style={{ "--brand": accentOf(platform) } as React.CSSProperties}
+      aria-label={`${platform.name}, ${total} service${total === 1 ? "" : "s"}`}
       className={cn(
-        "group relative isolate flex h-full min-h-[4.25rem] w-full items-center gap-3 overflow-hidden rounded-2xl border bg-card p-2.5 pe-3 text-start transition-[border-color,box-shadow,transform,background-color] duration-200 hover:-translate-y-px hover:border-[color-mix(in_oklab,var(--brand)_40%,var(--border))] hover:shadow-soft focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:min-h-[4.75rem] sm:gap-3.5 sm:p-3 sm:pe-3.5",
-        selected && "border-primary bg-secondary/50 ring-1 ring-primary hover:border-primary",
+        "group relative flex h-full w-full flex-col items-center gap-2 rounded-xl border bg-card px-1.5 pt-3 pb-2.5 text-center transition-[border-color,box-shadow,translate,background-color] duration-200 hover:-translate-y-px hover:border-primary/35 hover:shadow-soft focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none active:translate-y-0 motion-reduce:transition-none motion-reduce:hover:translate-y-0 sm:pt-3.5",
+        selected && "border-primary bg-secondary/50 ring-1 ring-primary hover:border-primary dark:bg-secondary/30",
       )}
     >
-      {/* Soft brand-coloured light that appears on hover */}
-      <span
-        className={cn(
-          "pointer-events-none absolute -top-10 -start-10 -z-10 size-28 rounded-full bg-(--brand) opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-[0.14]",
-          selected && "opacity-[0.1]",
-        )}
-        aria-hidden
-      />
       <PlatformTile
         platform={platform}
         size="md"
-        className="size-10 rounded-xl transition-transform duration-200 group-hover:scale-105 motion-reduce:group-hover:scale-100 sm:size-11"
+        className="size-10 rounded-xl transition-transform duration-200 group-hover:scale-105 motion-reduce:transition-none motion-reduce:group-hover:scale-100"
       />
-      <span className="min-w-0 flex-1">
-        <span className="line-clamp-2 text-[0.88rem] leading-tight font-semibold text-balance break-words sm:text-[0.95rem]">
-          {platform.name}
-        </span>
-        <span className="mt-0.5 block text-xs text-muted-foreground tabular-nums">
-          {total} service{total === 1 ? "" : "s"}
-        </span>
+      <span className="w-full min-w-0" aria-hidden>
+        <span className="block truncate text-[0.82rem] leading-tight font-semibold sm:text-sm">{platform.short}</span>
+        <span className="mt-0.5 block text-[0.7rem] text-muted-foreground tabular-nums">{total} services</span>
       </span>
-      <span
-        className={cn(
-          "grid size-5 shrink-0 place-items-center rounded-full transition-all duration-200",
-          selected
-            ? "bg-primary text-primary-foreground"
-            : "-translate-x-1 text-muted-foreground opacity-0 group-hover:translate-x-0 group-hover:opacity-100 group-focus-visible:translate-x-0 group-focus-visible:opacity-100 max-sm:hidden",
-        )}
-        aria-hidden
-      >
-        {selected ? <Check className="size-3" strokeWidth={3.5} /> : <ArrowRight className="size-4" />}
-      </span>
+      {selected ? (
+        <span className="absolute end-1.5 top-1.5 grid size-4.5 place-items-center rounded-full bg-primary text-primary-foreground" aria-hidden>
+          <Check className="size-3" strokeWidth={3.5} />
+        </span>
+      ) : null}
     </button>
   );
 }
 
-function CompactService({ service, onSelect }: { service: Service; onSelect: () => void }) {
+function ServiceList({ children, label, className }: { children: React.ReactNode; label?: string; className?: string }) {
+  return (
+    <ul className={cn("divide-y overflow-hidden rounded-xl border", className)} aria-label={label}>
+      {children}
+    </ul>
+  );
+}
+
+/**
+ * One service as a compact row. With `onConfirm` it's a selectable option (Step 2);
+ * otherwise picking it goes straight to the details.
+ */
+function ServiceRow({
+  service,
+  selected = false,
+  showPlatform,
+  onSelect,
+  onConfirm,
+}: {
+  service: Service;
+  selected?: boolean;
+  showPlatform?: boolean;
+  onSelect: () => void;
+  onConfirm?: () => void;
+}) {
   const p = PLATFORM_BY_ID[service.platformId];
   const Icon = CATEGORY_ICONS[service.category];
+  const price = pricing(service, {});
+  const option = Boolean(onConfirm);
+  // Most services need just a link and a quantity; only list requirements when there's more to it.
+  const needs = requirementsOf(service);
+  const unusual = needs.some((r) => r !== "Link" && r !== "Quantity");
   return (
-    <div className="relative">
+    <div className={cn("group/row relative transition-colors", selected ? "bg-secondary/60 dark:bg-secondary/30" : "hover:bg-muted/50")}>
+      {selected ? <span className="absolute inset-y-0 start-0 w-0.5 bg-primary" aria-hidden /> : null}
       <button
         type="button"
+        aria-pressed={option ? selected : undefined}
         onClick={onSelect}
-        className="group flex w-full items-center gap-3 rounded-2xl border bg-card p-3 text-start transition-colors hover:border-primary/35 hover:bg-secondary/30 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
+        onDoubleClick={onConfirm}
+        className={cn(
+          "flex w-full min-w-0 items-center gap-3 py-3 ps-3 text-start focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none focus-visible:ring-inset sm:ps-4",
+          option ? "pe-12" : "pe-3",
+          selected && "sm:pe-36",
+        )}
       >
-        <PlatformTile platform={p} size="sm" className="size-9" />
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-semibold">{service.name}</span>
-          <span className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-            <Icon className="size-3 shrink-0" aria-hidden />
-            <span className="truncate">
-              {p.short} · {CATEGORY_META[service.category].label}
-            </span>
+        {showPlatform ? (
+          <PlatformTile platform={p} size="sm" className="size-9 rounded-lg" />
+        ) : (
+          <span
+            className={cn(
+              "grid size-9 shrink-0 place-items-center rounded-lg transition-colors",
+              selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/75",
+            )}
+            title={CATEGORY_META[service.category].label}
+          >
+            {selected ? <Check className="size-4" strokeWidth={3} aria-hidden /> : <Icon className="size-4" aria-hidden />}
           </span>
+        )}
+        <span className="min-w-0 flex-1">
+          <span className="line-clamp-2 text-sm leading-snug font-semibold sm:block sm:truncate">{service.name}</span>
+          <span className="mt-0.5 line-clamp-1 text-xs leading-snug text-muted-foreground">
+            {showPlatform ? `${p.short} · ${CATEGORY_META[service.category].label}` : service.description}
+          </span>
+          {option ? (
+            <span className={cn("mt-1.5 flex-wrap items-center gap-1", unusual ? "hidden sm:flex" : "sr-only")}>
+              <span className="sr-only">You&apos;ll provide:</span>
+              {needs.map((r) => (
+                <span key={r} className="rounded-md bg-muted px-1.5 py-0.5 text-[0.68rem] font-medium text-muted-foreground">
+                  {r}
+                </span>
+              ))}
+            </span>
+          ) : null}
         </span>
-        <ArrowRight className="ms-9 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden />
+        {price ? <span className="shrink-0 text-xs font-semibold tabular-nums">{price.unit}</span> : <span className="sr-only">. Pricing pending.</span>}
+        {/* Room for the favorite button, which sits over the row */}
+        {!option ? <span className="w-8 shrink-0" aria-hidden /> : null}
+        {!option ? <ArrowRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover/row:translate-x-0.5 group-hover/row:text-primary rtl:-scale-x-100" aria-hidden /> : null}
       </button>
-      <FavoriteButton service={service} className="absolute top-1/2 end-9 -translate-y-1/2" />
+      {selected && onConfirm ? (
+        <button
+          type="button"
+          onClick={onConfirm}
+          className="absolute top-1/2 end-12 hidden h-8 -translate-y-1/2 items-center gap-1 rounded-full bg-primary px-3 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none sm:inline-flex"
+        >
+          Continue <ArrowRight className="size-3.5 rtl:-scale-x-100" aria-hidden />
+        </button>
+      ) : null}
+      <FavoriteButton service={service} className={cn("absolute top-1/2 -translate-y-1/2", option ? "end-2" : "end-10")} />
     </div>
   );
 }
@@ -1045,15 +1170,10 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
     category === "all" || (category === "favorites" ? favorites.has.has(s.id) : s.category === category);
   const list = all.filter((s) => inCategory(s) && matchesQuery(s, query));
 
-  const chip = chipClass;
-  const chipOn = chipOnClass;
-
   return (
     <Panel className="p-4 sm:p-6">
       <StepHeading
-       
         ctx={ctx}
-       
         title="Choose a service"
         description={
           <span className="inline-flex items-center gap-2">
@@ -1062,17 +1182,13 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
           </span>
         }
         action={
-          <button
-            type="button"
-            onClick={() => ctx.goTo(0)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full border bg-card px-3.5 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-          >
+          <button type="button" onClick={() => ctx.goTo(0)} className={cn(dashButton.secondary, "h-10 px-4")}>
             Change platform
           </button>
         }
       />
 
-      <div className="mt-5">
+      <div className="mt-4">
         <SearchField
           id="service-search"
           label={`Search ${platform.name} services`}
@@ -1084,14 +1200,14 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
 
       {categories.length > 1 ? (
         <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 no-scrollbar sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label="Filter by type">
-          <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")} className={cn(chip, category === "all" && chipOn)}>
+          <button type="button" aria-pressed={category === "all"} onClick={() => setCategory("all")} className={cn(chipClass, category === "all" && chipOnClass)}>
             All <span className="text-xs opacity-60">{all.length}</span>
           </button>
           <button
             type="button"
             aria-pressed={category === "favorites"}
             onClick={() => setCategory(category === "favorites" ? "all" : "favorites")}
-            className={cn(chip, category === "favorites" && chipOn)}
+            className={cn(chipClass, category === "favorites" && chipOnClass)}
           >
             <Heart className={cn("size-3.5", favoriteCount && "fill-current", category !== "favorites" && favoriteCount && "text-primary")} aria-hidden />
             Favorites
@@ -1101,7 +1217,7 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
             const Icon = CATEGORY_ICONS[c];
             const on = category === c;
             return (
-              <button key={c} type="button" aria-pressed={on} onClick={() => setCategory(on ? "all" : c)} className={cn(chip, on && chipOn)}>
+              <button key={c} type="button" aria-pressed={on} onClick={() => setCategory(on ? "all" : c)} className={cn(chipClass, on && chipOnClass)}>
                 <Icon className="size-3.5" aria-hidden />
                 {CATEGORY_META[c].short}
                 <span className="text-xs opacity-60">{all.filter((s) => s.category === c).length}</span>
@@ -1112,41 +1228,38 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
       ) : null}
 
       {list.length && list.every((s) => !s.price) ? (
-        <p className="mt-4 flex items-center gap-2 text-xs text-muted-foreground">
+        <p className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
           <Clock3 className="size-3.5 shrink-0" aria-hidden />
           Pricing for these services is pending verification. You can still set up your order.
         </p>
       ) : null}
 
       {list.length ? (
-        <ul className="mt-3 grid grid-cols-1 gap-2.5 lg:grid-cols-2 lg:gap-3" aria-label={`${platform.name} services`}>
+        <ServiceList className="mt-3" label={`${platform.name} services`}>
           {list.map((s) => (
             <li key={s.id}>
-              <ServiceOption service={s} selected={ctx.service?.id === s.id} onSelect={() => ctx.chooseService(s)} onConfirm={() => ctx.chooseService(s, true)} />
+              <ServiceRow service={s} selected={ctx.service?.id === s.id} onSelect={() => ctx.chooseService(s)} onConfirm={() => ctx.chooseService(s, true)} />
             </li>
           ))}
-        </ul>
+        </ServiceList>
       ) : category === "favorites" && !query.trim() ? (
-        <div className="mt-5">
+        <div className="mt-4">
           <FavoritesEmpty
             title={`No ${platform.short} favorites yet`}
             hint="Tap the heart on a service to save it here for faster ordering."
             action={
-              <button
-                type="button"
-                onClick={() => setCategory("all")}
-                className="mt-3 inline-flex h-8 items-center rounded-full px-3 text-sm font-semibold text-primary hover:bg-secondary"
-              >
+              <button type="button" onClick={() => setCategory("all")} className={cn(dashButton.ghost, "mt-3 h-9")}>
                 Show all services
               </button>
             }
           />
         </div>
       ) : (
-        <div className="mt-5">
+        <div className="mt-4">
           <Empty
             title="No services match"
             hint="Try another word or show every type."
+            resetLabel="Clear filters"
             onReset={() => {
               setQuery("");
               setCategory("all");
@@ -1158,77 +1271,29 @@ function ServiceStep({ ctx, platform }: StepProps & { platform: Platform }) {
   );
 }
 
-function ServiceOption({
-  service,
-  selected,
-  onSelect,
-  onConfirm,
-}: {
-  service: Service;
-  selected: boolean;
-  onSelect: () => void;
-  onConfirm: () => void;
-}) {
-  const Icon = CATEGORY_ICONS[service.category];
-  const price = pricing(service, {});
-  return (
-    <div className="relative h-full">
-      <button
-        type="button"
-        aria-pressed={selected}
-        onClick={onSelect}
-        onDoubleClick={onConfirm}
-        className={cn(
-          "group flex h-full w-full flex-col rounded-2xl border bg-card p-4 text-start transition-all hover:border-primary/40 hover:bg-secondary/20 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
-          selected && "border-primary bg-secondary/50 ring-1 ring-primary hover:border-primary hover:bg-secondary/50",
-        )}
-      >
-        <span className="flex items-start gap-3">
-          <span
-            className={cn(
-              "grid size-9 shrink-0 place-items-center rounded-xl transition-colors",
-              selected ? "bg-primary text-primary-foreground" : "bg-muted text-foreground/75",
-            )}
-            title={CATEGORY_META[service.category].label}
-          >
-            <Icon className="size-4" aria-hidden />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[0.95rem] leading-snug font-semibold">{service.name}</span>
-            <span className="mt-1 line-clamp-2 block text-[0.82rem] leading-relaxed text-muted-foreground">{service.description}</span>
-          </span>
-          <span
-            className={cn(
-              "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors",
-              selected ? "border-primary bg-primary text-primary-foreground" : "border-border text-transparent group-hover:border-primary/50",
-            )}
-            aria-hidden
-          >
-            <Check className="size-3" strokeWidth={3.5} />
-          </span>
-        </span>
-        <span className="mt-auto flex flex-wrap items-center gap-1.5 pt-3.5 pe-9 ps-12">
-          <span className="sr-only">You&apos;ll provide:</span>
-          {requirementsOf(service).map((r) => (
-            <span key={r} className="rounded-md bg-muted px-1.5 py-0.5 text-[0.7rem] font-medium text-muted-foreground">
-              {r}
-            </span>
-          ))}
-          {price ? (
-            <span className="ms-auto text-xs font-semibold">{price.unit}</span>
-          ) : (
-            <span className="sr-only">. Pricing pending.</span>
-          )}
-        </span>
-      </button>
-      <FavoriteButton service={service} className="absolute end-2.5 bottom-2.5" />
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Step 3 · Configure                                                        */
 /* -------------------------------------------------------------------------- */
+
+/** The chosen service as a compact strip, with a way back to change it. */
+function ServiceStrip({ ctx, service }: { ctx: FlowContext; service: Service }) {
+  const platform = PLATFORM_BY_ID[service.platformId];
+  return (
+    <div className="flex items-center gap-3 rounded-xl border bg-muted/40 p-2.5 sm:p-3">
+      <PlatformTile platform={platform} size="md" className="size-10 rounded-xl" />
+      <div className="min-w-0 flex-1">
+        <p className="line-clamp-2 text-sm leading-snug font-semibold sm:truncate">{service.name}</p>
+        <p className="truncate text-xs text-muted-foreground">
+          {platform.short} · {CATEGORY_META[service.category].short}
+        </p>
+      </div>
+      <FavoriteButton service={service} />
+      <button type="button" onClick={() => ctx.goTo(1)} className={cn(dashButton.ghost, "h-9 shrink-0 px-2.5")}>
+        Change
+      </button>
+    </div>
+  );
+}
 
 function ConfigureStep({ ctx, service }: StepProps & { service: Service }) {
   const platform = PLATFORM_BY_ID[service.platformId];
@@ -1236,62 +1301,50 @@ function ConfigureStep({ ctx, service }: StepProps & { service: Service }) {
   const visibleErrors = fields.filter((f) => ctx.showError(f.id));
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:gap-5">
-      <Panel className="p-4 sm:p-6">
-        <StepHeading ctx={ctx} title="Add your details" description="Only what this service needs. Required fields are marked." />
+    <Panel className="p-4 sm:p-6">
+      <StepHeading ctx={ctx} title="Configure your order" description="Only the details this service needs. Required fields are marked." />
 
-        {/* On narrow screens the actions wrap below the name so long names stay readable */}
-        <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-2xl border bg-muted/40 p-3 sm:flex-nowrap sm:p-3.5">
-          <PlatformTile platform={platform} size="md" className="size-10 rounded-xl" />
-          <div className="min-w-0 flex-1 basis-40">
-            <p className="text-sm leading-snug font-semibold text-balance break-words sm:truncate">{service.name}</p>
-            <p className="mt-0.5 text-xs leading-snug text-muted-foreground sm:mt-0 sm:truncate">
-              {platform.name} · {CATEGORY_META[service.category].label}
-            </p>
-          </div>
-          <div className="ms-auto flex shrink-0 items-center gap-3 max-sm:-me-1 max-sm:-mb-1">
-            <FavoriteButton service={service} />
-            <button
-              type="button"
-              onClick={() => ctx.goTo(1)}
-              className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-sm font-semibold text-primary transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-            >
-              Change
-            </button>
-          </div>
+      <div className="mt-4">
+        <ServiceStrip ctx={ctx} service={service} />
+      </div>
+
+      {visibleErrors.length > 1 ? (
+        <div role="alert" className="mt-4 flex gap-2.5 rounded-xl border border-destructive/30 bg-destructive/5 p-3.5 text-sm">
+          <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
+          <p>
+            <span className="font-semibold">Please fix {visibleErrors.length} fields</span>{" "}
+            <span className="text-muted-foreground">before reviewing your order.</span>
+          </p>
         </div>
+      ) : null}
 
-        {visibleErrors.length > 1 ? (
-          <div role="alert" className="mt-4 flex gap-2.5 rounded-2xl border border-destructive/30 bg-destructive/5 p-3.5 text-sm">
-            <CircleAlert className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden />
-            <p>
-              <span className="font-semibold">Please fix {visibleErrors.length} fields</span>{" "}
-              <span className="text-muted-foreground">before reviewing your order.</span>
-            </p>
-          </div>
-        ) : null}
+      <form
+        noValidate
+        className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          ctx.next();
+        }}
+      >
+        {fields.map((f) => (
+          <FormField key={f.id} field={f} ctx={ctx} service={service} platform={platform} />
+        ))}
+        <button type="submit" className="sr-only">
+          Review order
+        </button>
+      </form>
 
-        <form
-          noValidate
-          className="mt-5 grid grid-cols-1 gap-5 sm:grid-cols-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            ctx.next();
-          }}
-        >
-          {fields.map((f) => (
-            <FormField key={f.id} field={f} ctx={ctx} service={service} platform={platform} />
-          ))}
-          <button type="submit" className="sr-only">
-            Review order
-          </button>
-        </form>
-      </Panel>
-
-      <ServiceNotes service={service} />
-    </div>
+      <section className="mt-6 border-t pt-5" aria-labelledby="notes-title">
+        <h3 id="notes-title" className="mb-3 flex items-center gap-2 text-sm font-bold">
+          <ShieldCheck className="size-4 text-primary" aria-hidden /> Before you order
+        </h3>
+        <NotesList service={service} />
+      </section>
+    </Panel>
   );
 }
+
+const QUANTITY_PRESETS = [100, 500, 1000, 5000];
 
 const inputClass =
   "w-full scroll-mt-24 scroll-mb-36 rounded-xl border bg-card px-3.5 text-[0.95rem] shadow-xs transition-colors outline-none placeholder:text-muted-foreground/70 hover:border-foreground/20 focus-visible:border-primary/60 focus-visible:ring-3 focus-visible:ring-primary/15 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/15";
@@ -1421,6 +1474,9 @@ function FormField({ field, ctx, service, platform }: { field: OrderField; ctx: 
   })();
 
   const limits = field.kind === "quantity" ? service.limits : null;
+  // Common amounts as one-tap shortcuts, kept inside the service's own limits when it has them.
+  const presets = field.kind === "quantity" ? QUANTITY_PRESETS.filter((n) => !limits || (n >= limits.min && n <= limits.max)) : [];
+  const linkOk = field.kind === "link" && !error && !warning && Boolean(parseLink(value.trim()));
 
   return (
     <div className={cn(wide && "sm:col-span-2")}>
@@ -1431,6 +1487,35 @@ function FormField({ field, ctx, service, platform }: { field: OrderField; ctx: 
         <span className="text-[0.7rem] font-medium text-muted-foreground">{field.required ? "Required" : "Optional"}</span>
       </div>
       {control}
+      {presets.length ? (
+        <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Common quantities">
+          {presets.map((n) => {
+            const on = parseNumber(value) === n;
+            return (
+              <button
+                key={n}
+                type="button"
+                aria-pressed={on}
+                onClick={() => {
+                  ctx.setValue(field.id, String(n));
+                  ctx.touch(field.id);
+                }}
+                className={cn(
+                  "inline-flex h-9 items-center rounded-lg border bg-card px-3 text-xs font-semibold tabular-nums transition-colors hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+                  on && "border-primary bg-secondary text-secondary-foreground",
+                )}
+              >
+                {count(n)}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+      {linkOk ? (
+        <p className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-ok">
+          <CircleCheck className="size-3.5 shrink-0" aria-hidden /> Link looks good
+        </p>
+      ) : null}
       {field.help || limits ? (
         <p id={`${id}-help`} className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
           {limits ? `Between ${count(limits.min)} and ${count(limits.max)}. ` : ""}
@@ -1457,7 +1542,7 @@ const deliveryNotes = (s: Service) => CATEGORY_DELIVERY[s.category].filter((n) =
 
 function NotesList({ service }: { service: Service }) {
   return (
-    <ul className="space-y-2 text-sm text-muted-foreground">
+    <ul className="grid gap-2 text-sm text-muted-foreground sm:grid-cols-2 sm:gap-x-6">
       {deliveryNotes(service).map((n) => (
         <li key={n} className="flex gap-2.5">
           <span className="mt-2 size-1 shrink-0 rounded-full bg-muted-foreground/60" aria-hidden />
@@ -1474,14 +1559,39 @@ function NotesList({ service }: { service: Service }) {
   );
 }
 
-function ServiceNotes({ service, className }: { service: Service; className?: string }) {
+/** One part of the review, with an Edit action that returns to its step. */
+function ReviewSection({
+  ctx,
+  id,
+  title,
+  to,
+  children,
+  className,
+}: {
+  ctx: FlowContext;
+  id: string;
+  title: string;
+  to: Step;
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <Panel className={cn("p-4 sm:p-5", className)} aria-labelledby="notes-title">
-      <h3 id="notes-title" className="mb-3 flex items-center gap-2 text-sm font-bold">
-        <ShieldCheck className="size-4 text-primary" aria-hidden /> Before you order
-      </h3>
-      <NotesList service={service} />
-    </Panel>
+    <section className={cn("border-t px-4 py-3.5 sm:px-6", className)} aria-labelledby={id}>
+      <div className="flex items-center justify-between gap-3">
+        <h3 id={id} className="text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">
+          {title}
+        </h3>
+        <button
+          type="button"
+          onClick={() => ctx.goTo(to)}
+          aria-label={`Edit ${title.toLowerCase()}`}
+          className={cn(dashButton.ghost, "-me-2 h-9 gap-1.5")}
+        >
+          <Pencil className="size-3.5" aria-hidden /> Edit
+        </button>
+      </div>
+      <div className="mt-1.5">{children}</div>
+    </section>
   );
 }
 
@@ -1490,80 +1600,59 @@ function ReviewStep({ ctx, service }: StepProps & { service: Service }) {
   const fields = CATEGORY_FIELDS[service.category];
   const price = pricing(service, ctx.values);
 
-  const editBtn = (to: Step, label: string) => (
-    <button
-      type="button"
-      onClick={() => ctx.goTo(to)}
-      aria-label={label}
-      className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full px-3 text-sm font-semibold text-primary transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-    >
-      <Pencil className="size-3.5" aria-hidden /> Edit
-    </button>
-  );
-
   return (
     <div className="grid grid-cols-1 gap-4 sm:gap-5">
       <Panel className="overflow-hidden">
         <div className="p-4 sm:p-6">
-          <StepHeading ctx={ctx} title="Review your order" description="Check everything before you place it." />
+          <StepHeading ctx={ctx} title="Review your order" description="Check everything before you place it. Tap Edit to change any part." />
         </div>
 
-        <section className="border-t px-4 py-4 sm:px-6" aria-labelledby="review-service">
-          <div className="flex items-center justify-between gap-3">
-            <h3 id="review-service" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-              Service
-            </h3>
-            {editBtn(1, "Edit service")}
-          </div>
-          <div className="mt-2 flex items-center gap-3">
-            <PlatformTile platform={platform} size="md" className="size-10 rounded-xl" />
-            <div className="min-w-0">
-              <p className="font-semibold">{service.name}</p>
-              <p className="text-sm text-muted-foreground">
-                {platform.name} · {CATEGORY_META[service.category].label}
-              </p>
+        {/* Platform and service side by side from tablet up */}
+        <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <ReviewSection ctx={ctx} id="review-platform" title="Platform" to={0}>
+            <div className="flex items-center gap-2.5">
+              <PlatformTile platform={platform} size="sm" className="size-8 rounded-lg" />
+              <p className="truncate font-semibold">{platform.name}</p>
             </div>
-          </div>
-        </section>
+          </ReviewSection>
+          <ReviewSection ctx={ctx} id="review-service" title="Service" to={1} className="sm:border-s">
+            <p className="truncate font-semibold">{service.name}</p>
+            <p className="truncate text-sm text-muted-foreground">{CATEGORY_META[service.category].label}</p>
+          </ReviewSection>
+        </div>
 
-        <section className="border-t px-4 py-4 sm:px-6" aria-labelledby="review-details">
-          <div className="flex items-center justify-between gap-3">
-            <h3 id="review-details" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-              Details
-            </h3>
-            {editBtn(2, "Edit details")}
-          </div>
-          <dl className="mt-2 divide-y">
+        <ReviewSection ctx={ctx} id="review-details" title="Details" to={2}>
+          <dl className="divide-y">
             {fields.map((f) => {
               const v = displayValue(f, ctx.values[f.id]);
               if (!v && !f.required) return null;
               return (
-                <div key={f.id} className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[12rem_minmax(0,1fr)] sm:gap-4">
+                <div key={f.id} className="grid grid-cols-1 gap-0.5 py-2.5 sm:grid-cols-[11rem_minmax(0,1fr)] sm:gap-4">
                   <dt className="text-sm text-muted-foreground">{f.kind === "consent" ? "Confirmation" : f.label}</dt>
                   <dd className={cn("text-sm font-medium break-words whitespace-pre-line", f.kind === "link" && "font-mono text-[0.8rem]")}>{v}</dd>
                 </div>
               );
             })}
           </dl>
-        </section>
+        </ReviewSection>
 
         <section className="border-t bg-muted/30 px-4 py-4 sm:px-6" aria-labelledby="review-price">
-          <h3 id="review-price" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-            Price
+          <h3 id="review-price" className="text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">
+            Price &amp; balance
           </h3>
-          <PriceRows service={service} values={ctx.values} className="mt-2" />
+          <PriceRows service={service} values={ctx.values} className="mt-2.5" />
         </section>
       </Panel>
 
       {/* One consolidated notice: checkout status first, then what to know about the service */}
       <Panel className="overflow-hidden" aria-labelledby="before-title">
-        <div className="flex gap-3 border-b border-soon/20 bg-soon-soft/50 p-4 sm:p-5">
-          <Info className="mt-0.5 size-5 shrink-0 text-soon" aria-hidden />
+        <div role="status" className="flex gap-3 border-b border-soon/20 bg-soon-soft/50 p-4 sm:p-5">
+          <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-soon-soft text-soon" aria-hidden>
+            <Lock className="size-4" />
+          </span>
           <div className="text-sm leading-relaxed">
-            <p className="font-semibold">
-              {price ? "Checkout isn't open yet" : "Pricing pending — ordering isn't open for this service yet"}
-            </p>
-            <p className="mt-1 text-muted-foreground">
+            <p className="font-semibold">{price ? "Checkout isn't open yet" : "Pricing pending — ordering isn't open for this service yet"}</p>
+            <p className="mt-0.5 text-muted-foreground">
               {price ? "" : "Pricing, fulfilment and compliance are still being verified. "}
               No order will be created and your balance won&apos;t change.
             </p>
@@ -1581,6 +1670,7 @@ function ReviewStep({ ctx, service }: StepProps & { service: Service }) {
 }
 
 function PriceRows({ service, values, className }: { service: Service | null; values: Values; className?: string }) {
+  const live = useLiveAccount();
   const price = pricing(service, values);
   const qtyBased = service ? isQuantityBased(service.category) : true;
   const amountLabel = qtyBased ? "Quantity" : "Campaign budget";
@@ -1600,15 +1690,15 @@ function PriceRows({ service, values, className }: { service: Service | null; va
       </div>
       <div className="flex items-center justify-between gap-3 border-t pt-2.5">
         <dt className="font-semibold">Total</dt>
-        <dd className="font-heading text-base font-extrabold tabular-nums">
-          {service ? price?.total ?? <PricingPending /> : "—"}
-        </dd>
+        <dd className="font-heading text-base font-extrabold tabular-nums">{service ? price?.total ?? <PricingPending /> : "—"}</dd>
       </div>
       <div className="flex items-center justify-between gap-3">
         <dt className="flex items-center gap-1.5 text-muted-foreground">
-          Available balance <DemoTag className="h-4 px-1.5 text-[0.55rem] text-muted-foreground">Demo</DemoTag>
+          Available balance {live ? null : <DemoTag className="h-4 px-1.5 text-[0.55rem] text-muted-foreground">Demo</DemoTag>}
         </dt>
-        <dd className="font-medium tabular-nums"><WalletBalance /></dd>
+        <dd className="font-medium tabular-nums">
+          <WalletBalance />
+        </dd>
       </div>
     </dl>
   );
@@ -1647,13 +1737,13 @@ function PrimaryAction({ ctx, compact, className }: { ctx: FlowContext; compact?
       disabled={disabled}
       aria-disabled={disabled}
       className={cn(
-        "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-[0.95rem] font-semibold whitespace-nowrap text-primary-foreground shadow-[0_10px_28px_-12px_rgb(112_71_235/0.8)] transition-all hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none",
+        "inline-flex h-12 items-center justify-center gap-2 rounded-full bg-primary px-6 text-[0.95rem] font-semibold whitespace-nowrap text-primary-foreground shadow-[0_10px_28px_-14px_rgb(112_71_235/0.8)] transition-[background-color,translate] hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none active:translate-y-0 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground disabled:shadow-none disabled:hover:translate-y-0 motion-reduce:hover:translate-y-0",
         className,
       )}
     >
       {review ? <Lock className="size-4" aria-hidden /> : null}
       {(compact ? COMPACT_LABEL : ACTION_LABEL)[ctx.step]}
-      {review ? null : <ArrowRight className="size-4" aria-hidden />}
+      {review ? null : <ArrowRight className="size-4 rtl:-scale-x-100" aria-hidden />}
     </button>
   );
 }
@@ -1671,64 +1761,46 @@ function SelectionLine({ ctx }: { ctx: FlowContext }) {
     <div className="flex items-center gap-3">
       <PlatformTile platform={ctx.platform} size="sm" className="size-9 rounded-xl" />
       <div className="min-w-0">
-        <p className={cn("truncate text-sm font-semibold", !ctx.service && "text-muted-foreground")}>
-          {ctx.service?.name ?? "Choose a service"}
-        </p>
+        <p className={cn("truncate text-sm font-semibold", !ctx.service && "text-muted-foreground")}>{ctx.service?.name ?? "Choose a service"}</p>
         <p className="truncate text-xs text-muted-foreground">{ctx.platform.name}</p>
       </div>
     </div>
   );
 }
 
-/** Compact checkout status. The Review step holds the full summary. */
+/** Sticky order summary on wide screens: the selection, live price lines and the step actions. */
 function SummaryCard({ ctx }: { ctx: FlowContext }) {
   const { hint } = actionState(ctx);
-  const price = pricing(ctx.service, ctx.values);
   return (
-    <Panel className="p-5">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="font-heading text-base font-bold">Checkout</h2>
-        <span className="text-xs text-muted-foreground">
+    <Panel className="overflow-hidden">
+      <div className="flex items-center justify-between gap-3 border-b px-5 py-3.5">
+        <h2 className="font-heading text-[0.98rem] font-bold tracking-tight">Order summary</h2>
+        <span className="text-xs text-muted-foreground tabular-nums">
           Step {ctx.step + 1} of {STEPS.length}
         </span>
       </div>
 
-      <div className="mt-4 rounded-2xl bg-muted/50 p-3">
+      <div className="p-5">
         <SelectionLine ctx={ctx} />
+        <PriceRows service={ctx.service} values={ctx.values} className="mt-4 border-t pt-4" />
+
+        <div className="mt-5 flex gap-2">
+          {ctx.step > 0 ? (
+            <button type="button" onClick={ctx.back} className={cn(dashButton.secondary, "h-12 shrink-0 px-4")}>
+              Back
+            </button>
+          ) : null}
+          <PrimaryAction ctx={ctx} className="flex-1 px-4" />
+        </div>
+        {hint ? <p className="mt-2.5 text-center text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
       </div>
 
-      <dl className="mt-4 space-y-2.5 text-sm">
-        <div className="flex items-center justify-between gap-3">
-          <dt className="font-semibold">Total</dt>
-          <dd className="font-heading font-extrabold tabular-nums">
-            {ctx.service ? price?.total ?? <PricingPending /> : <span className="font-sans font-medium text-muted-foreground">—</span>}
-          </dd>
-        </div>
-        <div className="flex items-center justify-between gap-3">
-          <dt className="flex items-center gap-1.5 text-muted-foreground">
-            Balance <DemoTag className="h-4 px-1.5 text-[0.55rem] text-muted-foreground">Demo</DemoTag>
-          </dt>
-          <dd className="font-medium tabular-nums"><WalletBalance /></dd>
-        </div>
-      </dl>
-
-      <div className="mt-5 flex gap-2">
-        {ctx.step > 0 ? (
-          <button
-            type="button"
-            onClick={ctx.back}
-            className="inline-flex h-12 shrink-0 items-center justify-center rounded-full border bg-card px-4 text-sm font-semibold transition-colors hover:border-foreground/25 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-          >
-            Back
-          </button>
-        ) : null}
-        <PrimaryAction ctx={ctx} className="flex-1" />
+      <div className="border-t bg-muted/30 px-5 py-3">
+        <p className="flex items-center justify-center gap-1.5 text-[0.7rem] text-muted-foreground">
+          <Lock className="size-3" aria-hidden /> No payment is taken in this preview.
+        </p>
+        <FxNote className="mt-1.5 justify-center" />
       </div>
-      {hint ? <p className="mt-2.5 text-center text-xs leading-relaxed text-muted-foreground">{hint}</p> : null}
-      <p className="mt-3 flex items-center justify-center gap-1.5 border-t pt-3 text-[0.7rem] text-muted-foreground">
-        <Lock className="size-3" aria-hidden /> No payment is taken in this preview.
-      </p>
-      <FxNote className="mt-1.5 justify-center" />
     </Panel>
   );
 }
@@ -1759,36 +1831,36 @@ function useEditingOnTouch() {
 function MobileActionBar({ ctx }: { ctx: FlowContext }) {
   const { hint } = actionState(ctx);
   const editing = useEditingOnTouch();
+  const total = pricing(ctx.service, ctx.values)?.total;
   const line = ctx.service ? ctx.service.name : ctx.platform ? ctx.platform.name : "Nothing selected yet";
+  const sub = hint ?? (total ? `Total ${total}` : ctx.service && !ctx.service.price ? "Pricing pending" : `Step ${ctx.step + 1} of ${STEPS.length}`);
   return (
     <>
       {/* Keeps the last card clear of the fixed bar */}
-      <div className="h-28 xl:hidden" aria-hidden />
+      <div className="h-24 xl:hidden" aria-hidden />
       <div
         inert={editing}
         className={cn(
-          "fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl transition-transform duration-200 motion-reduce:transition-none lg:left-(--sidebar) xl:hidden rtl:lg:left-0! rtl:lg:right-(--sidebar)!",
+          "fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_24px_-16px_rgb(32_33_39/0.25)] backdrop-blur-xl transition-transform duration-200 motion-reduce:transition-none lg:left-(--sidebar) xl:hidden rtl:lg:left-0! rtl:lg:right-(--sidebar)!",
           editing && "translate-y-full",
         )}
       >
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-3xl items-center gap-2.5 px-3 py-2.5 sm:gap-3 sm:px-4">
           {ctx.step > 0 ? (
             <button
               type="button"
               onClick={ctx.back}
               aria-label="Back"
-              className="grid size-12 shrink-0 place-items-center rounded-full border bg-card transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
+              className="grid size-11 shrink-0 place-items-center rounded-full border bg-card transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
             >
-              <ArrowLeft className="size-5" aria-hidden />
+              <ArrowLeft className="size-5 rtl:-scale-x-100" aria-hidden />
             </button>
           ) : null}
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">{line}</p>
-            <p className="truncate text-xs text-muted-foreground">
-              {hint ?? (ctx.service && !ctx.service.price ? "Pricing pending" : `Step ${ctx.step + 1} of ${STEPS.length}`)}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{sub}</p>
           </div>
-          <PrimaryAction ctx={ctx} compact className="px-5" />
+          <PrimaryAction ctx={ctx} compact className="h-11 px-5" />
         </div>
       </div>
     </>

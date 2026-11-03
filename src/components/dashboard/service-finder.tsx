@@ -167,7 +167,7 @@ export function ServiceFinder() {
           >
             <ArrowLeft className="size-4" aria-hidden /> New Order
           </Link>
-          <h1 className="mt-2 flex items-center gap-2.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">
+          <h1 className="mt-2 flex items-center gap-2.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">
             Find the Right Service
           </h1>
           <p className="mt-1 text-[0.95rem] text-muted-foreground">
@@ -849,7 +849,7 @@ function ResultsStep({ ctx }: { ctx: Ctx }) {
         />
 
         {result.total === 0 ? (
-          <div className="mt-5 rounded-3xl border border-dashed px-5 py-10 text-center">
+          <div className="mt-5 rounded-2xl border border-dashed px-5 py-10 text-center">
             <span className="mx-auto grid size-11 place-items-center rounded-2xl bg-muted text-muted-foreground">
               <SearchX className="size-5" aria-hidden />
             </span>
@@ -924,7 +924,7 @@ function ResultsStep({ ctx }: { ctx: Ctx }) {
         </Panel>
       ) : null}
 
-      <div className="flex flex-col gap-3 rounded-3xl border border-dashed p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
+      <div className="flex flex-col gap-3 rounded-2xl border border-dashed p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <p className="text-sm text-muted-foreground">
           Want to compare everything yourself?{" "}
           <span className="text-foreground">Browse every {choices.platform !== "any" ? `${platformLabel(choices.platform)} ` : ""}service in New Order.</span>

@@ -329,6 +329,19 @@ describe("lifecycle & manual fulfilment", () => {
   });
 });
 
+describe("listing own orders", () => {
+  it("sorts newest or oldest first and stays scoped to the customer", async () => {
+    const c = await funded(10_000);
+    const first = (await createOrder(db, actorOf(c), body(), key())).order;
+    const second = (await createOrder(db, actorOf(c), body({ quantity: 2000 }), key())).order;
+    await placed(); // someone else's order never appears
+    const refs = async (sort?: "newest" | "oldest") => (await listOwnOrders(db, c.customer.id, sort ? { sort } : {})).items.map((o) => o.reference);
+    expect(await refs()).toEqual([second.reference, first.reference]);
+    expect(await refs("oldest")).toEqual([first.reference, second.reference]);
+    expect(await codeOf(listOwnOrders(db, c.customer.id, { sort: "price" as "newest" }))).toBe("ZOD");
+  });
+});
+
 describe("authorization & routes", () => {
   it("customers see only their own orders; placing needs sign-in, same-origin and a key", async () => {
     const { order } = await placed();

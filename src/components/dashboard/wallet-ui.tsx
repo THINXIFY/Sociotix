@@ -181,7 +181,7 @@ export function BalanceCard({ className }: { className?: string }) {
     <section
       aria-labelledby="balance-title"
       className={cn(
-        "relative isolate overflow-hidden rounded-3xl bg-graphite p-5 text-white shadow-float sm:p-6 dark:bg-[#17181e] dark:ring-1 dark:ring-white/10",
+        "relative isolate overflow-hidden rounded-2xl bg-graphite p-5 text-white shadow-float sm:p-6 dark:bg-[#17181e] dark:ring-1 dark:ring-white/10",
         className,
       )}
     >

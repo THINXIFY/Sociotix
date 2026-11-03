@@ -99,7 +99,7 @@ export function LiveSupport() {
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-heading text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Support</h1>
+          <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Support</h1>
           <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Ask our team anything about your account or orders. Replies appear here.</p>
         </div>
         <div className="flex flex-wrap gap-2">

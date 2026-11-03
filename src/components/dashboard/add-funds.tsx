@@ -40,12 +40,14 @@ import {
   type PaymentMethod,
   QUICK_AMOUNTS,
 } from "@/lib/payments";
+import type { CustomerDeposit } from "@/lib/deposits";
 import { useDisplay } from "@/lib/i18n";
+import { api } from "@/lib/live-account";
 import { cn } from "@/lib/utils";
 import { savePaymentPreview } from "./demo-store";
 import { useLiveAccount } from "./live-account";
-import { LiveDepositDialog, LiveMethodsProvider, registryId, useLiveMethods, useMethodReadiness } from "./live-deposit";
-import { DemoTag, enter, Panel, transactionsHref } from "./shared";
+import { DepositStatusBadge, LiveDepositDialog, LiveMethodsProvider, registryId, useLiveMethods, useMethodReadiness } from "./live-deposit";
+import { dashButton, DemoTag, enter, Panel, transactionsHref } from "./shared";
 import { BalanceCard, CryptoIcon, MethodMark, NetworkBadge, VisaMark } from "./wallet-ui";
 
 /* -------------------------------------------------------------------------- */
@@ -202,18 +204,20 @@ export function AddFunds() {
 
   return (
     <LiveMethodsProvider value={live ? methodsState : null}>
-    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
       <header className={cn("flex flex-wrap items-end justify-between gap-3", e[0].className)} style={e[0].style}>
         <div className="min-w-0">
-          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Add Funds</h1>
-          <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">
-            Choose how you&apos;d like to fund your account. Simple, flexible, and easy to manage.
+          <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Add Funds</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-[0.95rem]">
+            Request a deposit to your balance. A request isn&apos;t a payment: your balance changes only after the money arrives and is verified.
           </p>
         </div>
         {live ? null : <DemoTag className="text-primary">Payments not live yet</DemoTag>}
       </header>
 
-      <div className="mt-5 grid grid-cols-1 gap-4 sm:mt-6 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
+      <HowItWorks live={Boolean(live)} />
+
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_23rem] xl:items-start">
         <div className="min-w-0 space-y-4 sm:space-y-5">
           <BalanceCard className={e[1].className} />
 
@@ -321,7 +325,7 @@ export function AddFunds() {
           </Panel>
         </div>
 
-        <aside className="xl:sticky xl:top-24" aria-label="Payment summary">
+        <aside className="space-y-4 xl:sticky xl:top-24" aria-label="Payment summary">
           <Summary
             amount={error ? null : amount}
             category={category}
@@ -333,6 +337,7 @@ export function AddFunds() {
             live={Boolean(live)}
             blocker={liveBlocker}
           />
+          <RecentRequests live={Boolean(live)} />
         </aside>
       </div>
 
@@ -1078,5 +1083,93 @@ function CheckoutPreview({
         </div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*  How it works & recent requests                                            */
+/* -------------------------------------------------------------------------- */
+
+/** Three steps that keep a request and a payment clearly apart. */
+function HowItWorks({ live }: { live: boolean }) {
+  const steps = [
+    { title: "Choose amount & method", body: "Pick how much to add and how you'll pay." },
+    { title: live ? "Submit a request" : "Preview the request", body: live ? "You get a reference and payment instructions. Nothing is charged here." : "Demo only: nothing is submitted or charged." },
+    { title: "We verify, then credit", body: "Your balance updates only after the money arrives and our team confirms it." },
+  ];
+  return (
+    <ol className="mt-4 grid grid-cols-1 divide-y overflow-hidden rounded-2xl border bg-card shadow-soft sm:grid-cols-3 sm:divide-x sm:divide-y-0 rtl:sm:divide-x-reverse" aria-label="How adding funds works">
+      {steps.map((st, i) => (
+        <li key={st.title} className="flex items-start gap-3 px-3.5 py-2.5 sm:py-3">
+          <span className="grid size-6 shrink-0 place-items-center rounded-full bg-secondary text-[0.72rem] font-bold text-secondary-foreground tabular-nums" aria-hidden>
+            {i + 1}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold">{st.title}</span>
+            <span className="block text-xs leading-snug text-muted-foreground">{st.body}</span>
+          </span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** The customer's latest deposit requests and their status (live), or where demo deposits are listed. */
+function RecentRequests({ live }: { live: boolean }) {
+  const [state, setState] = React.useState<{ items?: CustomerDeposit[]; error?: string }>({});
+  React.useEffect(() => {
+    if (!live) return;
+    let cancelled = false;
+    api<{ items: CustomerDeposit[] }>("/api/account/deposits?page=1&pageSize=3").then(
+      (d) => !cancelled && setState({ items: d.items }),
+      (e: Error) => !cancelled && setState({ error: e.message }),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [live]);
+  const all = live ? "/dashboard/transactions#deposit-requests" : "/dashboard/transactions?type=deposit";
+
+  return (
+    <Panel className="overflow-hidden" aria-labelledby="recent-requests-title">
+      <div className="flex items-center justify-between gap-3 px-4 pt-4">
+        <h2 id="recent-requests-title" className="text-sm font-bold">
+          {live ? "Your deposit requests" : "Deposit history"}
+        </h2>
+        <Link href={all} className={cn(dashButton.ghost, "h-9 text-xs")}>
+          View all
+        </Link>
+      </div>
+      {!live ? (
+        <p className="px-4 pt-1 pb-4 text-xs leading-relaxed text-muted-foreground">Sample deposits, with their status, are listed in Transactions.</p>
+      ) : state.error ? (
+        <p role="alert" className="px-4 pt-1 pb-4 text-xs text-destructive">
+          {state.error}
+        </p>
+      ) : !state.items ? (
+        <div className="space-y-2 p-4 pt-2" aria-label="Loading deposit requests">
+          {[0, 1].map((i) => (
+            <div key={i} className="h-10 animate-pulse rounded-lg bg-muted motion-reduce:animate-none" />
+          ))}
+        </div>
+      ) : state.items.length === 0 ? (
+        <p className="px-4 pt-1 pb-4 text-xs leading-relaxed text-muted-foreground">No requests yet. Each request you submit appears here with its reference and status.</p>
+      ) : (
+        <ul className="mt-2 divide-y border-t">
+          {state.items.map((d) => (
+            <li key={d.reference} className="flex items-center justify-between gap-3 px-4 py-2.5">
+              <span className="min-w-0">
+                <span className="block truncate font-mono text-xs font-semibold">{d.reference}</span>
+                <span className="block truncate text-[0.7rem] text-muted-foreground">{d.methodName}</span>
+              </span>
+              <span className="flex shrink-0 items-center gap-2">
+                <span className="text-sm font-semibold tabular-nums">{usd(d.amountCents / 100)}</span>
+                <DepositStatusBadge status={d.status} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Panel>
   );
 }

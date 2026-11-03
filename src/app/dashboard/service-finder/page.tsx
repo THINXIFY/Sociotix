@@ -7,7 +7,7 @@ import { ServiceFinder } from "@/components/dashboard/service-finder";
 export const metadata: Metadata = { title: "Find the Right Service" };
 
 function Fallback() {
-  const block = "animate-pulse rounded-3xl bg-muted motion-reduce:animate-none";
+  const block = "animate-pulse rounded-2xl bg-muted motion-reduce:animate-none";
   return (
     <div className="mx-auto max-w-[90rem] px-3 pt-4 sm:px-6 sm:pt-7 lg:px-8" aria-busy="true">
       <span className="sr-only">Loading Service Finder…</span>

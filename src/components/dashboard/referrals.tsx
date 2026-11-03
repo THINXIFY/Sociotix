@@ -155,7 +155,7 @@ function Hero({ className, style }: { className?: string; style?: React.CSSPrope
   return (
     <section
       aria-labelledby="rewards-title"
-      className={cn("relative isolate overflow-hidden rounded-3xl bg-graphite p-5 text-white shadow-soft sm:p-8 lg:p-10", className)}
+      className={cn("relative isolate overflow-hidden rounded-2xl bg-graphite p-5 text-white shadow-soft sm:p-8 lg:p-10", className)}
       style={style}
     >
       {/* Soft brand light */}

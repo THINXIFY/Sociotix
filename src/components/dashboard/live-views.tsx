@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CircleAlert,
+  CircleCheck,
   Clock,
   Compass,
   LayoutGrid,
@@ -25,7 +26,8 @@ import { cn } from "@/lib/utils";
 import type { CustomerDeposit } from "@/lib/deposits";
 import { useLiveAccount } from "./live-account";
 import { BankInstructionsPanel, DepositStatusBadge } from "./live-deposit";
-import { enter, FINDER_ROUTE, Pagination, Panel, PanelHeader, ROUTES } from "./shared";
+import { CardIcon, DigitalProductsCard, FinderCard, HelpCard, splitAmount, useGreeting, WalletCard } from "./overview-parts";
+import { dashButton, enter, FINDER_ROUTE, Pagination, Panel, PanelHeader, ROUTES } from "./shared";
 import { Select } from "@/components/ui/select";
 
 /*
@@ -35,7 +37,7 @@ import { Select } from "@/components/ui/select";
  */
 
 const page = "mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8";
-const h1 = "text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]";
+const h1 = "font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]";
 const cents = (n: number) => usd(n / 100);
 const PLATFORM_BY_ID = new Map(PLATFORMS.map((p) => [p.id, p]));
 
@@ -49,18 +51,6 @@ function Header({ title, subtitle, action }: { title: string; subtitle: string; 
       </div>
       {action}
     </header>
-  );
-}
-
-function Stat({ label, value, hint, icon: Icon }: { label: string; value: React.ReactNode; hint?: string; icon: React.ComponentType<{ className?: string }> }) {
-  return (
-    <Panel className="p-4 sm:p-5">
-      <p className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-        <Icon className="size-3.5" aria-hidden /> {label}
-      </p>
-      <p className="mt-2 font-heading text-2xl font-extrabold tracking-tight tabular-nums sm:text-[1.65rem]">{value}</p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
-    </Panel>
   );
 }
 
@@ -93,89 +83,188 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 const secondaryLink =
   "inline-flex h-11 items-center gap-2 rounded-full border bg-card px-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none";
 
-const linkButton =
-  "inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_10px_28px_-12px_rgb(112_71_235/0.8)] transition-all hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none";
-
 /* -------------------------------------------------------------------------- */
 /*  Overview                                                                  */
 /* -------------------------------------------------------------------------- */
 
 export function LiveOverview() {
   useDisplay();
+  const greeting = useGreeting();
   const live = useLiveAccount()!;
   const { profile, wallet, orderCount } = live;
-  const e = [1, 2, 3].map(enter);
+  const { whole, rest } = splitAmount(cents(wallet.availableCents));
+  const a = [0, 1, 2, 3, 4, 5, 6, 7].map(enter);
+
+  // Same priority order as the demo overview; every figure is the customer's own record.
   return (
-    <div className={page}>
-      <Header
-        title={`Welcome, ${profile.displayName || profile.firstName}`}
-        subtitle="Your account at a glance. Checkout opens once services pass every review — nothing is charged until then."
-        action={
-          <div className="flex flex-wrap gap-2">
-            <Link href={ROUTES["new-order"]} className={secondaryLink}>
-              <ShoppingBag className="size-4" aria-hidden /> New order
-            </Link>
-            <Link href={ROUTES["add-funds"]} className={secondaryLink}>
-              <Wallet className="size-4" aria-hidden /> Add funds
-            </Link>
-          </div>
-        }
-      />
+    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,23rem)] xl:items-start xl:gap-5">
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
+          <Panel className={cn("relative isolate order-1 overflow-hidden p-4 sm:p-6 md:col-span-2", a[0].className)} style={a[0].style} aria-labelledby="welcome-title">
+            <div className="pointer-events-none absolute -end-24 -top-32 -z-10 size-80 rounded-full bg-primary/[0.08] blur-3xl dark:bg-primary/15" aria-hidden />
+            <p className="text-[0.82rem] font-medium text-muted-foreground">
+              {greeting}, {profile.displayName || profile.firstName}
+            </p>
+            <h1 id="welcome-title" className="mt-1.5 font-heading text-[1.6rem] leading-[1.12] font-extrabold tracking-tight text-balance sm:text-[2rem]">
+              What would you like to grow today?
+            </h1>
+            <p className="mt-1.5 max-w-xl text-[0.9rem] text-muted-foreground">
+              Checkout opens once services pass every review. Nothing is charged until then, and you can already explore every service.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Link href={ROUTES["new-order"]} className={cn(dashButton.primary, "h-11 px-5 text-[0.95rem]")}>
+                <ShoppingBag className="size-4" aria-hidden /> New Order
+              </Link>
+              <Link href={ROUTES["add-funds"]} className={cn(dashButton.secondary, "h-11")}>
+                <Wallet className="size-4" aria-hidden /> Add Funds
+              </Link>
+            </div>
+          </Panel>
 
-      <div className={cn("mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3", e[0].className)} style={e[0].style}>
-        <Stat icon={Wallet} label="Wallet balance" value={cents(wallet.availableCents)} hint="USD · from your account ledger" />
-        <Stat icon={Clock} label="Pending deposits" value={cents(wallet.pendingCents)} hint="Not spendable until approved" />
-        <Stat icon={ListOrdered} label="Orders" value={orderCount} hint={orderCount ? "All time" : "No orders yet"} />
-      </div>
+          <Panel className={cn("order-2 flex items-center gap-3 px-4 py-3.5 sm:px-5 md:col-span-2", a[1].className)} style={a[1].style} aria-labelledby="attention-title">
+            <CardIcon icon={CircleCheck} tone="neutral" />
+            <div className="min-w-0">
+              <h2 id="attention-title" className="font-heading text-[0.95rem] font-bold">
+                Nothing needs your action
+              </h2>
+              <p className="text-[0.8rem] text-muted-foreground">If an order ever needs something from you, it will show up here.</p>
+            </div>
+          </Panel>
 
-      <div className={cn("mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]", e[1].className)} style={e[1].style}>
-        <Panel>
-          <PanelHeader className="px-5 pt-5" title="Recent orders" description="Your latest orders and their progress." />
-          <EmptyState
-            icon={PackageOpen}
-            title={orderCount ? `${orderCount} order${orderCount === 1 ? "" : "s"}` : "No orders yet"}
-            action={
-              orderCount ? (
-                <Link href={ROUTES.orders} className={linkButton}>
-                  <ListOrdered className="size-4" aria-hidden /> View my orders
+          <Panel className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} aria-labelledby="orders-title">
+            <PanelHeader
+              id="orders-title"
+              className="px-4 pt-4 sm:px-5 sm:pt-5"
+              title="Your orders"
+              description={orderCount ? `${orderCount} order${orderCount === 1 ? "" : "s"} in total` : "Your orders and their progress will appear here."}
+              action={
+                orderCount ? (
+                  <Link href={ROUTES.orders} className={dashButton.ghost}>
+                    View all <ArrowRight className="size-3.5 rtl:-scale-x-100" aria-hidden />
+                  </Link>
+                ) : null
+              }
+            />
+            <EmptyState
+              icon={PackageOpen}
+              title={orderCount ? "See every order in one place" : "No orders yet"}
+              action={
+                orderCount ? (
+                  <Link href={ROUTES.orders} className={dashButton.primary}>
+                    <ListOrdered className="size-4" aria-hidden /> View my orders
+                  </Link>
+                ) : (
+                  <Link href={FINDER_ROUTE} className={dashButton.primary}>
+                    <Compass className="size-4" aria-hidden /> Browse services
+                  </Link>
+                )
+              }
+            >
+              {orderCount ? "Each order shows its status and recorded activity." : "Ordering isn't open yet. You can already browse every service we plan to offer."}
+            </EmptyState>
+          </Panel>
+
+          <Panel className={cn("order-9 p-4 sm:p-5 md:col-span-2", a[7].className)} style={a[7].style} aria-labelledby="account-title">
+            <PanelHeader
+              id="account-title"
+              title="Your account"
+              action={
+                <Link href={ROUTES.profile} className={dashButton.ghost}>
+                  Edit profile <ArrowRight className="size-3.5 rtl:-scale-x-100" aria-hidden />
                 </Link>
-              ) : (
-                <Link href={FINDER_ROUTE} className={linkButton}>
-                  <Compass className="size-4" aria-hidden /> Browse services
-                </Link>
-              )
-            }
-          >
-            {orderCount ? "See each order's status and recorded activity." : "Ordering isn't open yet. You can already browse every service we plan to offer."}
-          </EmptyState>
-        </Panel>
+              }
+            />
+            <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2.5 text-sm sm:grid-cols-2">
+              {[
+                ["Account ID", <span key="r" className="font-mono text-[0.8rem] font-semibold">{profile.accountRef}</span>],
+                ["Email", profile.email],
+                ["Member since", formatDate(profile.createdAt, { year: true })],
+                ["Account type", <span key="t" className="capitalize">{profile.accountType}</span>],
+              ].map(([label, value]) => (
+                <div key={String(label)} className="flex min-w-0 justify-between gap-3 border-b border-dashed pb-2.5 last:border-0 sm:[&:nth-last-child(-n+2)]:border-0">
+                  <dt className="shrink-0 text-muted-foreground">{label}</dt>
+                  <dd className="min-w-0 truncate font-medium">{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </Panel>
+        </div>
 
-        <Panel className="p-5">
-          <PanelHeader title="Your account" />
-          <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Account ID</dt>
-              <dd className="font-mono text-[0.8rem] font-semibold">{profile.accountRef}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Email</dt>
-              <dd className="min-w-0 truncate font-medium">{profile.email}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Member since</dt>
-              <dd className="font-medium">{formatDate(profile.createdAt, { year: true })}</dd>
-            </div>
-            <div className="flex justify-between gap-3">
-              <dt className="text-muted-foreground">Account type</dt>
-              <dd className="font-medium capitalize">{profile.accountType}</dd>
-            </div>
-          </dl>
-          <Link href={ROUTES.profile} className="mt-5 inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline">
-            Edit profile <ArrowRight className="size-3.5" aria-hidden />
-          </Link>
-        </Panel>
+        <div className="contents xl:flex xl:flex-col xl:gap-5">
+          <WalletCard
+            className={cn("order-4", a[3].className)}
+            style={a[3].style}
+            whole={whole}
+            rest={rest}
+            stats={[
+              { label: "Pending deposits", value: cents(wallet.pendingCents) },
+              { label: "Orders, all time", value: String(orderCount) },
+            ]}
+            note="USD, from your account ledger. Pending deposits aren't spendable until approved."
+          />
+          <FinderCard className={cn("order-5", a[4].className)} style={a[4].style} />
+          <LiveActivity className={cn("order-6", a[5].className)} style={a[5].style} />
+          <DigitalProductsCard className={cn("order-7", a[6].className)} style={a[6].style} />
+          <HelpCard className={cn("order-8 md:col-span-2 xl:col-span-1", a[6].className)} style={a[6].style} />
+        </div>
       </div>
     </div>
+  );
+}
+
+/** The latest entries in the customer's wallet ledger — real records only, never a placeholder feed. */
+function LiveActivity({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  const { data, error, loading, retry } = useRemote<EntriesPage>("/api/account/wallet/transactions?page=1&pageSize=4");
+  return (
+    <Panel className={cn("p-4 sm:p-5", className)} style={style} aria-labelledby="updates-title" aria-busy={loading}>
+      <PanelHeader
+        id="updates-title"
+        title="Recent activity"
+        description="The latest changes to your wallet."
+        action={
+          data?.items.length ? (
+            <Link href={ROUTES.transactions} className={dashButton.ghost}>
+              All <ArrowRight className="size-3.5 rtl:-scale-x-100" aria-hidden />
+            </Link>
+          ) : null
+        }
+      />
+      {error ? (
+        <p role="alert" className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-dashed p-3 text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <CircleAlert className="size-4 shrink-0 text-destructive" aria-hidden /> Activity didn&apos;t load.
+          </span>
+          <button type="button" onClick={retry} className={dashButton.ghost}>
+            Try again
+          </button>
+        </p>
+      ) : !data ? (
+        <div className="mt-4 space-y-3" aria-hidden>
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-9 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
+          ))}
+        </div>
+      ) : data.items.length ? (
+        <ul className="mt-3 divide-y">
+          {data.items.map((e) => (
+            <li key={e.id} className="flex items-center justify-between gap-3 py-2.5">
+              <span className="min-w-0">
+                <span className="block truncate text-sm font-medium">{e.label}</span>
+                <time className="block text-[0.72rem] text-muted-foreground">{formatDateTime(e.at)}</time>
+              </span>
+              <span className={cn("shrink-0 text-sm font-semibold tabular-nums", e.amountCents > 0 && "text-ok")}>
+                {e.amountCents > 0 ? "+" : ""}
+                {cents(e.amountCents)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-4 flex items-center gap-2.5 rounded-xl border border-dashed p-3.5 text-sm text-muted-foreground">
+          <Clock className="size-4 shrink-0" aria-hidden /> No activity yet. Deposits and payments will appear here.
+        </p>
+      )}
+    </Panel>
   );
 }
 
@@ -211,73 +300,6 @@ function useRemote<T>(url: string) {
   return { data: state.data, error: loading ? undefined : state.error, loading, retry: () => setAttempt((n) => n + 1) };
 }
 
-export function LiveTransactions() {
-  useDisplay();
-  const live = useLiveAccount()!;
-  const [pageNo, setPageNo] = React.useState(1);
-  const pageSize = 20;
-  const history = useRemote<EntriesPage>(`/api/account/wallet/transactions?page=${pageNo}&pageSize=${pageSize}`);
-  const e = [1, 2].map(enter);
-
-  return (
-    <div className={page}>
-      <Header
-        title="Transactions"
-        subtitle="Your wallet balance, every entry that changed it, and your deposit requests."
-        action={
-          <Link href={ROUTES["add-funds"]} className={secondaryLink}>
-            <Wallet className="size-4" aria-hidden /> Add funds
-          </Link>
-        }
-      />
-
-      <div className={cn("mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2", e[0].className)} style={e[0].style}>
-        <Stat icon={Wallet} label="Available balance" value={cents(live.wallet.availableCents)} hint="USD · calculated from your ledger entries" />
-        <Stat icon={Clock} label="Pending deposits" value={cents(live.wallet.pendingCents)} hint="Shown separately; not spendable until approved" />
-      </div>
-
-      <Panel className={cn("mt-5 overflow-hidden", e[1].className)} style={e[1].style} aria-busy={history.loading || undefined}>
-        <PanelHeader className="px-5 pt-5 pb-3" title="Wallet history" description="Read-only. Entries can't be edited or deleted." />
-        {history.error ? (
-          <ErrorState message={history.error} onRetry={history.retry} />
-        ) : !history.data ? (
-          <div className="space-y-2 px-5 pb-5" aria-label="Loading wallet history">
-            {[0, 1, 2].map((i) => (
-              <div key={i} className="h-12 animate-pulse rounded-xl bg-muted motion-reduce:animate-none" />
-            ))}
-          </div>
-        ) : history.data.items.length === 0 ? (
-          <EmptyState icon={Wallet} title="No transactions yet">
-            Verified deposits, order charges and refunds appear here once they&apos;re recorded. Your balance is {cents(live.wallet.availableCents)}.
-          </EmptyState>
-        ) : (
-          <>
-            <ul className="divide-y border-t">
-              {history.data.items.map((t) => (
-                <li key={t.id} className="flex items-center justify-between gap-3 px-5 py-3.5">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold">{t.label}</p>
-                    <p className="text-xs text-muted-foreground">{formatDateTime(t.at)}</p>
-                  </div>
-                  <p className={cn("shrink-0 font-heading font-bold tabular-nums", t.amountCents > 0 ? "text-primary" : "text-foreground")}>
-                    {t.amountCents > 0 ? "+" : "−"}
-                    {cents(Math.abs(t.amountCents))}
-                  </p>
-                </li>
-              ))}
-            </ul>
-            {history.data.pages > 1 ? (
-              <Pagination page={pageNo} pageCount={history.data.pages} total={history.data.total} pageSize={pageSize} label="Wallet history pages" onPage={setPageNo} />
-            ) : null}
-          </>
-        )}
-      </Panel>
-
-      <DepositRequests />
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /*  Deposit requests                                                          */
 /* -------------------------------------------------------------------------- */
@@ -291,7 +313,7 @@ interface DepositPage {
 }
 
 /** The customer's own requests: pending ones are shown apart from the balance, with every outcome and reason. */
-function DepositRequests() {
+export function DepositRequests() {
   const live = useLiveAccount()!;
   const [pageNo, setPageNo] = React.useState(1);
   const [version, setVersion] = React.useState(0);
@@ -501,7 +523,7 @@ export function LiveCatalog() {
         ) : !result.data ? (
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3" aria-label="Loading services">
             {Array.from({ length: 6 }, (_, i) => (
-              <div key={i} className="h-40 animate-pulse rounded-3xl bg-muted motion-reduce:animate-none" />
+              <div key={i} className="h-40 animate-pulse rounded-2xl bg-muted motion-reduce:animate-none" />
             ))}
           </div>
         ) : result.data.items.length === 0 ? (

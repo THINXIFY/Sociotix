@@ -7,7 +7,7 @@ import { LiveSupport } from "@/components/dashboard/live-support";
 export const metadata: Metadata = { title: "Support Center" };
 
 function Fallback() {
-  const block = "animate-pulse rounded-3xl bg-muted motion-reduce:animate-none";
+  const block = "animate-pulse rounded-2xl bg-muted motion-reduce:animate-none";
   return (
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8" aria-busy="true">
       <span className="sr-only">Loading support…</span>

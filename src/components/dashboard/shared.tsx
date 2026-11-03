@@ -206,7 +206,7 @@ export function Panel({
   ...props
 }: React.ComponentProps<"section">) {
   return (
-    <section className={cn("rounded-3xl border bg-card shadow-soft", className)} {...props}>
+    <section className={cn("rounded-2xl border bg-card shadow-soft", className)} {...props}>
       {children}
     </section>
   );
@@ -228,15 +228,25 @@ export function PanelHeader({
   return (
     <div className={cn("flex items-start justify-between gap-3", className)}>
       <div className="min-w-0">
-        <h2 id={id} className="text-base font-bold sm:text-[1.05rem]">
+        <h2 id={id} className="font-heading text-[0.98rem] font-bold tracking-tight sm:text-[1.05rem]">
           {title}
         </h2>
-        {description ? <p className="mt-0.5 text-sm text-muted-foreground">{description}</p> : null}
+        {description ? <p className="mt-0.5 text-[0.84rem] leading-snug text-muted-foreground">{description}</p> : null}
       </div>
       {action}
     </div>
   );
 }
+
+/** The dashboard's button and link styles: one set, so every page's controls match. */
+export const dashButton = {
+  primary:
+    "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4.5 text-sm font-semibold text-primary-foreground shadow-[0_8px_20px_-12px_rgb(112_71_235/0.9)] transition-[background-color,translate] duration-150 hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none active:translate-y-0 motion-reduce:hover:translate-y-0",
+  secondary:
+    "inline-flex h-10 items-center justify-center gap-2 rounded-full border bg-card px-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+  ghost:
+    "inline-flex h-8 shrink-0 items-center gap-1 rounded-full px-3 text-sm font-semibold text-primary transition-colors hover:bg-secondary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+};
 
 /** Staggered entrance; CSS-only so content is visible before hydration. */
 export function enter(i: number) {
@@ -248,7 +258,7 @@ export function enter(i: number) {
 }
 
 const pageButton =
-  "inline-flex h-9 min-w-9 items-center justify-center gap-1 rounded-full px-2.5 text-sm font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-11 min-w-11 items-center justify-center gap-1 rounded-full px-2.5 text-sm sm:h-9 sm:min-w-9 font-semibold transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-40";
 
 /** Numbered pager for client-side lists. */
 export function Pagination({

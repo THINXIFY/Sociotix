@@ -48,6 +48,7 @@ import { ASSET_BY_SYMBOL, METHOD_BY_ID, NETWORKS, networkLabel } from "@/lib/pay
 import { useDisplay } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { clearPaymentPreviews, type PaymentPreview, usePaymentPreviews } from "./demo-store";
+import { splitAmount, WalletCard } from "./overview-parts";
 import { FxNote } from "./region";
 import { DemoTag, enter, ordersHref, Pagination, Panel, ROUTES, supportHref } from "./shared";
 import { CryptoIcon, MethodMark, NetworkBadge } from "./wallet-ui";
@@ -358,67 +359,79 @@ export function Transactions() {
   const e = [0, 1, 2, 3].map(enter);
 
   return (
-    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
-      <header className={cn("flex flex-wrap items-end justify-between gap-4", e[0].className)} style={e[0].style}>
+    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
+      <header className={cn("flex flex-wrap items-end justify-between gap-x-6 gap-y-3", e[0].className)} style={e[0].style}>
         <div className="min-w-0">
-          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Transactions</h1>
-          <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">
-            A clear view of every deposit, payment, refund, and account adjustment.
-          </p>
+          <h1 className="flex flex-wrap items-center gap-x-3 gap-y-1 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">
+            Wallet &amp; transactions <DemoTag className="text-muted-foreground" />
+          </h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-[0.95rem]">Every deposit, payment, refund and adjustment, and how they add up to your balance.</p>
         </div>
-        <Link
-          href={ROUTES["add-funds"]!}
-          className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_10px_28px_-12px_rgb(112_71_235/0.8)] transition-all hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
-        >
-          <Plus className="size-4" strokeWidth={2.6} aria-hidden /> Add Funds
-        </Link>
       </header>
 
-      {/* Summary */}
-      <dl className={cn("mt-5 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-3 lg:grid-cols-4", e[1].className)} style={e[1].style}>
-        <SummaryTile label="Total Added" value={money(s.added)} hint={`${completedDeposits} completed deposits`} Icon={ArrowDownLeft} tone="bg-ok-soft text-ok" />
-        <SummaryTile
-          label="Net Spent"
-          value={money(s.spent)}
-          hint={`${money(s.ordersGross)} orders − ${money(s.refunds)} refunds`}
-          Icon={ArrowUpRight}
-          tone="bg-secondary text-secondary-foreground"
+      {/* Same layout as the live wallet: balance card beside the overview */}
+      <div className={cn("mt-5 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]", e[1].className)} style={e[1].style}>
+        <WalletCard
+          {...splitAmount(money(s.balance))}
+          demo
+          stats={[
+            { label: "Pending deposits", value: money(s.pending.amount) },
+            { label: "Transactions", value: String(TRANSACTIONS.length) },
+          ]}
+          note="Credited funds only. Pending deposits and payment previews aren't part of your balance."
+          actions={
+            <>
+              <Link
+                href={ROUTES["add-funds"]!}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-lime text-sm font-semibold text-graphite transition-transform hover:-translate-y-px focus-visible:ring-3 focus-visible:ring-lime/50 focus-visible:outline-none motion-reduce:hover:translate-y-0"
+              >
+                <Plus className="size-4" strokeWidth={2.6} aria-hidden /> Add Funds
+              </Link>
+              <button
+                type="button"
+                onClick={() => setType("deposit")}
+                className="inline-flex h-11 items-center justify-center gap-1.5 rounded-full bg-white/10 text-sm font-semibold text-white transition-colors hover:bg-white/15 focus-visible:ring-3 focus-visible:ring-white/30 focus-visible:outline-none"
+              >
+                <Clock3 className="size-4" aria-hidden /> Deposits
+              </button>
+            </>
+          }
         />
-        <SummaryTile
-          label="Pending Deposits"
-          value={money(s.pending.amount)}
-          hint={s.pending.count ? `Pending · Not credited · ${s.pending.count} ${s.pending.count === 1 ? "deposit" : "deposits"}` : "Nothing pending"}
-          Icon={Clock3}
-          tone="bg-muted text-foreground/80"
-          pending
-        />
-        <div className="relative isolate flex flex-col-reverse justify-end overflow-hidden rounded-2xl bg-graphite p-3 text-white shadow-soft sm:p-4 dark:bg-[#17181e] dark:ring-1 dark:ring-white/10">
-          <div className="pointer-events-none absolute -end-10 -bottom-14 -z-10 size-36 rounded-full bg-lime/20 blur-2xl" aria-hidden />
-          <dt className="mt-1 text-[0.8rem] font-semibold">
-            Current Balance
-            <span className="block text-[0.7rem] leading-snug font-normal text-white/55">Available now · credited funds only</span>
-          </dt>
-          <dd className="font-heading text-2xl leading-none font-extrabold tabular-nums">{money(s.balance)}</dd>
-          <span className="mb-2 hidden size-9 place-items-center rounded-xl bg-white/10 sm:grid" aria-hidden>
-            <Wallet className="size-4 text-lime" />
-          </span>
-        </div>
-      </dl>
 
-      <p className={cn("mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 px-1 text-xs text-muted-foreground tabular-nums", e[1].className)} style={e[1].style}>
-        <span className="font-semibold text-foreground">How your balance adds up:</span>
-        <span>{money(s.added)} deposits</span>
-        <span>+</span>
-        <span>{money(s.adjustments)} credits</span>
-        <span>−</span>
-        <span>{money(s.ordersGross)} orders</span>
-        <span>+</span>
-        <span>{money(s.refunds)} refunds</span>
-        <span>=</span>
-        <span className="font-semibold text-foreground">{money(s.balance)}</span>
-        <span>· Pending deposits and previews aren&apos;t included.</span>
-      </p>
-      <FxNote className="mt-1 px-1" />
+        <Panel className="flex flex-col p-4 sm:p-5" aria-labelledby="tx-overview-title">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="tx-overview-title" className="text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">
+              Overview
+            </h2>
+            <span className="text-[0.7rem] text-muted-foreground">All time · sample data</span>
+          </div>
+          <dl className="my-auto grid grid-cols-3 gap-2 py-3">
+            <SummaryTile label="Total added" value={money(s.added)} hint={`${completedDeposits} completed deposits`} Icon={ArrowDownLeft} tone="bg-ok-soft text-ok" />
+            <SummaryTile label="Net spent" value={money(s.spent)} hint={`${money(s.ordersGross)} orders − ${money(s.refunds)} refunds`} Icon={ArrowUpRight} tone="bg-muted text-foreground/75" />
+            <SummaryTile
+              label="Pending"
+              value={money(s.pending.amount)}
+              hint={s.pending.count ? `Not credited · ${s.pending.count} ${s.pending.count === 1 ? "deposit" : "deposits"}` : "Nothing pending"}
+              Icon={Clock3}
+              tone="bg-secondary text-secondary-foreground"
+              pending
+            />
+          </dl>
+          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 border-t pt-3 text-xs text-muted-foreground tabular-nums">
+            <span className="font-semibold text-foreground">How it adds up:</span>
+            <span>{money(s.added)} deposits</span>
+            <span>+</span>
+            <span>{money(s.adjustments)} credits</span>
+            <span>−</span>
+            <span>{money(s.ordersGross)} orders</span>
+            <span>+</span>
+            <span>{money(s.refunds)} refunds</span>
+            <span>=</span>
+            <span className="font-semibold text-foreground">{money(s.balance)}</span>
+          </p>
+          <FxNote className="mt-1" />
+        </Panel>
+      </div>
 
       {previews.length ? (
         <div role="status" className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 rounded-2xl border border-dashed border-primary/40 bg-card px-4 py-3 text-sm">
@@ -457,7 +470,7 @@ export function Transactions() {
           Transaction history
         </h2>
         <div className="space-y-3 p-4 sm:p-5">
-          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_10.5rem_10.5rem_9.5rem]">
+          <div className="grid grid-cols-1 gap-2.5 lg:grid-cols-[minmax(0,1fr)_10.5rem_10.5rem_11rem]">
             <div className="relative">
               <label htmlFor="tx-search" className="sr-only">
                 Search transactions
@@ -606,15 +619,17 @@ function SummaryTile({
   pending?: boolean;
 }) {
   return (
-    <div className={cn("flex flex-col-reverse justify-end rounded-2xl border bg-card p-3 shadow-soft sm:p-4", pending && "border-dashed bg-muted/30 shadow-none")}>
-      <dt className="mt-1 text-[0.8rem] font-semibold">
-        {label}
-        <span className="block text-[0.7rem] leading-snug font-normal text-muted-foreground">{hint}</span>
-      </dt>
-      <dd className={cn("font-heading text-2xl leading-none font-extrabold tabular-nums", pending && "text-muted-foreground")}>{value}</dd>
-      <span className={cn("mb-2 hidden size-9 place-items-center rounded-xl sm:grid", tone)} aria-hidden>
+    <div className={cn("flex min-w-0 items-start gap-3 rounded-xl border bg-muted/20 p-2.5 sm:p-3", pending && "border-dashed")}>
+      <span className={cn("hidden size-9 shrink-0 place-items-center rounded-xl sm:grid", tone)} aria-hidden>
         <Icon className="size-4" />
       </span>
+      <div className="flex min-w-0 flex-col-reverse">
+        <dt className="text-xs text-muted-foreground">
+          {label}
+          <span className="hidden truncate text-[0.68rem] leading-snug md:block">{hint}</span>
+        </dt>
+        <dd className={cn("truncate font-heading text-base leading-tight font-extrabold tabular-nums sm:text-lg", pending && "text-muted-foreground")}>{value}</dd>
+      </div>
     </div>
   );
 }

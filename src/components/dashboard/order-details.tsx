@@ -7,11 +7,9 @@ import {
   ArrowRight,
   ArrowUpRight,
   Ban,
-  Check,
   CircleAlert,
   CircleCheck,
   Clock3,
-  Copy,
   FlaskConical,
   Info,
   LifeBuoy,
@@ -19,24 +17,28 @@ import {
   Repeat,
   Sparkles,
   TriangleAlert,
-  X,
 } from "lucide-react";
-import { PlatformTile } from "@/components/brand";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { CATEGORY_META } from "@/lib/catalog";
-import {
-  count,
-  deliveryProgress,
-  formatDateTime,
-  money,
-  ORDER_STATUS_META,
-  orderService,
-} from "@/lib/demo-account";
+import { count, deliveryProgress, formatDate, formatDateTime, money, ORDER_STATUS_META, orderService } from "@/lib/demo-account";
 import { isForeignHost, parseLink } from "@/lib/links";
 import { cn } from "@/lib/utils";
 import { type LocalOrder, type OrderEvent, saveDemoFix } from "./demo-store";
 import { FavoriteButton } from "./favorite-button";
-import { newOrderHref, OrderStatusBadge, reorderHref, supportHref } from "./shared";
+import {
+  CloseButton,
+  CopyIdButton,
+  DetailList,
+  Lifecycle,
+  PanelActions,
+  PanelHead,
+  panelPrimary,
+  panelSecondary,
+  SectionTitle,
+  type StepState,
+  Timeline,
+} from "./orders-ui";
+import { DemoTag, newOrderHref, OrderStatusBadge, reorderHref, supportHref } from "./shared";
 
 /* -------------------------------------------------------------------------- */
 /*  Derived history & milestones                                              */
@@ -75,21 +77,21 @@ function eventsOf(o: LocalOrder): OrderEvent[] {
   return [...o.localEvents, ...list];
 }
 
-type MilestoneState = "done" | "current" | "blocked" | "upcoming" | "cancelled";
-
 const MILESTONES = ["Placed", "Paid", "Checked", "Delivering", "Completed"] as const;
 
-function milestonesOf(o: LocalOrder): { label: string; state: MilestoneState }[] {
+function milestonesOf(o: LocalOrder): { label: string; state: StepState; at?: string | null }[] {
   if (o.status === "cancelled") {
     return [
-      { label: "Placed", state: "done" },
-      { label: "Cancelled", state: "cancelled" },
+      { label: "Placed", state: "done", at: formatDate(o.placedAt) },
+      { label: "Cancelled", state: "closed", at: o.cancelledAt ? formatDate(o.cancelledAt) : null },
     ];
   }
   const current = { pending: 2, attention: 2, processing: 3, completed: 5 }[o.status];
   return MILESTONES.map((label, i) => ({
     label,
     state: i < current ? "done" : i === current ? (o.status === "attention" ? "blocked" : "current") : "upcoming",
+    // Only the real placement and completion dates; the steps between have none recorded.
+    at: i === 0 ? formatDate(o.placedAt) : i === 4 && o.completedAt ? formatDate(o.completedAt) : null,
   }));
 }
 
@@ -135,117 +137,88 @@ function DetailsBody({
 }) {
   const router = useRouter();
   const { service, platform } = orderService(order);
-  const [copied, setCopied] = React.useState<"idle" | "done" | "failed">("idle");
-
-  const copyId = async () => {
-    try {
-      await navigator.clipboard.writeText(order.id);
-      setCopied("done");
-    } catch {
-      setCopied("failed");
-    }
-    window.setTimeout(() => setCopied("idle"), 2000);
-  };
 
   // My Orders closes this drawer once its page is left; closing it first would rewrite the URL mid-navigation.
   const contactSupport = () => router.push(supportHref({ new: true, order: order.id }));
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      {/* Header */}
-      <div className="border-b px-5 pt-5 pb-4">
-        <div className="flex items-start gap-3">
-          <PlatformTile platform={platform} size="md" className="size-11 rounded-xl" />
-          <div className="min-w-0 flex-1">
-            <SheetTitle className="font-heading text-lg leading-tight font-bold">{service.name}</SheetTitle>
-            <SheetDescription className="mt-0.5 text-sm">
-              {platform.name} · {CATEGORY_META[service.category].label}
-            </SheetDescription>
-          </div>
-          <FavoriteButton service={service} className="size-9" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-            aria-label="Close order details"
-          >
-            <X className="size-4" aria-hidden />
-          </button>
-        </div>
-        <div className="mt-3.5 flex flex-wrap items-center gap-2">
-          <OrderStatusBadge status={order.status} />
-          <button
-            type="button"
-            onClick={copyId}
-            className="inline-flex h-6 items-center gap-1.5 rounded-full border px-2 font-mono text-[0.72rem] font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-            aria-label={`Copy order ID ${order.id}`}
-          >
-            {order.id}
-            {copied === "done" ? <Check className="size-3 text-ok" aria-hidden /> : <Copy className="size-3" aria-hidden />}
-          </button>
-          <span className="text-xs text-muted-foreground">Placed {formatDateTime(order.placedAt)}</span>
-          <span className="sr-only" aria-live="polite">
-            {copied === "done" ? "Order ID copied" : copied === "failed" ? "Couldn't copy. Select the ID to copy it." : ""}
-          </span>
-          {copied === "failed" ? <span className="text-xs text-destructive">Couldn&apos;t copy</span> : null}
-        </div>
-      </div>
+      <PanelHead
+        platform={platform}
+        title={<SheetTitle className="font-heading text-lg leading-tight font-bold">{service.name}</SheetTitle>}
+        subtitle={
+          <SheetDescription className="mt-0.5 text-sm">
+            {platform.name} · {CATEGORY_META[service.category].label}
+          </SheetDescription>
+        }
+        actions={
+          <>
+            <FavoriteButton service={service} className="size-9" />
+            <CloseButton onClick={onClose} />
+          </>
+        }
+        badges={
+          <>
+            <OrderStatusBadge status={order.status} />
+            <CopyIdButton id={order.id} />
+            <span className="text-xs text-muted-foreground">Placed {formatDateTime(order.placedAt)}</span>
+            <DemoTag className="ms-auto text-muted-foreground" />
+          </>
+        }
+      />
 
-      {/* Body */}
-      <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-5 py-5">
+      <div className="min-h-0 flex-1 space-y-6 overflow-y-auto overscroll-contain px-5 py-5">
         <StatusPanel order={order} startWithAction={startWithAction} />
-        <Milestones order={order} />
 
-        <section aria-labelledby="details-title">
-          <h3 id="details-title" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-            Order details
-          </h3>
-          <dl className="mt-2 divide-y rounded-2xl border text-sm">
-            <Row label="Target link">
-              <span className="font-mono text-[0.78rem] break-all">{order.link}</span>
-            </Row>
-            <Row label="Quantity">{count(order.quantity)}</Row>
-            <Row label="Price">
-              {money(order.price)} <span className="text-xs text-muted-foreground">· demo</span>
-            </Row>
-            <Row label="Paid from">Balance (demo)</Row>
-          </dl>
+        <section aria-labelledby="milestones-title">
+          <SectionTitle id="milestones-title">Progress</SectionTitle>
+          <div className="mt-3">
+            <Lifecycle steps={milestonesOf(order)} />
+          </div>
         </section>
 
-        <Activity order={order} />
+        <section aria-labelledby="details-title">
+          <SectionTitle id="details-title">Order details</SectionTitle>
+          <DetailList
+            rows={[
+              { label: "Order ID", value: order.id, mono: true },
+              { label: "Target link", value: order.link, mono: true },
+              { label: "Quantity", value: count(order.quantity) },
+              {
+                label: "Price",
+                value: (
+                  <>
+                    {money(order.price)} <span className="text-xs text-muted-foreground">· demo</span>
+                  </>
+                ),
+              },
+              { label: "Paid from", value: "Balance (demo)" },
+            ]}
+          />
+        </section>
+
+        <section aria-labelledby="activity-title">
+          <SectionTitle id="activity-title" aside="Newest first · times in UTC">
+            Activity
+          </SectionTitle>
+          <Timeline events={eventsOf(order)} format={formatDateTime} />
+          <p className="mt-4 text-[0.7rem] text-muted-foreground">
+            Status: {ORDER_STATUS_META[order.status].label}. Demo history, generated from sample data.
+          </p>
+        </section>
       </div>
 
-      {/* Footer actions */}
-      <div className="grid grid-cols-2 gap-2 border-t bg-card px-5 py-4 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-        <Link
-          href={reorderHref(order.id)}
-          className="col-span-2 inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary text-sm font-semibold text-primary-foreground shadow-[0_10px_28px_-12px_rgb(112_71_235/0.8)] transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
-        >
-          <Repeat className="size-4" aria-hidden /> Review &amp; Reorder
+      <PanelActions>
+        <Link href={reorderHref(order.id)} className={panelPrimary}>
+          <Repeat className="size-4" aria-hidden /> Reorder
         </Link>
-        <button
-          type="button"
-          onClick={contactSupport}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border bg-card text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-        >
+        <button type="button" onClick={contactSupport} className={panelSecondary}>
           <LifeBuoy className="size-4" aria-hidden /> Contact Support
         </button>
-        <Link
-          href={newOrderHref(service.id)}
-          className="inline-flex h-11 items-center justify-center gap-2 rounded-full border bg-card text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-        >
+        <Link href={newOrderHref(service.id)} className={panelSecondary}>
           View Service <ArrowUpRight className="size-4" aria-hidden />
         </Link>
-      </div>
-    </div>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="grid grid-cols-[7.5rem_minmax(0,1fr)] gap-3 px-3.5 py-2.5">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="font-medium">{children}</dd>
+      </PanelActions>
     </div>
   );
 }
@@ -528,113 +501,6 @@ function ActionNeeded({
           </div>
         </form>
       )}
-    </section>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Milestones & activity                                                     */
-/* -------------------------------------------------------------------------- */
-
-const STATE_TEXT: Record<MilestoneState, string> = {
-  done: "completed",
-  current: "current step",
-  blocked: "paused, action needed",
-  upcoming: "upcoming",
-  cancelled: "cancelled",
-};
-
-function Milestones({ order }: { order: LocalOrder }) {
-  const steps = milestonesOf(order);
-  return (
-    <section aria-labelledby="milestones-title">
-      <h3 id="milestones-title" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-        Progress
-      </h3>
-      <ol className="mt-3 flex items-start">
-        {steps.map((step, i) => (
-          <li key={step.label} className="relative flex flex-1 flex-col items-center text-center">
-            {i > 0 ? (
-              <span
-                className={cn(
-                  "absolute top-3.5 right-1/2 h-0.5 w-full -translate-y-1/2",
-                  step.state === "done" || step.state === "current" || step.state === "blocked" ? "bg-primary/50" : "bg-border",
-                  step.state === "cancelled" && "bg-off/40",
-                )}
-                aria-hidden
-              />
-            ) : null}
-            <span
-              className={cn(
-                "relative grid size-7 place-items-center rounded-full",
-                step.state === "done" && "bg-primary text-primary-foreground",
-                step.state === "current" && "bg-card text-primary ring-2 ring-primary",
-                step.state === "blocked" && "bg-soon text-white dark:text-graphite",
-                step.state === "upcoming" && "border-2 border-dashed bg-card",
-                step.state === "cancelled" && "bg-off text-white dark:text-graphite",
-              )}
-              aria-hidden
-            >
-              {step.state === "done" ? <Check className="size-3.5" strokeWidth={3} /> : null}
-              {step.state === "current" ? <span className="size-2 rounded-full bg-primary" /> : null}
-              {step.state === "blocked" ? <TriangleAlert className="size-3.5" strokeWidth={2.5} /> : null}
-              {step.state === "cancelled" ? <Ban className="size-3.5" strokeWidth={2.5} /> : null}
-            </span>
-            <span
-              className={cn(
-                "mt-1.5 text-[0.7rem] leading-tight font-semibold",
-                step.state === "upcoming" && "font-medium text-muted-foreground",
-                step.state === "blocked" && "text-soon",
-                step.state === "current" && "text-primary",
-              )}
-            >
-              {step.label}
-              <span className="sr-only">, {STATE_TEXT[step.state]}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </section>
-  );
-}
-
-const EVENT_DOT: Record<NonNullable<OrderEvent["tone"]>, string> = {
-  default: "bg-primary",
-  attention: "bg-soon",
-  done: "bg-ok",
-  demo: "bg-card ring-2 ring-primary",
-  muted: "bg-off",
-};
-
-function Activity({ order }: { order: LocalOrder }) {
-  const events = eventsOf(order);
-  return (
-    <section aria-labelledby="activity-title">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 id="activity-title" className="text-xs font-bold tracking-wider text-muted-foreground uppercase">
-          Activity
-        </h3>
-        <span className="text-[0.7rem] text-muted-foreground">Newest first · times in UTC</span>
-      </div>
-      <ol className="relative mt-3 space-y-4 before:absolute before:top-1.5 before:bottom-1.5 before:start-[0.3125rem] before:w-px before:bg-border">
-        {events.map((ev, i) => (
-          <li key={`${ev.title}-${i}`} className="relative flex gap-3.5">
-            <span className={cn("relative mt-1.5 size-2.5 shrink-0 rounded-full ring-4 ring-card", EVENT_DOT[ev.tone ?? "default"])} aria-hidden />
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-baseline justify-between gap-x-3">
-                <span className="text-sm font-semibold">{ev.title}</span>
-                <time className="text-[0.72rem] text-muted-foreground" dateTime={ev.at ?? undefined}>
-                  {ev.at ? formatDateTime(ev.at) : "Just now"}
-                </time>
-              </p>
-              {ev.detail ? <p className="mt-0.5 text-[0.8rem] leading-relaxed text-muted-foreground">{ev.detail}</p> : null}
-            </div>
-          </li>
-        ))}
-      </ol>
-      <p className="mt-4 text-[0.7rem] text-muted-foreground">
-        Status: {ORDER_STATUS_META[order.status].label}. Demo history, generated from sample data.
-      </p>
     </section>
   );
 }

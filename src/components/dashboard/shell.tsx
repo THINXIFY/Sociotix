@@ -115,8 +115,8 @@ function NavBadge({ collapsed }: { collapsed: boolean }) {
 /** Shared sizing so expanded rows and collapsed squares line up with the logo. */
 const sidebarItemClass = (collapsed: boolean) =>
   cn(
-    "group/item relative flex items-center gap-3 rounded-xl text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-lime/50 focus-visible:outline-none",
-    collapsed ? "mx-auto size-11 justify-center" : "h-10 w-full px-2",
+    "group/item relative flex items-center gap-2.5 rounded-xl text-[0.86rem] font-medium text-white/60 transition-colors duration-150 hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-lime/50 focus-visible:outline-none",
+    collapsed ? "mx-auto size-11 justify-center" : "h-10 w-full px-1.5",
   );
 
 function WithTooltip({ show, label, children }: { show: boolean; label: string; children: React.ReactElement }) {
@@ -147,7 +147,7 @@ function SidebarItem({ item, collapsed }: { item: NavItem; collapsed: boolean })
         aria-label={collapsed ? navLabel(item) : undefined}
         className={cn(
           sidebarItemClass(collapsed),
-          active && "bg-white/[0.1] text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] hover:bg-white/[0.1]",
+          active && "bg-white/[0.09] font-semibold text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] hover:bg-white/[0.09]",
         )}
       >
         {active ? (
@@ -159,11 +159,13 @@ function SidebarItem({ item, collapsed }: { item: NavItem; collapsed: boolean })
             aria-hidden
           />
         ) : null}
-        <span className="grid size-8 shrink-0 place-items-center">
-          <Icon
-            className={cn("size-[1.15rem] transition-colors", active ? "text-lime" : "group-hover/item:text-white")}
-            aria-hidden
-          />
+        <span
+          className={cn(
+            "grid size-7.5 shrink-0 place-items-center rounded-lg transition-colors",
+            active ? "bg-lime/[0.12] text-lime" : "group-hover/item:text-white",
+          )}
+        >
+          <Icon className="size-[1.05rem]" aria-hidden />
         </span>
         {collapsed ? null : <span className="truncate">{navLabel(item)}</span>}
         {item.id === "orders" ? <NavBadge collapsed={collapsed} /> : null}
@@ -213,30 +215,24 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
         animate && "transition-[width] duration-300 ease-out motion-reduce:transition-none",
       )}
     >
-      {/* Soft light leak, keeps the graphite from feeling flat */}
-      <div
-        className="pointer-events-none absolute -top-32 -start-28 size-72 rounded-full bg-primary/10 blur-3xl"
-        aria-hidden
-      />
-
-      <div className={cn("relative flex h-16 shrink-0 items-center px-5", collapsed && "justify-center px-0")}>
+      <div className={cn("relative flex h-16 shrink-0 items-center border-b border-white/[0.06] px-5", collapsed && "justify-center px-0")}>
         <SidebarLogo collapsed={collapsed} />
       </div>
 
-      <div className="relative px-3 pt-3 pb-2">
+      <div className="relative px-3 pt-4 pb-1">
         <SidebarNewOrder collapsed={collapsed} />
       </div>
 
       <nav aria-label={t("nav.primary")} className="relative flex-1 overflow-y-auto px-3 pt-3 scrollbar-inverse">
         <p
           className={cn(
-            "mb-2 px-2 text-[0.65rem] font-bold tracking-[0.14em] text-white/55 uppercase",
+            "mb-1.5 px-2 text-[0.64rem] font-bold tracking-[0.14em] text-white/50 uppercase",
             collapsed && "sr-only",
           )}
         >
           {t("nav.workspace")}
         </p>
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {PRIMARY_NAV.filter((item) => item.id !== "new-order").map((item) => (
             <li key={item.id}>
               <SidebarItem item={item} collapsed={collapsed} />
@@ -246,14 +242,14 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
 
         <p
           className={cn(
-            "mt-7 mb-2 px-2 text-[0.65rem] font-bold tracking-[0.14em] text-white/55 uppercase",
+            "mt-6 mb-1.5 px-2 text-[0.64rem] font-bold tracking-[0.14em] text-white/50 uppercase",
             collapsed && "sr-only",
           )}
         >
           {t("nav.ai")}
         </p>
         {collapsed ? <div className="mx-auto mt-5 mb-3 h-px w-8 bg-white/10" aria-hidden /> : null}
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {AI_NAV.map((item) => (
             <li key={item.id}>
               <SidebarItem item={item} collapsed={collapsed} />
@@ -263,14 +259,14 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
 
         <p
           className={cn(
-            "mt-7 mb-2 px-2 text-[0.65rem] font-bold tracking-[0.14em] text-white/55 uppercase",
+            "mt-6 mb-1.5 px-2 text-[0.64rem] font-bold tracking-[0.14em] text-white/50 uppercase",
             collapsed && "sr-only",
           )}
         >
           {t("nav.account")}
         </p>
         {collapsed ? <div className="mx-auto mt-5 mb-3 h-px w-8 bg-white/10" aria-hidden /> : null}
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {SECONDARY_NAV.map((item) => (
             <li key={item.id}>
               <SidebarItem item={item} collapsed={collapsed} />
@@ -284,32 +280,31 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
         </ul>
       </nav>
 
-      <div className="relative shrink-0 border-t border-white/10 p-3">
+      {/* Who's signed in, with the collapse control beside it */}
+      <div className={cn("relative flex shrink-0 items-center gap-2 border-t border-white/[0.08] p-3", collapsed && "justify-center")}>
         {collapsed ? null : (
-          <div className="mb-2 flex items-center gap-3 rounded-2xl bg-white/[0.05] p-2.5">
+          <Link
+            href={ROUTES.profile}
+            className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl p-1.5 transition-colors hover:bg-white/[0.06] focus-visible:ring-2 focus-visible:ring-lime/50 focus-visible:outline-none"
+          >
             <Avatar className="size-8" />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold">{fullName}</p>
-              <p className="truncate text-[0.7rem] text-white/50">{live ? live.profile.accountRef : t("nav.demoWorkspace")}</p>
-            </div>
-          </div>
+            <span className="min-w-0 flex-1">
+              <span className="block truncate text-sm font-semibold">{fullName}</span>
+              <span className="block truncate text-[0.7rem] text-white/50">{live ? live.profile.accountRef : t("nav.demoWorkspace")}</span>
+            </span>
+          </Link>
         )}
-        <button
-          type="button"
-          onClick={() => writeCollapsed(!collapsed)}
-          aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
-          aria-expanded={!collapsed}
-          className={cn(sidebarItemClass(collapsed), "text-white/50")}
-        >
-          <span className="grid size-8 shrink-0 place-items-center">
-            {collapsed ? (
-              <PanelLeftOpen className="size-[1.15rem]" aria-hidden />
-            ) : (
-              <PanelLeftClose className="size-[1.15rem]" aria-hidden />
-            )}
-          </span>
-          {collapsed ? null : t("nav.collapse")}
-        </button>
+        <WithTooltip show label={collapsed ? t("nav.expand") : t("nav.collapse")}>
+          <button
+            type="button"
+            onClick={() => writeCollapsed(!collapsed)}
+            aria-label={collapsed ? t("nav.expand") : t("nav.collapse")}
+            aria-expanded={!collapsed}
+            className="grid size-10 shrink-0 place-items-center rounded-xl text-white/50 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-lime/50 focus-visible:outline-none"
+          >
+            {collapsed ? <PanelLeftOpen className="size-[1.1rem] rtl:-scale-x-100" aria-hidden /> : <PanelLeftClose className="size-[1.1rem] rtl:-scale-x-100" aria-hidden />}
+          </button>
+        </WithTooltip>
       </div>
     </aside>
   );
@@ -320,7 +315,16 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
 /* -------------------------------------------------------------------------- */
 
 const TAB_IDS: Destination[] = ["overview", "orders", "new-order", "add-funds"];
-const MORE_IDS: Destination[] = ["transactions", "support", "digital-products", "social", "referrals", "settings", "profile"];
+const MORE_IDS: Destination[] = ["transactions", "support", "digital-products", "ai", "social", "referrals", "settings", "profile"];
+
+/** Shared look for the bottom bar's tabs: an icon in a pill that fills when active, and a label. */
+const tabClass =
+  "group/tab flex h-full w-full flex-col items-center justify-center gap-0.5 text-[0.66rem] font-medium text-muted-foreground transition-colors focus-visible:outline-none";
+const tabPill = (active: boolean) =>
+  cn(
+    "relative grid h-7 w-12 place-items-center rounded-full transition-colors duration-200 group-focus-visible/tab:ring-2 group-focus-visible/tab:ring-primary/40 group-active/tab:bg-muted",
+    active && "bg-secondary text-primary group-active/tab:bg-secondary",
+  );
 const ALL_NAV = [...PRIMARY_NAV, ...AI_NAV, ...SECONDARY_NAV];
 const navItem = (id: Destination) => ALL_NAV.find((n) => n.id === id)!;
 
@@ -328,6 +332,8 @@ function BottomNav() {
   const activeId = useActiveDestination();
   const [moreOpen, setMoreOpen] = React.useState(false);
   const { attention } = useDemoOrders().summary;
+  // Pages reached through "More" keep it highlighted, so the bar always shows where you are.
+  const moreActive = activeId !== null && MORE_IDS.includes(activeId);
 
   // New Order is a focused flow with its own sticky action bar.
   if (activeId === "new-order") return null;
@@ -338,40 +344,30 @@ function BottomNav() {
         aria-label={t("nav.primary")}
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
-        <ul className="mx-auto grid h-16 max-w-xl grid-cols-5 px-2">
+        <ul className="mx-auto grid h-16 max-w-xl grid-cols-5 px-1">
           {TAB_IDS.map((id) => {
             const item = navItem(id);
             const Icon = item.icon;
             const active = id === activeId;
             if (id === "new-order") {
               return (
-                <li key={id} className="grid place-items-center">
-                  <NavTarget id={id} className="group -mt-6 flex flex-col items-center gap-1 focus-visible:outline-none">
-                    <span className="grid size-14 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_10px_30px_-8px_rgb(112_71_235/0.7)] ring-4 ring-background transition-transform group-active:scale-95 group-focus-visible:ring-primary/40">
-                      <Plus className="size-6" strokeWidth={2.6} aria-hidden />
+                <li key={id}>
+                  <NavTarget id={id} className={cn(tabClass, "font-semibold text-foreground")}>
+                    <span className="grid h-9 w-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_6px_16px_-8px_rgb(112_71_235/0.9)] transition-transform group-active/tab:scale-95 group-focus-visible/tab:ring-3 group-focus-visible/tab:ring-primary/40 motion-reduce:transition-none">
+                      <Plus className="size-5" strokeWidth={2.6} aria-hidden />
                     </span>
-                    <span className="text-[0.68rem] font-semibold text-foreground">{t("nav.newOrder")}</span>
+                    {t("nav.newOrder")}
                   </NavTarget>
                 </li>
               );
             }
             return (
               <li key={id}>
-                <NavTarget
-                  id={id}
-                  aria-current={active ? "page" : undefined}
-                  className={cn(
-                    "relative flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl text-[0.68rem] font-medium text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none active:bg-muted",
-                    active && "font-semibold text-primary",
-                  )}
-                >
-                  {active ? (
-                    <span className="absolute top-0 h-0.5 w-8 rounded-b-full bg-primary" aria-hidden />
-                  ) : null}
-                  <span className="relative">
+                <NavTarget id={id} aria-current={active ? "page" : undefined} className={cn(tabClass, active && "font-semibold text-foreground")}>
+                  <span className={tabPill(active)}>
                     <Icon className="size-5" aria-hidden />
                     {id === "orders" && attention ? (
-                      <span className="absolute -top-1 -end-2 grid h-4 min-w-4 place-items-center rounded-full bg-soon px-1 text-[0.58rem] font-bold text-white ring-2 ring-card dark:text-graphite">
+                      <span className="absolute -top-1 end-1 grid h-4 min-w-4 place-items-center rounded-full bg-soon px-1 text-[0.58rem] font-bold text-white ring-2 ring-card dark:text-graphite">
                         {attention}
                       </span>
                     ) : null}
@@ -382,13 +378,10 @@ function BottomNav() {
             );
           })}
           <li>
-            <button
-              type="button"
-              onClick={() => setMoreOpen(true)}
-              aria-haspopup="dialog"
-              className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-xl text-[0.68rem] font-medium text-muted-foreground transition-colors focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none active:bg-muted"
-            >
-              <Ellipsis className="size-5" aria-hidden />
+            <button type="button" onClick={() => setMoreOpen(true)} aria-haspopup="dialog" className={cn(tabClass, moreActive && "font-semibold text-foreground")}>
+              <span className={tabPill(moreActive)}>
+                <Ellipsis className="size-5" aria-hidden />
+              </span>
               {t("nav.more")}
             </button>
           </li>
@@ -420,12 +413,12 @@ function BottomNav() {
                     id={id}
                     onClick={() => setMoreOpen(false)}
                     aria-current={activeId === id ? "page" : undefined}
-                    className="flex h-14 w-full items-center gap-3 rounded-2xl border bg-card px-3.5 text-start text-sm font-semibold transition-colors hover:border-primary/30 active:bg-muted"
+                    className="flex h-13 w-full min-w-0 items-center gap-2.5 rounded-xl border bg-card px-3 text-start text-[0.84rem] font-semibold transition-colors hover:border-primary/30 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none active:bg-muted aria-[current=page]:border-primary/40 aria-[current=page]:bg-secondary/50"
                   >
-                    <span className="grid size-8 place-items-center rounded-xl bg-secondary text-secondary-foreground">
+                    <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-secondary-foreground">
                       <Icon className="size-4" aria-hidden />
                     </span>
-                    {navLabel(item)}
+                    <span className="truncate">{navLabel(item)}</span>
                   </NavTarget>
                 </li>
               );

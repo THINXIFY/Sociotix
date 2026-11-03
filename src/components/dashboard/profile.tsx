@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { BadgeCheck, Briefcase, Camera, Check, CircleAlert, Copy, FlaskConical, LoaderCircle, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
+import Link from "next/link";
+import { BadgeCheck, Briefcase, Camera, Check, ChevronRight, CircleAlert, Copy, FlaskConical, KeyRound, Laptop, LoaderCircle, Pencil, ShieldCheck, Trash2, UserRound } from "lucide-react";
 import { DEMO_USER, formatDate } from "@/lib/demo-account";
 import {
   type AccountType,
@@ -18,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { PendingBadge, Section } from "./account-ui";
 import { saveProfile, setAvatarPreview, useAvatarPreview, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
-import { DemoTag, enter, Panel } from "./shared";
+import { dashButton, DemoTag, enter, Panel, ROUTES } from "./shared";
 import { Avatar } from "./top-bar";
 import { Select } from "@/components/ui/select";
 
@@ -40,7 +41,7 @@ const FIELD_IDS: Record<keyof ProfileErrors, string> = {
 
 export function MyProfile() {
   // Re-render when language, currency, time zone or date format change.
-  useDisplay();
+  const display = useDisplay();
   const { profile, fullName } = useProfile();
   // Live mode: saved to the account on the server. Demo mode: this browser only.
   const live = useLiveAccount();
@@ -136,17 +137,17 @@ export function MyProfile() {
   const err = (k: keyof ProfileErrors) => (editing ? errors[k] : undefined);
 
   return (
-    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8">
+    <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
       <header className={cn("flex flex-wrap items-end justify-between gap-4", e[0].className)} style={e[0].style}>
         <div className="min-w-0">
-          <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">My Profile</h1>
-          <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Manage your personal information and account details.</p>
+          <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">My Profile</h1>
+          <p className="mt-1 max-w-xl text-sm text-muted-foreground sm:text-[0.95rem]">Manage your personal information and account details.</p>
         </div>
         {!editing ? (
           <button
             type="button"
             onClick={startEdit}
-            className="inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-semibold text-primary-foreground shadow-[0_10px_28px_-12px_rgb(112_71_235/0.8)] transition-all hover:-translate-y-px hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
+            className={cn(dashButton.primary, "h-11 px-5")}
           >
             <Pencil className="size-4" aria-hidden /> Edit Profile
           </button>
@@ -163,7 +164,10 @@ export function MyProfile() {
       </div>
 
       <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-[19rem_minmax(0,1fr)] lg:items-start">
-        <ProfileCard className={e[1].className} live={live} profile={current} fullName={editing ? `${current.firstName} ${current.lastName}`.trim() : fullName} />
+        <div className={cn("space-y-4 lg:sticky lg:top-24", e[1].className)}>
+          <ProfileCard live={live} profile={current} fullName={editing ? `${current.firstName} ${current.lastName}`.trim() : fullName} />
+          <SecurityShortcut live={Boolean(live)} id="security-shortcut" className="hidden lg:block" />
+        </div>
 
         <form onSubmit={save} noValidate className={cn("min-w-0", e[2].className)} aria-label="Profile details">
           <Panel className="divide-y px-5 py-7 sm:px-7">
@@ -274,9 +278,12 @@ export function MyProfile() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs font-medium text-muted-foreground">Preferred currency</dt>
+                  <dt className="text-xs font-medium text-muted-foreground">Currency</dt>
                   <dd className="mt-1 text-sm font-semibold">
-                    USD <span className="font-normal text-muted-foreground">· more currencies later</span>
+                    USD <span className="font-normal text-muted-foreground">· shown in {display.currency}</span>{" "}
+                    <Link href={`${ROUTES.settings}#region`} className="text-xs font-semibold text-primary hover:underline">
+                      Change
+                    </Link>
                   </dd>
                 </div>
                 <div>
@@ -327,6 +334,7 @@ export function MyProfile() {
             </div>
           ) : null}
         </form>
+        <SecurityShortcut live={Boolean(live)} id="security-shortcut-m" className="lg:hidden" />
       </div>
     </div>
   );
@@ -504,5 +512,40 @@ function ProfileCard({ profile, fullName, live, className }: { profile: ProfileD
         </div>
       </Panel>
     </aside>
+  );
+}
+
+/** Shortcuts to the sign-in controls: the real security page for live accounts, the Settings previews in demo mode. */
+function SecurityShortcut({ live, id, className }: { live: boolean; id: string; className?: string }) {
+  const href = live ? "/dashboard/security" : `${ROUTES.settings}#security`;
+  const rows = [
+    { id: "sec-password", label: "Password", hint: live ? "Change your sign-in password" : "Preview only in demo mode", Icon: KeyRound },
+    { id: "sec-sessions", label: "Active sessions", hint: live ? "See where you're signed in" : "Preview only in demo mode", Icon: Laptop },
+  ];
+  return (
+    <Panel className={cn("overflow-hidden", className)} aria-labelledby={`${id}-title`}>
+      <h2 id={`${id}-title`} className="flex items-center gap-2 px-4 pt-4 text-sm font-bold">
+        <ShieldCheck className="size-4 text-primary" aria-hidden /> Sign-in &amp; security
+      </h2>
+      <ul className="mt-2 divide-y border-t">
+        {rows.map((r) => (
+          <li key={r.id}>
+            <Link
+              href={live ? `${href}#${r.id}` : href}
+              className="group flex min-h-14 items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50 focus-visible:bg-muted/60 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none focus-visible:ring-inset"
+            >
+              <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-muted text-foreground/70" aria-hidden>
+                <r.Icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold">{r.label}</span>
+                <span className="block truncate text-xs text-muted-foreground">{r.hint}</span>
+              </span>
+              <ChevronRight className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none rtl:-scale-x-100" aria-hidden />
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }

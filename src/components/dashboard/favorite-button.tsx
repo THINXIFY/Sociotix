@@ -25,7 +25,8 @@ export function FavoriteButton({ service, className }: { service: Service; class
         toggleFavorite(service.id);
       }}
       className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-full transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+        // A 44px invisible hit area around the 32px circle, so the heart stays small but easy to tap.
+        "relative grid size-8 shrink-0 place-items-center rounded-full transition-colors after:absolute after:top-1/2 after:left-1/2 after:size-11 after:-translate-1/2 after:rounded-full focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
         on ? "text-primary hover:bg-secondary" : "text-muted-foreground hover:bg-muted hover:text-foreground",
         className,
       )}

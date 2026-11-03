@@ -82,7 +82,7 @@ export const en = {
 
   // Settings
   "settings.title": "Settings",
-  "settings.subtitle": "Personalize your workspace, currency, notifications and account security.",
+  "settings.subtitle": "Manage your account, security, preferences and privacy.",
   "settings.sections": "Settings sections",
   "settings.nav.appearance": "Appearance",
   "settings.nav.region": "Currency & region",
@@ -166,6 +166,22 @@ export const en = {
   "account.signOutBody": "Sign-in arrives in a later phase. This workspace runs on a demo account, so there's nothing to sign out of yet.",
   "account.deleteBody": "Account deletion isn't available in demo mode and nothing will be deleted. Once accounts are live, you'll be able to request deletion here.",
   "account.deleteNote": "To clear what this demo saved in your browser, use {reset}. For questions, email {email} or visit {support}.",
+  "settings.nav.securityOnly": "Security",
+  "settings.nav.privacy": "Privacy & account",
+  "account.infoDesc": "Your name, email and password.",
+  "account.editProfile": "Edit profile",
+  "account.verified": "Verified",
+  "account.unverified": "Not verified",
+  "security.manage": "Manage",
+  "security.liveDesc": "Where you're signed in and how you sign in.",
+  "security.notYet": "Not available yet",
+  "notifications.liveNote": "Email notifications aren't sent yet, so there's nothing to choose here. Updates appear in the bell menu at the top of your dashboard.",
+  "privacy.description": "Your data, signing out and closing your account.",
+  "privacy.live1": "Your profile, orders and wallet history are visible only to you and authorized Sociotix staff.",
+  "privacy.live2": "Sociotix never asks for your social media passwords or one-time codes.",
+  "account.deleteLive": "To close your account, contact support. We confirm every request with you before anything is removed.",
+  "account.contactSupport": "Contact support",
+  "account.signOutLiveBody": "You'll be signed out on this device. Other devices stay signed in — you can manage them under Security.",
 } as const;
 
 export type MessageKey = keyof typeof en;

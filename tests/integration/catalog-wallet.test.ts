@@ -78,8 +78,32 @@ describe("customer wallets", () => {
     expect(await walletSummary(db, customer.id)).toMatchObject({ availableCents: 2_500, pendingCents: 1_000 });
     const history = await walletEntries(db, customer.id);
     expect(history.items).toHaveLength(1);
-    expect(history.items[0]).toMatchObject({ label: "Deposit", amountCents: 2_500 });
-    expect(Object.keys(history.items[0]).sort()).toEqual(["amountCents", "at", "id", "label"]); // no internal ledger fields
+    expect(history.items[0]).toMatchObject({ label: "Deposit", kind: "deposit_credit", amountCents: 2_500, orderRef: null });
+    expect(Object.keys(history.items[0]).sort()).toEqual(["amountCents", "at", "id", "kind", "label", "orderRef"]); // no internal accounts, keys or staff
+    expect(history).toMatchObject({ total: 1, pages: 1, totals: { inCents: 2_500, outCents: 0 } });
+  });
+
+  it("history filters, sorts and totals only the caller's own entries", async () => {
+    const a = await makeCustomer(db);
+    const b = await makeCustomer(db);
+    await fundWallet(db, a.customer.id, 1_000);
+    await fundWallet(db, a.customer.id, 4_000);
+    await fundWallet(db, b.customer.id, 7_700);
+    const all = await walletEntries(db, a.customer.id);
+    expect(all.items.map((e) => e.amountCents)).toEqual([4_000, 1_000]);
+    expect((await walletEntries(db, a.customer.id, 1, 20, { sort: "oldest" })).items.map((e) => e.amountCents)).toEqual([1_000, 4_000]);
+    expect((await walletEntries(db, a.customer.id, 1, 20, { direction: "out" })).total).toBe(0);
+    expect((await walletEntries(db, a.customer.id, 1, 20, { kind: "deposit_credit" })).totals).toEqual({ inCents: 5_000, outCents: 0 });
+    expect((await walletEntries(db, a.customer.id, 1, 20, { q: "deposit" })).total).toBe(2);
+    expect((await walletEntries(db, a.customer.id, 1, 20, { q: all.items[0].id.slice(0, 8) })).items.map((e) => e.id)).toEqual([all.items[0].id]);
+    expect((await walletEntries(db, a.customer.id, 1, 20, { from: "2000-01-01", to: "2000-01-02" })).total).toBe(0);
+    expect((await walletEntries(db, a.customer.id, 1, 1)).pages).toBe(2);
+    expect(await codeOf(walletEntries(db, a.customer.id, 1, 20, { kind: "staff_only" as "refund" }))).toMatch(/invalid_value|VALIDATION/); // unknown types are refused, not ignored
+    signInAs("customer", a.token);
+    const r = (await (await call(walletTxRoute.GET, "/api/account/wallet/transactions?direction=in&sort=oldest")).json()) as { total: number; items: { amountCents: number }[] };
+    expect(r.total).toBe(2);
+    expect(r.items.map((e) => e.amountCents)).toEqual([1_000, 4_000]); // never b's 7,700
+    await jar_clear();
   });
 
   it("there is no way to write to a wallet through the API", () => {
