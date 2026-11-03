@@ -207,7 +207,7 @@ export function AdminProviders() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Operations <AdminDemoTag>Admin demo</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Fulfillment Providers</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Fulfillment Providers</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Manage fulfillment partners, service connections and delivery operations in one place.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">

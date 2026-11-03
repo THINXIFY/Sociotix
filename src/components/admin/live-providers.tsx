@@ -230,7 +230,7 @@ export function LiveAdminProviders() {
     <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <header>
         <p className="text-[0.8rem] font-medium text-muted-foreground">Operations</p>
-        <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Fulfillment providers</h1>
+        <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Fulfillment providers</h1>
         <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Prepare providers, map catalog services to them and get approved orders ready for provider fulfilment. Nothing here moves money.</p>
       </header>
 

@@ -166,7 +166,7 @@ export function AdminAnalytics() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Insights <AdminDemoTag>Demo records</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Analytics &amp; Reports</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Analytics &amp; Reports</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Understand business performance, track trends and discover opportunities.</p>
         </div>
         <button

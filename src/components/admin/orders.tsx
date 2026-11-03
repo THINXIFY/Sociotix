@@ -269,7 +269,7 @@ export function AdminOrders() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Operations <AdminDemoTag>Admin demo</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Orders</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Orders</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">See what each order needs and act on it. Actions here are demo-only and change nothing.</p>
         </div>
         {noteCount ? (

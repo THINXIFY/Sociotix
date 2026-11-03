@@ -132,7 +132,7 @@ export function LiveReports({ allowed }: { allowed: ReportId[] }) {
   if (!report)
     return (
       <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
-        <h1 className="font-heading text-[1.75rem] font-extrabold tracking-tight">Reports</h1>
+        <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Reports</h1>
         <p className="mt-2 text-muted-foreground">Your role doesn&apos;t include any reports.</p>
       </div>
     );
@@ -144,7 +144,7 @@ export function LiveReports({ allowed }: { allowed: ReportId[] }) {
       <header className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
         <div className="min-w-0">
           <p className="text-[0.8rem] font-medium text-muted-foreground">Analytics</p>
-          <h1 className="mt-1.5 font-heading text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Reports</h1>
+          <h1 className="font-heading mt-1.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Reports</h1>
           <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Accurate figures from Sociotix&apos;s records, with CSV export for the rows behind them.</p>
         </div>
         <div className="flex min-w-0 flex-col gap-2 xl:items-end">

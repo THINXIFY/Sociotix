@@ -202,7 +202,7 @@ export function AdminPayments() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Finance <AdminDemoTag>Admin demo</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Payments</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Payments</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Manage deposits, review transactions and monitor customer wallet activity.</p>
         </div>
         {noteCount ? (

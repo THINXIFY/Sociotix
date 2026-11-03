@@ -151,7 +151,7 @@ export function LiveAdminReferrals() {
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-[0.8rem] font-medium text-muted-foreground">Growth</p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Referrals</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Referrals</h1>
           <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Sign-ups made with customers&apos; referral links. Signals flag a referral for review; they never reject one.</p>
         </div>
         {d ? (

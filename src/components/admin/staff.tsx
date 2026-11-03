@@ -179,7 +179,7 @@ export function AdminStaff() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Administration <AdminDemoTag>Demo configuration</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Staff &amp; Permissions</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Staff &amp; Permissions</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Manage your team, organize roles and control access to your platform.</p>
         </div>
         <button type="button" onClick={() => openOverlay({ invite: true, member: "" })} className={primaryBtn}>

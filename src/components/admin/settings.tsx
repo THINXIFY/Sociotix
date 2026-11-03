@@ -207,7 +207,7 @@ export function AdminSettings() {
         <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
           Administration <AdminDemoTag>Local demo settings</AdminDemoTag>
         </p>
-        <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Settings</h1>
+        <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Settings</h1>
         <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Manage platform preferences and see what&apos;s ready to go live. Changes are saved on this device only and never affect customers.</p>
       </header>
 

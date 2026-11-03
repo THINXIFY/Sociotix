@@ -239,7 +239,7 @@ export function AdminReferrals() {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Growth <AdminDemoTag>Admin demo</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Referrals &amp; Rewards</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Referrals &amp; Rewards</h1>
           <p className="mt-1 max-w-xl text-[0.95rem] text-muted-foreground">Track referrals, review reward eligibility and monitor program performance.</p>
         </div>
         {noteCount ? (

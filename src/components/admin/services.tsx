@@ -240,7 +240,7 @@ export function ServicesManager({ live = false }: { live?: boolean }) {
   if (live && source.state !== "ready") {
     return (
       <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8" aria-busy={source.state === "loading" || undefined}>
-        <h1 className="text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Services &amp; Pricing</h1>
+        <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Services &amp; Pricing</h1>
         {source.state === "loading" ? (
           <div className="mt-7 space-y-3" aria-label="Loading the catalog">
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -270,7 +270,7 @@ export function ServicesManager({ live = false }: { live?: boolean }) {
           <p className="flex items-center gap-2 text-[0.8rem] font-medium text-muted-foreground">
             Catalog {live ? null : <AdminDemoTag>Admin demo</AdminDemoTag>}
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Services &amp; Pricing</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Services &amp; Pricing</h1>
           <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">
             Manage the catalog, set pricing and track what each service needs before it can be ordered.{" "}
             {live ? "Changes are saved to the catalog and recorded in the audit log." : "Changes stay in this browser."}

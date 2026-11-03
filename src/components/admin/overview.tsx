@@ -91,7 +91,7 @@ export function AdminOverview() {
             {new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" }).format(new Date(ADMIN_NOW))}
             <AdminDemoTag>Demo data</AdminDemoTag>
           </p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">
             {greeting}, {firstName}
           </h1>
           <p className="mt-1 text-[0.95rem] text-muted-foreground">Here&apos;s what&apos;s happening across your platform today.</p>
@@ -99,13 +99,13 @@ export function AdminOverview() {
         <div className="grid grid-cols-2 gap-2 sm:flex">
           <Link
             href="/admin/orders"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_8px_20px_-12px_rgb(112_71_235/0.9)] transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-3.5 text-[0.84rem] font-semibold whitespace-nowrap text-primary-foreground sm:h-10 sm:px-4 sm:text-sm shadow-[0_8px_20px_-12px_rgb(112_71_235/0.9)] transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none"
           >
             <Package className="size-4" aria-hidden /> Manage Orders
           </Link>
           <Link
             href="/admin/services"
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-full border bg-card px-4 text-sm font-semibold transition-colors hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-full border bg-card px-3.5 text-[0.84rem] font-semibold whitespace-nowrap transition-colors sm:h-10 sm:px-4 sm:text-sm hover:border-primary/40 hover:text-primary focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
           >
             <Settings2 className="size-4" aria-hidden /> Manage Services
           </Link>
@@ -157,7 +157,7 @@ function Scorecard() {
         so the sidebar state never breaks it — phones: Revenue and review full-width, the rest 2 × 2 ·
         ~36rem: 2 columns · ~56rem: 3 × 2.
       */}
-      <dl className="grid grid-cols-2 gap-2.5 @xl:auto-rows-fr @xl:gap-3 @4xl:grid-cols-3">
+      <dl className="grid auto-rows-fr grid-cols-2 gap-2 @xl:gap-2.5 @3xl:grid-cols-3 @5xl:grid-cols-6">
         {/* Revenue leads: it's the one figure every other number feeds into. Order payments minus refunds. */}
         <Kpi
           href="/admin/payments"
@@ -229,13 +229,13 @@ function Kpi({
   return (
     <div
       className={cn(
-        "group/kpi relative flex min-w-0 flex-col rounded-2xl border bg-card px-4 py-3.5 transition-colors hover:border-foreground/20 has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-primary/30 @xl:px-5 @xl:py-4",
-        wide && "col-span-2 @xl:col-span-1",
+        "group/kpi relative flex min-w-0 flex-col rounded-2xl border bg-card px-3.5 py-3 shadow-soft transition-[border-color,translate] duration-200 hover:-translate-y-px hover:border-foreground/20 has-[a:focus-visible]:ring-3 has-[a:focus-visible]:ring-primary/30 motion-reduce:transition-none motion-reduce:hover:translate-y-0 @xl:px-4",
+        wide && "min-w-0",
         featured && "border-transparent bg-graphite bg-[linear-gradient(135deg,transparent_55%,rgb(112_71_235/0.16))] text-white hover:border-white/15 dark:border-white/10 dark:bg-[#1b1c23]",
         attention && "border-soon/35 bg-soon-soft/25 hover:border-soon/60 dark:bg-soon-soft/10",
       )}
     >
-      <dt className={cn("flex items-center gap-1.5 pe-5 text-[0.78rem] font-medium whitespace-nowrap", featured ? "text-white/65" : attention ? "text-soon" : "text-muted-foreground")}>
+      <dt className={cn("flex min-w-0 items-center gap-1.5 pe-5 text-[0.78rem] font-medium whitespace-nowrap [&>a]:truncate", featured ? "text-white/65" : attention ? "text-soon" : "text-muted-foreground")}>
         {attention ? <span className="size-1.5 shrink-0 rounded-full bg-soon" aria-hidden /> : null}
         <Link href={href} className="after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none">
           {label}
@@ -244,8 +244,8 @@ function Kpi({
         {badge}
       </dt>
       <ArrowUpRight className={cn("absolute end-3.5 top-3.5 size-3.5 opacity-0 transition-opacity group-hover/kpi:opacity-60 motion-reduce:transition-none", featured ? "text-white" : "text-muted-foreground")} aria-hidden />
-      <dd className={cn("mt-1 font-heading text-[1.5rem] leading-tight font-extrabold tracking-[-0.015em] tabular-nums @xl:text-[1.7rem]", attention && "text-soon")}>{value}</dd>
-      <dd className={cn("mt-auto pt-0.5 text-[0.78rem] leading-snug", featured ? "text-white/60" : "text-muted-foreground")}>{note}</dd>
+      <dd className={cn("mt-1 truncate font-heading text-[1.3rem] leading-tight font-extrabold tracking-[-0.015em] tabular-nums @xl:text-[1.5rem]", attention && "text-soon")}>{value}</dd>
+      <dd className={cn("mt-auto line-clamp-2 pt-0.5 text-[0.74rem] leading-snug", featured ? "text-white/60" : "text-muted-foreground")}>{note}</dd>
     </div>
   );
 }

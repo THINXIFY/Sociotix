@@ -163,7 +163,7 @@ export function LiveCustomers() {
     <div className="mx-auto max-w-[96rem] px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <header>
         <p className="text-[0.8rem] font-medium text-muted-foreground">People</p>
-        <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Customers</h1>
+        <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Customers</h1>
         <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Every registered customer, with balances from the ledger and orders as recorded. Viewing a customer never changes their account.</p>
       </header>
 

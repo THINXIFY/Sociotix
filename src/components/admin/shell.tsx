@@ -93,7 +93,7 @@ function NavLink({ section, collapsed, onNavigate }: { section: AdminSection; co
       aria-label={collapsed ? section.label : undefined}
       className={cn(
         "group/item relative flex items-center gap-3 rounded-xl text-sm font-medium text-white/60 transition-colors hover:bg-white/[0.06] hover:text-white focus-visible:ring-2 focus-visible:ring-lime/50 focus-visible:outline-none",
-        collapsed ? "mx-auto size-10 justify-center" : "h-10 w-full px-2.5",
+        collapsed ? "mx-auto size-10 justify-center" : "h-11 w-full px-2.5 lg:h-10",
         active && "bg-white/[0.1] text-white shadow-[inset_0_0_0_1px_rgb(255_255_255/0.06)] hover:bg-white/[0.1]",
       )}
     >
@@ -166,7 +166,7 @@ function AdminLogo({ collapsed }: { collapsed?: boolean }) {
       // Icon-only when collapsed; otherwise the visible "Sociotix Admin" is the name.
       aria-label={collapsed ? "Sociotix Admin" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none",
+        "flex min-h-11 items-center gap-2 rounded-lg text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none",
       )}
     >
       <Logo variant={collapsed ? "icon" : "horizontal"} surface="dark" className="h-7" />
@@ -229,7 +229,7 @@ function Sidebar({ collapsed }: { collapsed: boolean }) {
 /* -------------------------------------------------------------------------- */
 
 const iconButton =
-  "relative grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none data-popup-open:bg-muted data-popup-open:text-foreground";
+  "relative grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors after:absolute after:-inset-1 after:rounded-full hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none data-popup-open:bg-muted data-popup-open:text-foreground";
 const popupClass = popupSurface;
 
 type Result = { id: string; title: string; meta: string; href: string; tile?: React.ReactNode };
@@ -568,7 +568,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <div className="flex h-16 items-center justify-between px-5">
             <SheetTitle className="sr-only">Admin navigation</SheetTitle>
             <AdminLogo />
-            <button type="button" onClick={() => setNavOpen(false)} aria-label="Close navigation" className="grid size-9 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
+            <button type="button" onClick={() => setNavOpen(false)} aria-label="Close navigation" className="grid size-11 place-items-center rounded-full text-white/60 hover:bg-white/10 hover:text-white">
               <X className="size-4" aria-hidden />
             </button>
           </div>
@@ -582,7 +582,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             <NavGroups collapsed={false} onNavigate={() => setNavOpen(false)} />
           </nav>
           <div className="flex items-center justify-between border-t border-white/10 px-5 py-3">
-            <Link href="/dashboard" className="text-sm font-medium text-white/60 hover:text-white">
+            <Link href="/dashboard" className="inline-flex h-11 items-center rounded-lg text-sm font-medium text-white/60 hover:text-white focus-visible:ring-3 focus-visible:ring-lime/40 focus-visible:outline-none">
               Customer dashboard
             </Link>
             <ThemeToggle className="text-white/70" />

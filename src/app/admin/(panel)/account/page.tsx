@@ -16,7 +16,7 @@ async function Content({ searchParams }: { searchParams: Promise<Record<string, 
     <div className="mx-auto max-w-3xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
       <header>
         <p className="text-[0.8rem] font-medium text-muted-foreground">Administration</p>
-        <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Account &amp; security</h1>
+        <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Account &amp; security</h1>
         <p className="mt-1 text-[0.95rem] text-muted-foreground">
           {ctx.session.user.name || ctx.session.user.email} · {ctx.staff.roleName} · {ctx.session.user.email}
         </p>

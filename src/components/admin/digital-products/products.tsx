@@ -204,7 +204,7 @@ export function DigitalProducts({ canManage }: { canManage: boolean }) {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-[0.8rem] font-medium text-muted-foreground">Content</p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">Digital Products</h1>
+          <h1 className="font-heading mt-1.5 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">Digital Products</h1>
           <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">Create and publish products for the Digital Products Marketplace. Drafts stay private. Purchasing isn&apos;t open yet: publishing shows a product, it doesn&apos;t sell it.</p>
         </div>
         <div className="flex shrink-0 gap-2 self-start sm:self-auto">

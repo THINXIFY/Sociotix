@@ -24,7 +24,7 @@ export function SectionPreview({ id }: { id: string }) {
             <p className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-0.5 text-[0.7rem] font-bold tracking-wide text-muted-foreground uppercase">
               <CircleDashed className="size-3" aria-hidden /> Preview · not built yet
             </p>
-            <h1 className="mt-2 text-[1.6rem] leading-tight font-extrabold tracking-tight">{section.label}</h1>
+            <h1 className="font-heading mt-2 text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{section.label}</h1>
             <p className="mt-1 text-[0.95rem] text-muted-foreground">{section.summary}</p>
           </div>
         </div>
