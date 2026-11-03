@@ -42,6 +42,14 @@ export function ActivityToast() {
   const [item, setItem] = React.useState<Item | null>(null);
   const [shown, setShown] = React.useState(false);
   const dismissRef = React.useRef<() => void>(() => {});
+  // While any dialog is open the toast steps aside, so it never sits in the keyboard path or competes for attention.
+  const [dialogOpen, setDialogOpen] = React.useState(false);
+  React.useEffect(() => {
+    const check = () => setDialogOpen(Boolean(document.querySelector("[role=dialog]")));
+    const mo = new MutationObserver(check);
+    mo.observe(document.body, { childList: true, subtree: true });
+    return () => mo.disconnect();
+  }, []);
 
   React.useEffect(() => {
     let timers: number[] = [];
@@ -99,7 +107,7 @@ export function ActivityToast() {
 
   return (
     <div data-activity-toast role="status" aria-live="polite" className="pointer-events-none fixed start-4 bottom-[calc(env(safe-area-inset-bottom)+1rem)] z-40 w-[min(270px,calc(100vw-2rem))]">
-      {item && service && platform ? (
+      {item && service && platform && !dialogOpen ? (
         <div
           className={cn(
             "pointer-events-auto flex min-h-14 items-center gap-2.5 rounded-xl border bg-card/95 py-2 ps-2 pe-1 shadow-[0_12px_32px_-16px_rgb(32_33_39/0.45)] backdrop-blur-md transition-[opacity,translate] duration-300 ease-out motion-reduce:translate-y-0 motion-reduce:transition-opacity dark:shadow-[0_12px_32px_-12px_rgb(0_0_0/0.7)]",
