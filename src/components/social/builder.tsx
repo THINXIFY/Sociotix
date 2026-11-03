@@ -367,7 +367,7 @@ export function AutomationBuilder({ existing, template }: { existing: Automation
             <ArrowLeft className="size-4" aria-hidden />
           </Link>
           <div className="min-w-0">
-            <h1 className="truncate text-[1.5rem] leading-tight font-extrabold tracking-tight sm:text-[1.8rem]">{existing ? "Edit automation" : "Create automation"}</h1>
+            <h1 className="truncate font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{existing ? "Edit automation" : "Create automation"}</h1>
             <p className="text-[0.82rem] text-muted-foreground">{existing?.status === "active" ? "Saving without re-activating pauses it until you activate again." : "Nothing runs until you review and activate it."}</p>
           </div>
         </div>

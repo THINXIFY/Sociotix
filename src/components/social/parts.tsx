@@ -13,11 +13,11 @@ import { cn } from "@/lib/utils";
 
 /* Shared building blocks for the Social workspace (AI-06). */
 
-export const page = "mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-7 lg:px-8";
+export const page = "mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8";
 export const primaryButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-14px_rgb(112_71_235/0.9)] transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full bg-primary px-4.5 sm:h-10 text-sm font-semibold text-primary-foreground shadow-[0_10px_24px_-14px_rgb(112_71_235/0.9)] transition-colors hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-primary/35 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
 export const quietButton =
-  "inline-flex h-10 items-center justify-center gap-2 rounded-full border bg-card px-4 text-sm font-semibold transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex h-11 items-center justify-center gap-2 rounded-full border bg-card px-4 sm:h-10 text-sm font-semibold transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50";
 export const eyebrow = "text-[0.7rem] font-bold tracking-[0.16em] uppercase";
 
 const CATALOG = new Map(PLATFORMS.map((p) => [p.id, p]));
@@ -82,7 +82,7 @@ const TABS = [
 export function SocialNav({ className }: { className?: string }) {
   const pathname = usePathname();
   return (
-    <nav aria-label="Social workspace" className={cn("-mx-1 overflow-x-auto px-1", className)}>
+    <nav aria-label="Social workspace" className={cn("-mx-3 overflow-x-auto px-3 no-scrollbar sm:-mx-1 sm:px-1", className)}>
       <ul className="inline-flex gap-1 rounded-full border bg-card p-1 shadow-soft">
         {TABS.map((t) => {
           const active = pathname === t.href || (t.href !== SOCIAL_ROUTES.overview && pathname.startsWith(`${t.href}/`));
@@ -92,7 +92,7 @@ export function SocialNav({ className }: { className?: string }) {
                 href={t.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex h-9 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
+                  "inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap sm:h-9 transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
                   active ? "bg-graphite text-white dark:bg-white dark:text-graphite" : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
@@ -112,8 +112,8 @@ export function SocialHeader({ title, subtitle, action }: { title: string; subti
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
           <p className={cn(eyebrow, "text-primary")}>Sociotix AI · Social</p>
-          <h1 className="mt-1.5 text-[1.75rem] leading-tight font-extrabold tracking-tight sm:text-[2.1rem]">{title}</h1>
-          <p className="mt-1 max-w-2xl text-[0.95rem] text-muted-foreground">{subtitle}</p>
+          <h1 className="mt-1.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{title}</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground sm:text-[0.95rem]">{subtitle}</p>
         </div>
         {action}
       </div>

@@ -47,7 +47,7 @@ export function AutomationDetail({ data, a }: { data: AutomationData; a: Automat
               <ArrowLeft className="size-4" aria-hidden />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-[1.5rem] leading-tight font-extrabold tracking-tight sm:text-[1.8rem]">{a.name}</h1>
+              <h1 className="truncate font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{a.name}</h1>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-[0.82rem] text-muted-foreground">
                 <AutomationBadge status={a.status} />
                 {a.description ? <span>{a.description}</span> : null}

@@ -201,7 +201,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
               <ArrowLeft className="size-4" aria-hidden />
             </Link>
             <div className="min-w-0">
-              <h1 className="truncate text-[1.5rem] leading-tight font-extrabold tracking-tight sm:text-[1.8rem]">{post ? "Edit post" : "New post"}</h1>
+              <h1 className="truncate font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{post ? "Edit post" : "New post"}</h1>
               <p className="flex items-center gap-2 text-[0.82rem] text-muted-foreground">
                 {post ? <StateBadge state={post.state} /> : null}
                 {dirty ? <span className="text-soon">Unsaved changes</span> : post ? `Saved ${formatDateTime(post.updatedAt)}` : "Not saved yet"}
@@ -215,8 +215,17 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
               </button>
             ) : (
               <>
-                <button type="button" className={quietButton} onClick={() => setScheduleOpen(true)} disabled={busy !== null} aria-describedby={scheduleBlocker ? "schedule-why" : undefined}>
-                  <CalendarClock className="size-4" aria-hidden /> Schedule
+                {/* Blocked scheduling still opens its explanation, but never looks like a working publish action. */}
+                <button
+                  type="button"
+                  className={cn(quietButton, scheduleBlocker && "border-dashed text-muted-foreground")}
+                  onClick={() => setScheduleOpen(true)}
+                  disabled={busy !== null}
+                  title={scheduleBlocker ?? undefined}
+                  aria-describedby={scheduleBlocker ? "schedule-why" : undefined}
+                >
+                  {scheduleBlocker ? <Lock className="size-4" aria-hidden /> : <CalendarClock className="size-4" aria-hidden />} Schedule
+                  {scheduleBlocker ? <span className="sr-only"> (not available yet)</span> : null}
                 </button>
                 <button type="button" className={primaryButton} onClick={save} disabled={busy !== null || (!dirty && !!post)}>
                   <Save className="size-4" aria-hidden /> {busy === "save" ? "Saving…" : "Save draft"}

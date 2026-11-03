@@ -47,7 +47,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
   const hydrated = useHydrated();
   const tz = hydrated ? browserTimeZone() : "UTC";
   const today = hydrated ? dayKey(new Date().toISOString(), tz) : null;
-  const [view, setView] = React.useState<"month" | "week">("month");
+  const [view, setView] = React.useState<"month" | "week" | "list">("month");
   const [cursor, setCursor] = React.useState<string | null>(null);
   const [filter, setFilter] = React.useState<SocialProviderId | "all">("all");
   const [open, setOpen] = React.useState<PostView | null>(null);
@@ -70,8 +70,9 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
   const firstOfMonth = keyOf(ay, am - 1, 1);
   const gridStart = addDays(firstOfMonth, -weekday(ay, am - 1, 1));
   const weekStart = addDays(anchor, -weekday(ay, am - 1, Number(anchor.slice(8, 10))));
-  const days = view === "month" ? Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)) : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
   const inMonth = (k: string) => k.slice(0, 7) === firstOfMonth.slice(0, 7);
+  // List shows the whole month as an agenda, so it moves month by month like the grid.
+  const days = view === "week" ? Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)) : Array.from({ length: 42 }, (_, i) => addDays(gridStart, i)).filter((d) => view === "month" || inMonth(d));
   const visibleItems = days.flatMap((d) => byDay.get(d) ?? []);
   const providersUsed = [...new Set(data.posts.flatMap((p) => p.providers))];
 
@@ -80,7 +81,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
     const t = new Date(Date.UTC(ay, am - 1 + dir, 1));
     setCursor(keyOf(t.getUTCFullYear(), t.getUTCMonth(), 1));
   };
-  const title = view === "month" ? monthLabel(ay, am - 1) : `${dayLabel(days[0]!, { month: "short", day: "numeric" })} – ${dayLabel(days[6]!, { month: "short", day: "numeric", year: "numeric" })}`;
+  const title = view !== "week" ? monthLabel(ay, am - 1) : `${dayLabel(days[0]!, { month: "short", day: "numeric" })} – ${dayLabel(days[6]!, { month: "short", day: "numeric", year: "numeric" })}`;
 
   function openPost(p: PostView) {
     setOpen(p);
@@ -101,7 +102,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
     <div className={page}>
       <SocialHeader
         title="Calendar"
-        subtitle="See every planned and scheduled post across your month."
+        subtitle="Every planned and scheduled post — by month, week or as a list."
         action={
           <Link href={PUBLISHING_ROUTES.compose} className={primaryButton}>
             <PenLine className="size-4" aria-hidden /> New post
@@ -112,13 +113,13 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
           <div className="flex items-center rounded-full border bg-card p-1">
-            <button type="button" onClick={() => move(-1)} className="grid size-8 place-items-center rounded-full hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none" aria-label={view === "month" ? "Previous month" : "Previous week"}>
+            <button type="button" onClick={() => move(-1)} className="grid size-10 place-items-center rounded-full hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:size-8" aria-label={view === "week" ? "Previous week" : "Previous month"}>
               <ChevronLeft className="size-4" aria-hidden />
             </button>
-            <button type="button" onClick={() => setCursor(null)} className="h-8 rounded-full px-3 text-[0.78rem] font-semibold hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none">
+            <button type="button" onClick={() => setCursor(null)} className="h-10 rounded-full px-3 text-[0.78rem] font-semibold hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:h-8">
               Today
             </button>
-            <button type="button" onClick={() => move(1)} className="grid size-8 place-items-center rounded-full hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none" aria-label={view === "month" ? "Next month" : "Next week"}>
+            <button type="button" onClick={() => move(1)} className="grid size-10 place-items-center rounded-full hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:size-8" aria-label={view === "week" ? "Next week" : "Next month"}>
               <ChevronRight className="size-4" aria-hidden />
             </button>
           </div>
@@ -130,16 +131,16 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
           {providersUsed.length > 1 ? (
             <div className="flex flex-wrap gap-1" role="group" aria-label="Filter by platform">
               {(["all", ...providersUsed] as const).map((p) => (
-                <button key={p} type="button" aria-pressed={filter === p} onClick={() => setFilter(p)} className={cn("inline-flex h-8 items-center gap-1.5 rounded-full border px-2.5 text-[0.75rem] font-semibold", filter === p ? "border-transparent bg-graphite text-white dark:bg-white dark:text-graphite" : "bg-card text-muted-foreground hover:text-foreground")}>
+                <button key={p} type="button" aria-pressed={filter === p} onClick={() => setFilter(p)} className={cn("inline-flex h-10 items-center gap-1.5 rounded-full border px-2.5 text-[0.75rem] font-semibold sm:h-8", filter === p ? "border-transparent bg-graphite text-white dark:bg-white dark:text-graphite" : "bg-card text-muted-foreground hover:text-foreground")}>
                   {p === "all" ? "All" : <SocialTile provider={p} size="xs" className="size-4 rounded [&_svg]:size-2.5" />}
                   {p === "all" ? null : SOCIAL_PLATFORM[p].name}
                 </button>
               ))}
             </div>
           ) : null}
-          <div className="hidden rounded-full border bg-card p-1 md:flex" role="group" aria-label="Calendar view">
-            {(["month", "week"] as const).map((v) => (
-              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={cn("h-8 rounded-full px-3 text-[0.78rem] font-semibold capitalize", view === v ? "bg-graphite text-white dark:bg-white dark:text-graphite" : "text-muted-foreground hover:text-foreground")}>
+          <div className="flex rounded-full border bg-card p-1" role="group" aria-label="Calendar view">
+            {(["month", "week", "list"] as const).map((v) => (
+              <button key={v} type="button" aria-pressed={view === v} onClick={() => setView(v)} className={cn("h-10 rounded-full px-3.5 text-[0.78rem] font-semibold capitalize transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none sm:h-8", view === v ? "bg-graphite text-white dark:bg-white dark:text-graphite" : "text-muted-foreground hover:text-foreground")}>
                 {v}
               </button>
             ))}
@@ -153,7 +154,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
       ) : (
         <>
           {/* Desktop/tablet grid */}
-          <Panel className="mt-4 hidden overflow-hidden md:block">
+          <Panel className={cn("mt-4 hidden overflow-hidden", view !== "list" && "md:block")}>
             <div className="grid grid-cols-7 border-b bg-subtle/60 dark:bg-white/[0.02]">
               {WEEKDAYS.map((d) => (
                 <p key={d} className="px-2.5 py-2 text-[0.7rem] font-bold tracking-[0.1em] text-muted-foreground uppercase">
@@ -186,8 +187,8 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
             </div>
           </Panel>
 
-          {/* Mobile agenda */}
-          <div className="mt-4 md:hidden">
+          {/* Agenda: phones always, and the List view at every size */}
+          <div className={cn("mt-4", view !== "list" && "md:hidden")}>
             {visibleItems.length ? (
               <ol className="space-y-4">
                 {[...new Set(visibleItems.map((i) => i.day))].map((d) => (
@@ -196,7 +197,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
                     <ul className="space-y-1.5">
                       {(byDay.get(d) ?? []).map((it) => (
                         <li key={it.post.id}>
-                          <button type="button" onClick={() => openPost(it.post)} className="flex w-full items-center gap-3 rounded-2xl border bg-card px-3.5 py-3 text-start">
+                          <button type="button" onClick={() => openPost(it.post)} className="flex w-full items-center gap-3 rounded-2xl border bg-card px-3.5 py-3 text-start transition-colors hover:border-primary/35 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none">
                             <span className="w-14 shrink-0 text-[0.75rem] font-semibold tabular-nums text-muted-foreground">{timeIn(it.when, tz)}</span>
                             <span className="min-w-0 flex-1">
                               <span className="block truncate text-[0.85rem] font-semibold">{headline(it.post)}</span>
@@ -225,7 +226,7 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
               </Link>
             </Panel>
           ) : !visibleItems.length ? (
-            <p className="mt-4 rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground md:hidden">Nothing planned in this {view}.</p>
+            <p className={cn("mt-4 rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground", view !== "list" && "md:hidden")}>Nothing planned in this {view === "week" ? "week" : "month"}.</p>
           ) : null}
         </>
       )}
