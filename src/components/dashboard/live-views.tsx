@@ -27,6 +27,7 @@ import type { CustomerDeposit } from "@/lib/deposits";
 import { useLiveAccount } from "./live-account";
 import { BankInstructionsPanel, DepositStatusBadge } from "./live-deposit";
 import { CardIcon, DigitalProductsCard, FinderCard, HelpCard, splitAmount, useGreeting, WalletCard } from "./overview-parts";
+import { ForYouPanel } from "./onboarding";
 import { dashButton, enter, FINDER_ROUTE, Pagination, Panel, PanelHeader, ROUTES } from "./shared";
 import { Select } from "@/components/ui/select";
 
@@ -163,6 +164,8 @@ export function LiveOverview() {
               {orderCount ? "Each order shows its status and recorded activity." : "Ordering isn't open yet. You can already browse every service we plan to offer."}
             </EmptyState>
           </Panel>
+
+          <ForYouPanel className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} />
 
           <Panel className={cn("order-9 p-4 sm:p-5 md:col-span-2", a[7].className)} style={a[7].style} aria-labelledby="account-title">
             <PanelHeader

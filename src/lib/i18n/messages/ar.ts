@@ -120,8 +120,9 @@ export const ar: Messages = {
   "notifications.note": "يُحفظ في هذا المتصفح. لم يتم ربط إرسال البريد الإلكتروني بعد، لذا لا تُرسل أي رسائل في الوضع التجريبي. لا تتأثر الإشعارات داخل التطبيق في الشريط العلوي.",
 
   "preferences.description": "تُحفظ الآن وتُطبَّق مع إطلاق كل ميزة.",
-  "preferences.platform": "المنصة المفضلة",
-  "preferences.platformDesc": "سنستخدمها لاقتراح خدماتها أولًا.",
+  "preferences.platform": "الأهداف والمنصات",
+  "preferences.platformDesc": "ما تريده من Sociotix وأين تنشر. يحدد الاقتراحات في لوحة التحكم.",
+  "preferences.platformAction": "تعديل",
   "preferences.ai": "مساحة Sociotix AI",
   "preferences.aiDesc": "غيّر ما يصفك وأهدافك، أو أعد بدء المقدمة القصيرة.",
   "preferences.aiAction": "تعديل تفضيلات الذكاء الاصطناعي",

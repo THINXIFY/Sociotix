@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { ServiceUnavailable } from "@/components/auth/states";
 import { ViewerProvider } from "@/components/auth/viewer";
 import { LiveDashboard } from "@/components/dashboard/live-provider";
+import { OnboardingProvider } from "@/components/dashboard/onboarding";
 import { DashboardShell } from "@/components/dashboard/shell";
 import { customerPage } from "@/server/auth/pages";
 import { accountSnapshot } from "@/server/customers/customers";
@@ -19,7 +20,11 @@ async function Gate({ children }: { children: React.ReactNode }) {
   const r = await customerPage();
   if (r.status !== "ok") return <ServiceUnavailable />;
   const v = r.viewer;
-  const shell = <DashboardShell>{children}</DashboardShell>;
+  const shell = (
+    <DashboardShell>
+      <OnboardingProvider>{children}</OnboardingProvider>
+    </DashboardShell>
+  );
   return (
     <ViewerProvider viewer={{ kind: "customer", name: v.name, email: v.email, demo: v.demo }}>
       {/* Live mode: the customer's own records, loaded per request. A failure shows the error page — never sample data. */}

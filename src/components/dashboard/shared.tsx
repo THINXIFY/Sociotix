@@ -115,7 +115,8 @@ export function useActiveDestination(): Destination | null {
   if (pathname === FINDER_ROUTE) return "new-order";
   const match = (Object.entries(ROUTES) as [Destination, string][])
     .sort((a, b) => b[1].length - a[1].length)
-    .find(([, href]) => pathname === href || pathname.startsWith(`${href}/`));
+    // Overview is the dashboard home only; pages without their own item (Notifications, Security) don't light it up.
+    .find(([id, href]) => pathname === href || (id !== "overview" && pathname.startsWith(`${href}/`)));
   return match?.[0] ?? null;
 }
 

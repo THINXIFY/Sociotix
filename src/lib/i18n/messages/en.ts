@@ -127,8 +127,9 @@ export const en = {
   "notifications.note": "Saved in this browser. Email delivery isn't connected yet, so no emails are sent in demo mode. In-app notifications in the top bar are unaffected.",
 
   "preferences.description": "Saved now and applied as each feature launches.",
-  "preferences.platform": "Preferred platform",
-  "preferences.platformDesc": "We'll use this to suggest services first.",
+  "preferences.platform": "Goals & platforms",
+  "preferences.platformDesc": "What you want from Sociotix and where you post. Shapes the suggestions on your dashboard.",
+  "preferences.platformAction": "Edit",
   "preferences.ai": "Sociotix AI workspace",
   "preferences.aiDesc": "Change what describes you and your goals, or restart the short introduction.",
   "preferences.aiAction": "Edit AI preferences",

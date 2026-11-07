@@ -33,6 +33,7 @@ import {
 } from "@/server/orders/orders";
 import { requestRefund } from "@/server/payments/adjustments";
 import { financialSummary, reconcile } from "@/server/payments/reconcile";
+import { listNotifications } from "@/server/support/notifications";
 import { walletSummary } from "@/server/wallet/wallet";
 import { runMigrations } from "../../scripts/db/migrate";
 import { seedReferenceData } from "../../scripts/db/seed";
@@ -224,6 +225,37 @@ describe("placing orders (isolated database)", () => {
     expect(totalCentsFor("per1000", 1_235_000, 1000)).toBe(124); // 123.5 → 124
     expect(totalCentsFor("unit", 15_000, 3)).toBe(5); // 4.5 → 5
     expect(totalCentsFor("fixed", 49_990_000, 1)).toBe(4999);
+  });
+});
+
+describe("customer notifications (NT-01)", () => {
+  it("accept, start and complete notify the owner once each; assignment and progress notes don't; other customers see nothing", async () => {
+    const { c, order } = await placed();
+    const other = await makeCustomer(db);
+    const ops = await makeStaff(db, "orders");
+    const s = { userId: ops.user.id };
+    expect((await listNotifications(db, c.user.id)).items).toHaveLength(0); // placing an order is the customer's own action
+    await approveOrder(db, s, order.reference);
+    await assignOrder(db, s, order.reference, {});
+    await startFulfillment(db, s, order.reference, { fulfillmentRef: "MAN-0042" });
+    await recordProgress(db, s, order.reference, { note: "Started delivery on the profile." });
+    await completeOrder(db, s, order.reference, done);
+    const n = await listNotifications(db, c.user.id);
+    expect(n.items.map((i) => i.title)).toEqual(["Order completed", "Order in progress", "Order accepted"]);
+    expect(n.items.every((i) => i.kind === "order" && i.link === `/dashboard/orders?order=${order.reference}`)).toBe(true);
+    expect(n.unread).toBe(3);
+    expect((await listNotifications(db, other.user.id)).items).toHaveLength(0);
+    // Each notification is tied to its order event: the same event can't notify twice.
+    const keys = await db.execute(sql`select dedupe_key from notifications where recipient_user_id = ${c.user.id}`);
+    expect(new Set(keys.rows.map((r) => (r as { dedupe_key: string }).dedupe_key)).size).toBe(3);
+  });
+
+  it("a request for details carries the team's message", async () => {
+    const { c, order } = await placed();
+    const ops = await makeStaff(db, "orders");
+    await requestOrderInfo(db, { userId: ops.user.id }, order.reference, { message: "Please make the profile public so we can start." });
+    const [n] = (await listNotifications(db, c.user.id)).items;
+    expect(n).toMatchObject({ kind: "order", title: "Your order needs a detail from you", body: "Please make the profile public so we can start.", read: false });
   });
 });
 

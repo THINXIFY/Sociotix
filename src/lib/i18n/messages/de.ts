@@ -120,8 +120,9 @@ export const de: Messages = {
   "notifications.note": "In diesem Browser gespeichert. Der E-Mail-Versand ist noch nicht angebunden, daher werden im Demomodus keine E-Mails verschickt. Benachrichtigungen in der oberen Leiste bleiben unverändert.",
 
   "preferences.description": "Werden jetzt gespeichert und angewendet, sobald die jeweilige Funktion startet.",
-  "preferences.platform": "Bevorzugte Plattform",
-  "preferences.platformDesc": "Wir schlagen Ihnen damit zuerst passende Services vor.",
+  "preferences.platform": "Ziele & Plattformen",
+  "preferences.platformDesc": "Was Sie mit Sociotix erreichen möchten und wo Sie posten. Bestimmt die Vorschläge in Ihrem Dashboard.",
+  "preferences.platformAction": "Bearbeiten",
   "preferences.ai": "Sociotix AI Arbeitsbereich",
   "preferences.aiDesc": "Ändern Sie, was Sie beschreibt und welche Ziele Sie haben, oder starten Sie die kurze Einführung neu.",
   "preferences.aiAction": "KI-Einstellungen bearbeiten",

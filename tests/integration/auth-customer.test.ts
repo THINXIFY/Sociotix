@@ -6,6 +6,7 @@ import type { Db } from "@/server/db/client";
 import { authTokens, customers, deposits, ledgerAccounts, orders, sessions, users } from "@/server/db/schema";
 import { capturedEmails } from "@/server/email";
 import { AppError } from "@/server/errors";
+import { listNotifications } from "@/server/support/notifications";
 import { lastEmailTo, makeCustomer, PASSWORD, tokenFrom, uniqueEmail, userByEmail } from "./auth-helpers";
 import { ensureReferenceData, testDb } from "./helpers";
 
@@ -168,6 +169,7 @@ describe("password recovery", () => {
     expect(await code(loginCustomer(db, { email: c.email, password: PASSWORD }))).toBe("UNAUTHENTICATED");
     expect((await loginCustomer(db, { email: c.email, password: "a-brand-new-password" })).token).toBeTruthy();
     expect(lastEmailTo(c.email)?.kind).toBe("password_changed");
+    expect((await listNotifications(db, c.user.id)).items).toMatchObject([{ kind: "security", title: "Your password was reset", link: "/dashboard/security", read: false }]);
   });
 
   it("expired links don't work", async () => {

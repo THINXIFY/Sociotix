@@ -8,6 +8,7 @@ import {
   MESSAGE_AUTHOR,
   NOTE_TARGET,
   NOTIFICATION_CHANNEL,
+  NOTIFICATION_KIND,
   OUTBOX_STATUS,
   POLICY_STATUS,
   REFERRAL_STATUS,
@@ -311,9 +312,17 @@ export const notifications = pgTable(
     body: text("body"),
     link: text("link"),
     readAt: ts("read_at"),
+    /** One notification per real event (e.g. "order-event:<id>"); a retried event can't notify twice. */
+    dedupeKey: text("dedupe_key"),
     createdAt: createdAt(),
   },
-  (t) => [index("notifications_recipient_idx").on(t.recipientUserId, t.createdAt.desc()), check("notifications_link_check", sql`${t.link} is null or ${t.link} ~ '^/'`)],
+  (t) => [
+    index("notifications_recipient_idx").on(t.recipientUserId, t.createdAt.desc()),
+    index("notifications_unread_idx").on(t.recipientUserId).where(sql`${t.readAt} is null`),
+    uniqueIndex("notifications_dedupe_idx").on(t.recipientUserId, t.dedupeKey),
+    check("notifications_link_check", sql`${t.link} is null or ${t.link} ~ '^/'`),
+    check("notifications_kind_check", oneOf(t.kind, NOTIFICATION_KIND)),
+  ],
 );
 
 export const notificationPreferences = pgTable(

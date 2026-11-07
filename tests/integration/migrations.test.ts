@@ -54,13 +54,17 @@ describe("migrations", () => {
     expect(first.tables).toBe(72);
     expect(first.triggers).toBeGreaterThanOrEqual(25);
     expect(first.views).toBe(1);
-    expect(first.applied).toBe(20);
+    expect(first.applied).toBe(22);
     await runMigrations(url);
     expect(await inspect()).toEqual(first);
   });
 
   it("rolls back in reverse order and re-applies", async () => {
     const latest = await inspect();
+    await runFile("drizzle/rollback/0021_notification_center.down.sql");
+    expect(await inspect()).toEqual({ ...latest, applied: 21 }); // notification de-duplication key and indexes
+    await runFile("drizzle/rollback/0020_customer_onboarding.down.sql");
+    expect(await inspect()).toEqual({ ...latest, applied: 20 }); // onboarding columns on customer_preferences
     await runFile("drizzle/rollback/0019_digital_products.down.sql");
     expect(await inspect()).toEqual({ ...latest, tables: 69, applied: 19 }); // digital_products, digital_product_files, digital_categories
     await runFile("drizzle/rollback/0018_blog_categories.down.sql");

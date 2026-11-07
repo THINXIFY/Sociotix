@@ -6,6 +6,7 @@ import { z } from "zod";
 import { CATEGORY_FIELDS, CATEGORY_META, type ServiceCategory } from "@/lib/catalog";
 import { CUSTOMER_CANCELLABLE, type CustomerOrder, OPEN_ORDER_STATUSES, ORDER_STATUS_META, type OrderEventView, type OrderPaymentStatus, type OrderRevenueStatus, type OrderStatus } from "@/lib/orders";
 import { audit } from "../audit";
+import { notifyUser } from "../support/notifications";
 import { allows } from "../auth/permissions";
 import { loadStaffAccess } from "../auth";
 import type { Db, Executor } from "../db/client";
@@ -563,6 +564,28 @@ function checkUrl(v: string, field: string) {
   if (v && !httpsUrl(v)) throw new AppError("VALIDATION_FAILED", "Use a full https:// link.", { details: { field } });
 }
 
+/** What the customer is told for each staff change that has a customer notice. Internal steps (assignment, notes, ledger) have none. */
+const ORDER_NOTICES: Record<string, { title: string; body: (service: string, message: string) => string }> = {
+  "order.accepted": { title: "Order accepted", body: (s) => `${s} passed review and is queued to start.` },
+  "order.needs_info": { title: "Your order needs a detail from you", body: (s, m) => m || `${s} is paused until you update it.` },
+  "order.fulfillment_started": { title: "Order in progress", body: (s) => `Work on ${s} has started.` },
+  "order.completed": { title: "Order completed", body: (s) => `${s} has been delivered.` },
+  "order.rejected": { title: "Order not accepted", body: (s, m) => m || `${s} couldn't be accepted. Your funds were returned.` },
+  "order.cancelled": { title: "Order cancelled", body: (s, m) => m || `${s} was cancelled. Your funds were returned.` },
+  "order.failed": { title: "Order couldn't be completed", body: (s, m) => m || `${s} couldn't be completed.` },
+};
+
+async function notifyOrderOwner(tx: Executor, o: OrderRow, eventId: string, data?: Record<string, unknown>) {
+  const notice = typeof data?.notify === "string" ? ORDER_NOTICES[data.notify] : undefined;
+  if (!notice) return;
+  const [owner] = await tx.select({ userId: customers.userId }).from(customers).where(eq(customers.id, o.customerId)).limit(1);
+  if (!owner) return;
+  const snap = o.priceSnapshot as Record<string, unknown>;
+  const service = typeof snap?.serviceName === "string" && snap.serviceName ? snap.serviceName : `Order ${o.publicRef}`;
+  const message = typeof data?.customerMessage === "string" ? data.customerMessage : "";
+  await notifyUser(tx, { userId: owner.userId, kind: "order", title: notice.title, body: notice.body(service, message), link: `/dashboard/orders?order=${o.publicRef}`, dedupeKey: `order-event:${eventId}` });
+}
+
 async function staffTransition(
   db: Db,
   staff: Staff,
@@ -577,8 +600,13 @@ async function staffTransition(
     const result = await run(tx as unknown as Db, o);
     if (!result) return;
     await tx.update(orders).set({ ...result.set, updatedAt: new Date() }).where(eq(orders.id, o.id));
-    for (const ev of result.events)
-      await tx.insert(orderEvents).values({ orderId: o.id, type: ev.type, fromStatus: ev.to ? o.status : null, toStatus: ev.to ?? null, actorType: ev.type === "funds_released" ? "system" : "staff", actorId: ev.type === "funds_released" ? null : staff.userId, data: ev.data ?? {} });
+    for (const ev of result.events) {
+      const [row] = await tx
+        .insert(orderEvents)
+        .values({ orderId: o.id, type: ev.type, fromStatus: ev.to ? o.status : null, toStatus: ev.to ?? null, actorType: ev.type === "funds_released" ? "system" : "staff", actorId: ev.type === "funds_released" ? null : staff.userId, data: ev.data ?? {} })
+        .returning({ id: orderEvents.id });
+      await notifyOrderOwner(tx, o, row.id, ev.data);
+    }
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: `order.${action}`, targetType: "order", targetId: o.id, after: { from: o.status, to: result.set.status ?? o.status }, ip: client.ip, userAgent: client.userAgent });
   });
 }

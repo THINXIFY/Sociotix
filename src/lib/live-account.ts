@@ -6,6 +6,7 @@
 
 import type { CurrencyCode } from "./i18n/config";
 import type { DateFormat } from "./i18n";
+import type { OnboardingPrefs } from "./onboarding";
 
 export interface LiveProfile {
   accountRef: string;
@@ -43,6 +44,8 @@ export interface LiveAccountSnapshot {
   profile: LiveProfile;
   wallet: LiveWallet;
   preferences: LivePreferences;
+  /** Goals and platforms from the welcome flow, and whether it has been seen. */
+  onboarding: OnboardingPrefs;
   orderCount: number;
 }
 

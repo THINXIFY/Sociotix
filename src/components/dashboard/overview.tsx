@@ -10,6 +10,7 @@ import { formatMoneyParts, isConverted, t, useDisplay } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { type LocalOrder, useDemoActivity, useDemoOrders, useFavorites, useProfile, whenLabel } from "./demo-store";
 import { CardIcon, DigitalProductsCard, FinderCard, HelpCard, useGreeting, WalletCard } from "./overview-parts";
+import { ForYouPanel } from "./onboarding";
 import { dashButton, DemoTag, enter, newOrderHref, ordersHref, OrderStatusBadge, Panel, PanelHeader, ROUTES, useDestinations } from "./shared";
 import { ACTIVITY_ICONS } from "./top-bar";
 
@@ -453,6 +454,7 @@ export function Overview() {
           <StartOrder className={cn("order-1 md:col-span-2", a[0].className)} style={a[0].style} />
           <NeedsAction className={cn("order-2 md:col-span-2", a[1].className)} style={a[1].style} />
           <ActiveOrders className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} />
+          <ForYouPanel className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} />
         </div>
         <div className="contents xl:flex xl:flex-col xl:gap-5">
           <WalletCard

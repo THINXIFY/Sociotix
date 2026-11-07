@@ -120,8 +120,9 @@ export const ur: Messages = {
   "notifications.note": "اس براؤزر میں محفوظ ہے۔ ای میل کی ترسیل ابھی منسلک نہیں، اس لیے ڈیمو موڈ میں کوئی ای میل نہیں بھیجی جاتی۔ اوپر والی بار کی اطلاعات پر کوئی اثر نہیں پڑتا۔",
 
   "preferences.description": "ابھی محفوظ ہوتی ہیں اور ہر فیچر کے آنے پر لاگو ہوں گی۔",
-  "preferences.platform": "پسندیدہ پلیٹ فارم",
-  "preferences.platformDesc": "ہم اسی کی سروسز پہلے تجویز کریں گے۔",
+  "preferences.platform": "اہداف اور پلیٹ فارمز",
+  "preferences.platformDesc": "آپ Sociotix سے کیا چاہتے ہیں اور کہاں پوسٹ کرتے ہیں۔ اسی سے آپ کے ڈیش بورڈ کی تجاویز بنتی ہیں۔",
+  "preferences.platformAction": "ترمیم کریں",
   "preferences.ai": "Sociotix AI ورک اسپیس",
   "preferences.aiDesc": "اپنی پہچان اور اہداف بدلیں، یا مختصر تعارف دوبارہ شروع کریں۔",
   "preferences.aiAction": "اے آئی ترجیحات میں ترمیم کریں",

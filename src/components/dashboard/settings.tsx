@@ -26,7 +26,6 @@ import {
   TriangleAlert,
   UserRound,
 } from "lucide-react";
-import { PLATFORMS } from "@/lib/catalog";
 import { SUPPORT_EMAIL } from "@/lib/demo-support";
 import { NOTIFICATION_PREFS, TIMEZONES } from "@/lib/account";
 import { type DateFormat, formatDate, type MessageKey, saveDisplay, t, timeZoneName, tRich, useDisplay } from "@/lib/i18n";
@@ -34,6 +33,7 @@ import { cn } from "@/lib/utils";
 import { ConfirmDialog, PendingBadge, SavedNote, Section, SettingRow, Switch, useSavedFlash } from "./account-ui";
 import { resetDemoData, savePreferences, usePreferences, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
+import { OnboardingSettingsButton } from "./onboarding";
 import { CurrencyPicker, LanguagePicker, offersLanguages } from "./region";
 import { enter, Panel, ROUTES, useHydrated } from "./shared";
 import { Select } from "@/components/ui/select";
@@ -438,28 +438,11 @@ function Notifications() {
 /* -------------------------------------------------------------------------- */
 
 function PreferencesSection() {
-  const prefs = usePreferences();
-  const [saved, flash] = useSavedFlash();
-
   return (
-    <Section id="preferences" title={t("settings.nav.preferences")} description={t("preferences.description")} icon={SlidersHorizontal} action={<SavedNote show={saved} />}>
-      <SettingRow title={t("preferences.platform")} description={t("preferences.platformDesc")} badge={<PendingBadge>{t("common.appliedLater")}</PendingBadge>}>
-        <SelectField
-          id="pref-platform"
-          label={t("preferences.platform")}
-          value={prefs.platform}
-          onChange={(v) => {
-            savePreferences({ platform: v });
-            flash();
-          }}
-        >
-          <option value="">{t("common.noPreference")}</option>
-          {PLATFORMS.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </SelectField>
+    <Section id="preferences" title={t("settings.nav.preferences")} description={t("preferences.description")} icon={SlidersHorizontal}>
+      {/* Goals and platforms from the welcome flow; saved to the account in live mode. */}
+      <SettingRow title={t("preferences.platform")} description={t("preferences.platformDesc")}>
+        <OnboardingSettingsButton className={quietButton}>{t("preferences.platformAction")}</OnboardingSettingsButton>
       </SettingRow>
       {/* Sociotix AI personalisation (AI-09) is saved on the server; this reopens the short introduction. */}
       <SettingRow title={t("preferences.ai")} description={t("preferences.aiDesc")}>

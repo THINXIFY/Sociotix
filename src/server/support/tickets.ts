@@ -5,11 +5,12 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { CATEGORIES, EVENT_LABEL, PRIORITY_LABEL, REOPEN_DAYS, STATUS_META, type TicketCategory, type TicketEventView, type TicketMessageView, type TicketPriority, type TicketStatus, type TicketSummary } from "@/lib/support";
 import { audit } from "../audit";
+import { notifyUser } from "./notifications";
 import { allows } from "../auth/permissions";
 import { loadStaffAccess } from "../auth";
 import { hit } from "../auth/rate-limit";
 import type { Db, Executor } from "../db/client";
-import { customers, notifications, orders, services, staffMembers, ticketEvents, ticketInternalNotes, ticketMessages, tickets, users } from "../db/schema";
+import { customers, orders, services, staffMembers, ticketEvents, ticketInternalNotes, ticketMessages, tickets, users } from "../db/schema";
 import { AppError, errors } from "../errors";
 
 /*
@@ -39,8 +40,8 @@ function checkText(...values: string[]) {
   for (const v of values) if (looksSensitive(v)) throw new AppError("VALIDATION_FAILED", "Please don't include passwords, codes, keys or card numbers. Our team will never ask for them.", { details: { field: "message" } });
 }
 
-async function notify(tx: Executor, userId: string, title: string, body: string, reference: string) {
-  await tx.insert(notifications).values({ recipientUserId: userId, kind: "support", title, body: body.slice(0, 200), link: `/dashboard/support?ticket=${reference}` });
+async function notify(tx: Executor, userId: string, title: string, body: string, reference: string, dedupeKey: string) {
+  await notifyUser(tx, { userId, kind: "support", title, body, link: `/dashboard/support?ticket=${reference}`, dedupeKey });
 }
 
 async function event(tx: Executor, ticketId: string, type: string, actor: { type: "customer" | "staff" | "system"; userId?: string | null }, opts: { from?: string | null; to?: string | null; customerVisible?: boolean } = {}) {
@@ -405,7 +406,7 @@ export async function staffReply(db: Db, staff: Staff, reference: string, raw: u
     if (status !== t.status) await event(tx, t.id, "status_changed", { type: "staff", userId: staff.userId }, { from: t.status, to: status });
     if (!t.assignedTo) await event(tx, t.id, "assigned", { type: "staff", userId: staff.userId }, { to: (await staffName(tx, staff.staffId)) ?? "Staff", customerVisible: false });
     const owner = await customerUser(tx, t.customerId);
-    if (owner) await notify(tx, owner, status === "resolved" ? `We've resolved: ${t.subject}` : `New reply on: ${t.subject}`, body, t.publicRef);
+    if (owner) await notify(tx, owner, status === "resolved" ? `We've resolved: ${t.subject}` : `New reply on: ${t.subject}`, body, t.publicRef, `ticket-message:${inserted[0].id}`);
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: "ticket.staff_replied", targetType: "ticket", targetId: t.id, after: { status }, ip: client.ip, userAgent: client.userAgent });
   });
 }
@@ -426,7 +427,7 @@ export async function setStatus(db: Db, staff: Staff, reference: string, raw: un
     await tx.update(tickets).set({ status, resolvedAt: status === "resolved" ? now : t.resolvedAt, closedAt: status === "closed" ? now : null, updatedAt: now }).where(eq(tickets.id, t.id));
     await event(tx, t.id, t.status === "closed" || t.status === "resolved" ? (OPEN.includes(status) ? "reopened" : "status_changed") : "status_changed", { type: "staff", userId: staff.userId }, { from: t.status, to: status });
     const owner = await customerUser(tx, t.customerId);
-    if (owner) await notify(tx, owner, `Ticket update: ${STATUS_META[status].customer}`, `${t.subject}. ${STATUS_META[status].customerExplain}`, t.publicRef);
+    if (owner) await notify(tx, owner, `Ticket update: ${STATUS_META[status].customer}`, `${t.subject}. ${STATUS_META[status].customerExplain}`, t.publicRef, `ticket-status:${t.id}:${status}:${now.getTime()}`);
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: "ticket.status_changed", targetType: "ticket", targetId: t.id, before: { status: t.status }, after: { status }, ip: client.ip, userAgent: client.userAgent });
   });
 }

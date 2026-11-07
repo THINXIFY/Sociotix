@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, index, integer, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, index, integer, jsonb, pgTable, primaryKey, text, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import {
   ACCESS_LEVEL,
   ACCOUNT_TYPE,
@@ -8,6 +8,7 @@ import {
   DISPLAY_CURRENCY,
   MFA_TYPE,
   MODULE,
+  ONBOARDING_STATE,
   SENSITIVE_PERMISSION,
   SESSION_KIND,
   STAFF_STATUS,
@@ -161,9 +162,21 @@ export const customerPreferences = pgTable(
     timezone: text("timezone").notNull().default("UTC"),
     dateFormat: text("date_format").notNull().default("mdy"),
     reduceMotion: boolean("reduce_motion").notNull().default(false),
+    /** Onboarding goals (ONBOARDING_INTEREST ids) and catalog platform ids. */
+    interests: jsonb("interests").$type<string[]>().notNull().default([]),
+    platforms: jsonb("platforms").$type<string[]>().notNull().default([]),
+    /** Null until the welcome flow is finished or skipped; then shown only on request. */
+    onboarding: text("onboarding"),
+    onboardedAt: ts("onboarded_at"),
     updatedAt: updatedAt(),
   },
-  (t) => [check("customer_preferences_currency_check", oneOf(t.displayCurrency, DISPLAY_CURRENCY)), check("customer_preferences_date_format_check", oneOf(t.dateFormat, DATE_FORMAT))],
+  (t) => [
+    check("customer_preferences_currency_check", oneOf(t.displayCurrency, DISPLAY_CURRENCY)),
+    check("customer_preferences_date_format_check", oneOf(t.dateFormat, DATE_FORMAT)),
+    check("customer_preferences_onboarding_check", sql`${t.onboarding} is null or ${oneOf(t.onboarding, ONBOARDING_STATE)}`),
+    check("customer_preferences_interests_check", sql`jsonb_typeof(${t.interests}) = 'array' and jsonb_array_length(${t.interests}) <= 5`),
+    check("customer_preferences_platforms_check", sql`jsonb_typeof(${t.platforms}) = 'array' and jsonb_array_length(${t.platforms}) <= 20`),
+  ],
 );
 
 export const customerFlags = pgTable(

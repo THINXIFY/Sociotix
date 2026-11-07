@@ -2,6 +2,7 @@ import "server-only";
 import { and, asc, count, desc, eq, ilike, isNotNull, isNull, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { COUNTRIES, TIMEZONES, validateProfile } from "@/lib/account";
+import { cleanChoices, type OnboardingPrefs, type OnboardingState } from "@/lib/onboarding";
 import { audit } from "../audit";
 import type { Db, Executor } from "../db/client";
 import { accountBalances, customerFlags, customerPreferences, customers, ledgerAccounts, orders, users } from "../db/schema";
@@ -142,6 +143,51 @@ export async function updatePreferences(db: Db, actor: { userId: string; custome
   return getPreferences(db, actor.customerId);
 }
 
+/* Onboarding ---------------------------------------------------------------- */
+
+/** The customer's own onboarding choices. No stored row yet means a new customer who hasn't seen the welcome flow. */
+export async function getOnboarding(db: Executor, customerId: string): Promise<OnboardingPrefs> {
+  const [p] = await db
+    .select({ state: customerPreferences.onboarding, interests: customerPreferences.interests, platforms: customerPreferences.platforms })
+    .from(customerPreferences)
+    .where(eq(customerPreferences.customerId, customerId))
+    .limit(1);
+  const { interests, platforms } = cleanChoices({ interests: p?.interests, platforms: p?.platforms });
+  return { state: (p?.state as OnboardingState | null) ?? null, interests, platforms };
+}
+
+export const onboardingSchema = z
+  .object({
+    /** "complete" saves the choices; "skip" only records that the flow was dismissed. */
+    action: z.enum(["complete", "skip"]),
+    interests: z.array(z.string().max(20)).max(10).optional(),
+    platforms: z.array(z.string().max(40)).max(30).optional(),
+  })
+  .strict();
+
+/** Saves for the signed-in customer only; the body can't name another account. Skipping keeps any earlier choices. */
+export async function saveOnboarding(db: Db, customerId: string, raw: unknown) {
+  const input = onboardingSchema.parse(raw);
+  const now = new Date();
+  if (input.action === "complete") {
+    const row = { ...cleanChoices({ interests: input.interests, platforms: input.platforms }), onboarding: "completed", onboardedAt: now };
+    await db
+      .insert(customerPreferences)
+      .values({ customerId, ...row })
+      .onConflictDoUpdate({ target: customerPreferences.customerId, set: { ...row, updatedAt: now } });
+  } else {
+    // Closing the flow later (from Settings) never undoes a finished one.
+    await db
+      .insert(customerPreferences)
+      .values({ customerId, onboarding: "skipped", onboardedAt: now })
+      .onConflictDoUpdate({
+        target: customerPreferences.customerId,
+        set: { onboarding: sql`case when ${customerPreferences.onboarding} = 'completed' then 'completed' else 'skipped' end`, onboardedAt: sql`coalesce(${customerPreferences.onboardedAt}, ${now})`, updatedAt: now },
+      });
+  }
+  return getOnboarding(db, customerId);
+}
+
 /* Staff directory ----------------------------------------------------------- */
 
 export const directoryQuerySchema = z.object({
@@ -248,11 +294,12 @@ export async function getCustomerForStaff(db: Db, publicRef: string) {
 
 /** Everything the live dashboard shell needs for the signed-in customer, from stored records only. */
 export async function accountSnapshot(db: Executor, customerId: string) {
-  const [profile, wallet, preferences, [{ n }]] = await Promise.all([
+  const [profile, wallet, preferences, onboarding, [{ n }]] = await Promise.all([
     getOwnProfile(db, customerId),
     walletSummary(db, customerId),
     getPreferences(db, customerId),
+    getOnboarding(db, customerId),
     db.select({ n: count() }).from(orders).where(eq(orders.customerId, customerId)),
   ]);
-  return { profile, wallet, preferences, orderCount: Number(n) };
+  return { profile, wallet, preferences, onboarding, orderCount: Number(n) };
 }

@@ -120,8 +120,9 @@ export const es: Messages = {
   "notifications.note": "Se guarda en este navegador. El envío de correos aún no está conectado, así que en modo demostración no se envía ningún correo. Las notificaciones de la barra superior no cambian.",
 
   "preferences.description": "Se guardan ahora y se aplicarán a medida que se lance cada función.",
-  "preferences.platform": "Plataforma preferida",
-  "preferences.platformDesc": "La usaremos para sugerirte primero sus servicios.",
+  "preferences.platform": "Objetivos y plataformas",
+  "preferences.platformDesc": "Lo que quieres lograr con Sociotix y dónde publicas. Define las sugerencias de tu panel.",
+  "preferences.platformAction": "Editar",
   "preferences.ai": "Espacio de Sociotix AI",
   "preferences.aiDesc": "Cambia lo que te describe y tus objetivos, o reinicia la breve introducción.",
   "preferences.aiAction": "Editar preferencias de IA",

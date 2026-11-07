@@ -12,6 +12,9 @@ export const AUTH_TOKEN_PURPOSE = ["verify_email", "reset_password", "staff_invi
 export const MFA_TYPE = ["totp"] as const;
 export const ACCOUNT_TYPE = ["personal", "business"] as const;
 export const DATE_FORMAT = ["mdy", "dmy", "iso"] as const;
+/** Customer onboarding (mirrors `src/lib/onboarding.ts`): what the customer wants from Sociotix, and how the welcome flow ended. "existing" marks accounts that predate it, so they are never interrupted. */
+export const ONBOARDING_INTEREST = ["grow", "content", "ai", "manage", "services"] as const;
+export const ONBOARDING_STATE = ["completed", "skipped", "existing"] as const;
 export const DISPLAY_CURRENCY = ["USD", "EUR", "GBP", "PKR", "AED", "SAR", "INR", "CAD"] as const;
 
 export const STAFF_STATUS = ["invited", "active", "disabled"] as const;
@@ -78,6 +81,8 @@ export const POLICY_STATUS = ["draft", "active", "retired"] as const;
 export const REWARD_STATUS = ["pending", "holding", "awaiting_approval", "approved", "credited", "reversed"] as const;
 
 export const NOTIFICATION_CHANNEL = ["in_app", "email"] as const;
+/** In-app notification categories (mirrors `src/lib/notifications.ts`). */
+export const NOTIFICATION_KIND = ["support", "order", "security"] as const;
 export const OUTBOX_STATUS = ["queued", "sending", "sent", "failed"] as const;
 export const NOTE_TARGET = ["order", "customer", "deposit", "ticket", "referral", "referrer"] as const;
 export const AUDIT_ACTOR = ["customer", "staff", "system"] as const;

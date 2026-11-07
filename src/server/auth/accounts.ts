@@ -1,9 +1,10 @@
 import "server-only";
-import { randomInt } from "node:crypto";
+import { createHash, randomInt } from "node:crypto";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit } from "../audit";
-import type { Db } from "../db/client";
+import { notifyUser } from "../support/notifications";
+import type { Db, Executor } from "../db/client";
 import { customerPreferences, customers, users } from "../db/schema";
 import { emailConfigured, sendEmail } from "../email";
 import { existingAccountMessage, passwordChangedMessage, resetPasswordMessage, verifyEmailMessage } from "../email/templates";
@@ -169,6 +170,21 @@ export async function requestPasswordReset(db: Db, rawEmail: string, client: Cli
 
 export const resetTokenValid = async (db: Db, rawToken: string) => Boolean(await peekToken(db, rawToken, "reset_password"));
 
+/** Tells a customer (never staff) that their password changed, once per change: keyed by the reset link or the new session. */
+async function notifyPasswordChange(tx: Executor, userId: string, how: "changed" | "reset", source: string) {
+  const [c] = await tx.select({ id: customers.id }).from(customers).where(eq(customers.userId, userId)).limit(1);
+  if (!c) return;
+  const key = createHash("sha256").update(source).digest("hex").slice(0, 32);
+  await notifyUser(tx, {
+    userId,
+    kind: "security",
+    title: how === "reset" ? "Your password was reset" : "Your password was changed",
+    body: how === "reset" ? "You were signed out on every device. If this wasn't you, contact support right away." : "Other devices were signed out. If this wasn't you, reset your password and contact support.",
+    link: "/dashboard/security",
+    dedupeKey: `password-${how}:${key}`,
+  });
+}
+
 /** Sets a new password from a reset link and signs the user out everywhere. */
 export async function resetPassword(db: Db, rawToken: string, newPassword: string, client: ClientInfo = {}): Promise<{ status: "reset" | "invalid" }> {
   if (client.ip) await enforce(db, "token-ip", client.ip, LIMITS.tokenIp);
@@ -185,6 +201,7 @@ export async function resetPassword(db: Db, rawToken: string, newPassword: strin
     await tx.update(users).set({ passwordHash, emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())`, updatedAt: new Date() }).where(eq(users.id, used.userId));
     await revokeAllSessions(tx, used.userId);
     await audit(tx, { actorUserId: used.userId, actorType: "customer", action: "auth.password_reset", targetType: "user", targetId: used.userId, ip: client.ip, userAgent: client.userAgent });
+    await notifyPasswordChange(tx, used.userId, "reset", rawToken);
     return true;
   });
   if (!done) return { status: "invalid" };
@@ -204,6 +221,7 @@ export async function changePassword(db: Db, session: ValidSession, current: str
   await revokeAllSessions(db, session.userId, { except: session.id });
   const rotated = await rotateSession(db, session, { reauthenticated: true }, client);
   await audit(db, { actorUserId: session.userId, actorType: session.kind === "staff" ? "staff" : "customer", action: "auth.password_changed", targetType: "user", targetId: session.userId, ip: client.ip, userAgent: client.userAgent });
+  if (session.kind === "customer") await notifyPasswordChange(db, session.userId, "changed", rotated.id);
   if (u) await safeSend(passwordChangedMessage(u.email));
   return rotated;
 }

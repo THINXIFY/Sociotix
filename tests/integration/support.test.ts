@@ -203,6 +203,16 @@ describe("staff workspace", () => {
     expect(detail.can.manage).toBe(true);
   });
 
+  it("a retried staff reply notifies once", async () => {
+    const c = await makeCustomer(db);
+    const s = await makeStaff(db, "support");
+    const t = await open(c);
+    const k = key();
+    await staffReply(db, staffOf(s), t.reference, { body: "Looking into it.", key: k });
+    await staffReply(db, staffOf(s), t.reference, { body: "Looking into it.", key: k });
+    expect((await listNotifications(db, c.user.id)).items).toHaveLength(1);
+  });
+
   it("status changes notify the customer; priority and assignment don't", async () => {
     const c = await makeCustomer(db);
     const s = await makeStaff(db, "support");
