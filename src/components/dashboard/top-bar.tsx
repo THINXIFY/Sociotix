@@ -7,7 +7,6 @@ import { Popover } from "@base-ui/react/popover";
 import { Menu } from "@base-ui/react/menu";
 import {
   ArrowLeft,
-  ArrowRight,
   Bell,
   CheckCheck,
   CircleCheck,
@@ -26,190 +25,20 @@ import {
   Sun,
   TriangleAlert,
   Wallet,
-  X,
 } from "lucide-react";
-import { PlatformTile } from "@/components/brand";
 import { ThemeToggle } from "@/components/site/header";
-import { CATEGORY_META, CATALOG_TOTALS, matchesQuery, PLATFORM_BY_ID, SERVICES, type Service } from "@/lib/catalog";
 import { type ActivityKind, DEMO_WALLET, money, usd } from "@/lib/demo-account";
 import { signOutAction } from "@/app/(auth)/actions";
 import { useViewer } from "@/components/auth/viewer";
 import { useLiveAccount } from "./live-account";
+import { GlobalSearchTrigger } from "./global-search";
 import { LiveNotifications } from "./live-notifications";
-import { formatNumber, languageOf, t, useDisplaySettings } from "@/lib/i18n";
+import { languageOf, t, useDisplaySettings } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { markNotificationsRead, resetDemoData, useDemoActivity, useAvatarPreview, useDemoOrders, useDemoPrefsSaved, useOrderingChanges, usePaymentPreviews, useProfile, useTickets, whenLabel } from "./demo-store";
 import { offersLanguages, RegionDialog } from "./region";
 import { DemoTag, useDestinations } from "./shared";
 import { menuItem as sharedMenuItem, menuItemDestructive, popupSurface } from "@/components/ui/menu";
-
-/* -------------------------------------------------------------------------- */
-/*  Global service search                                                     */
-/* -------------------------------------------------------------------------- */
-
-const POPULAR = SERVICES.filter((s) => s.featured);
-
-export function searchServices(query: string, limit: number) {
-  const q = query.trim();
-  if (!q) return { results: POPULAR.slice(0, limit), total: POPULAR.length };
-  const all = SERVICES.filter((s) => matchesQuery(s, q)).sort((a, b) => Number(b.featured) - Number(a.featured));
-  return { results: all.slice(0, limit), total: all.length };
-}
-
-export function ServiceSearch({
-  id,
-  autoFocus,
-  onPick,
-  className,
-  inline = false,
-}: {
-  id: string;
-  autoFocus?: boolean;
-  onPick?: () => void;
-  className?: string;
-  /** Render results below the field instead of in a floating dropdown. */
-  inline?: boolean;
-}) {
-  const go = useDestinations();
-  const [query, setQuery] = React.useState("");
-  const [open, setOpen] = React.useState(inline);
-  const [active, setActive] = React.useState(0);
-  const { results, total } = React.useMemo(() => searchServices(query, 6), [query]);
-  const listId = `${id}-results`;
-  const showList = inline || open;
-
-  const pick = (s: Service) => {
-    go("new-order", { service: s });
-    setOpen(inline);
-    onPick?.();
-  };
-
-  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "ArrowDown") {
-      e.preventDefault();
-      setOpen(true);
-      setActive((i) => Math.min(i + 1, results.length - 1));
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      setActive((i) => Math.max(i - 1, 0));
-    } else if (e.key === "Enter" && showList && results[active]) {
-      e.preventDefault();
-      pick(results[active]);
-    } else if (e.key === "Escape" && !inline) {
-      if (query) setQuery("");
-      else e.currentTarget.blur();
-      setOpen(false);
-    }
-  };
-
-  return (
-    <div
-      className={cn("relative", className)}
-      onBlur={(e) => {
-        if (!inline && !e.currentTarget.contains(e.relatedTarget)) setOpen(false);
-      }}
-    >
-      <label htmlFor={id} className="sr-only">
-        {t("search.label")}
-      </label>
-      <Search
-        className="pointer-events-none absolute top-1/2 start-3.5 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden
-      />
-      <input
-        id={id}
-        type="search"
-        role="combobox"
-        aria-expanded={showList}
-        aria-controls={listId}
-        aria-autocomplete="list"
-        aria-activedescendant={showList && results[active] ? `${id}-opt-${active}` : undefined}
-        autoComplete="off"
-        autoFocus={autoFocus}
-        value={query}
-        placeholder={t("search.placeholder", { count: formatNumber(CATALOG_TOTALS.services) })}
-        onFocus={() => setOpen(true)}
-        onChange={(e) => {
-          setQuery(e.target.value);
-          setActive(0);
-          setOpen(true);
-        }}
-        onKeyDown={onKeyDown}
-        className="h-10 w-full rounded-full border bg-card pe-16 ps-10 text-sm shadow-xs transition-colors outline-none placeholder:text-muted-foreground hover:border-primary/30 focus-visible:border-primary/50 focus-visible:ring-3 focus-visible:ring-primary/15 [&::-webkit-search-cancel-button]:hidden"
-      />
-      {query ? (
-        <button
-          type="button"
-          onClick={() => {
-            setQuery("");
-            document.getElementById(id)?.focus();
-          }}
-          className="absolute top-1/2 end-2.5 grid size-6 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
-          aria-label={t("search.clear")}
-        >
-          <X className="size-3.5" aria-hidden />
-        </button>
-      ) : !inline ? (
-        <kbd className="pointer-events-none absolute top-1/2 end-3 hidden -translate-y-1/2 rounded-md border bg-muted px-1.5 py-0.5 font-sans text-[0.65rem] font-semibold text-muted-foreground xl:block">
-          {t("search.shortcut")}
-        </kbd>
-      ) : null}
-
-      {showList ? (
-        <div
-          className={cn(
-            !inline &&
-              "absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 animate-in rounded-2xl border bg-popover p-1.5 shadow-float fade-in-0 zoom-in-95 duration-150 motion-reduce:animate-none",
-            inline && "mt-3",
-          )}
-        >
-          <p className="px-2.5 pt-1.5 pb-1 text-[0.68rem] font-bold tracking-wider text-muted-foreground uppercase">
-            {query.trim() ? t("search.matching", { count: formatNumber(total) }) : t("search.popular")}
-          </p>
-          {results.length ? (
-            <ul id={listId} role="listbox" aria-label={t("search.results")}>
-              {results.map((s, i) => {
-                const p = PLATFORM_BY_ID[s.platformId];
-                return (
-                  <li
-                    key={s.id}
-                    id={`${id}-opt-${i}`}
-                    role="option"
-                    aria-selected={i === active}
-                    onMouseDown={(e) => e.preventDefault()}
-                    onMouseEnter={() => setActive(i)}
-                    onClick={() => pick(s)}
-                    className={cn(
-                      "flex cursor-pointer items-center gap-3 rounded-xl px-2.5 py-2 transition-colors",
-                      i === active && "bg-muted",
-                    )}
-                  >
-                    <PlatformTile platform={p} size="sm" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm font-semibold">{s.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {p.short} · {CATEGORY_META[s.category].label}
-                      </span>
-                    </span>
-                    <ArrowRight
-                      className={cn("size-4 shrink-0 text-primary opacity-0 transition-opacity", i === active && "opacity-100")}
-                      aria-hidden
-                    />
-                  </li>
-                );
-              })}
-            </ul>
-          ) : (
-            <div id={listId} role="listbox" aria-label={t("search.results")} className="px-2.5 py-6 text-center">
-              <p className="text-sm font-semibold">{t("search.noMatch", { query: query.trim() })}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{t("search.noMatchHint")}</p>
-            </div>
-          )}
-        </div>
-      ) : null}
-    </div>
-  );
-}
 
 /* -------------------------------------------------------------------------- */
 /*  Notifications                                                             */
@@ -436,15 +265,14 @@ export function TopBar({ mobileLogo, onOpenSearch }: { mobileLogo: React.ReactNo
 
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "k") {
         e.preventDefault();
-        const input = document.getElementById("global-search");
-        if (input && input.offsetParent) input.focus();
-        else onOpenSearch();
+        onOpenSearch();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    // Capture phase: a page field that stops key events (e.g. on New Order) can't swallow the shortcut.
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
   }, [onOpenSearch]);
 
   return (
@@ -452,7 +280,7 @@ export function TopBar({ mobileLogo, onOpenSearch }: { mobileLogo: React.ReactNo
       <div className="mx-auto flex h-16 max-w-[90rem] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
         <div className="lg:hidden">{mobileLogo}</div>
 
-        <ServiceSearch id="global-search" className="hidden max-w-md flex-1 md:block" />
+        <GlobalSearchTrigger onOpen={onOpenSearch} className="hidden max-w-md flex-1 md:flex" />
 
         <div className="ms-auto flex items-center gap-1 sm:gap-1.5">
           <button type="button" className={cn(iconButton, "md:hidden")} aria-label={t("search.label")} onClick={onOpenSearch}>

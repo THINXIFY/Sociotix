@@ -26,7 +26,8 @@ import {
 } from "./shared";
 import { useDemoOrders, usePreferences, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
-import { Avatar, ServiceSearch, TopBar } from "./top-bar";
+import { GlobalSearch } from "./global-search";
+import { Avatar, TopBar } from "./top-bar";
 
 /* -------------------------------------------------------------------------- */
 /*  Collapsed state, remembered per browser                                   */
@@ -469,7 +470,18 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const collapsed = useCollapsed();
   const hydrated = useHydrated();
   const [searchOpen, setSearchOpen] = React.useState(false);
-  const openSearch = React.useCallback(() => setSearchOpen(true), []);
+  // Each opening mounts a fresh search (empty field, current recent searches).
+  const [searchSession, setSearchSession] = React.useState(0);
+  const searchIsOpen = React.useRef(false);
+  React.useEffect(() => {
+    searchIsOpen.current = searchOpen;
+  }, [searchOpen]);
+  const openSearch = React.useCallback(() => {
+    // Already open: keep the current search rather than starting over.
+    if (searchIsOpen.current) return;
+    setSearchSession((n) => n + 1);
+    setSearchOpen(true);
+  }, []);
   const { reduceMotion } = usePreferences();
 
   // Language and direction for the dashboard; the marketing site stays English, left to right.
@@ -522,22 +534,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
 
-      <Sheet open={searchOpen} onOpenChange={setSearchOpen}>
-        <SheetContent side="top" showCloseButton={false} className="max-h-[85dvh] overflow-y-auto rounded-b-3xl p-4">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="font-heading text-base font-bold">{t("nav.findService")}</SheetTitle>
-            <button
-              type="button"
-              onClick={() => setSearchOpen(false)}
-              className="grid size-9 place-items-center rounded-full text-muted-foreground hover:bg-muted"
-              aria-label={t("nav.closeSearch")}
-            >
-              <X className="size-4" aria-hidden />
-            </button>
-          </div>
-          <ServiceSearch id="mobile-search" inline autoFocus onPick={() => setSearchOpen(false)} />
-        </SheetContent>
-      </Sheet>
+      <GlobalSearch key={searchSession} open={searchOpen} onOpenChange={setSearchOpen} />
     </div>
     </MotionConfig>
     </DirectionProvider>
