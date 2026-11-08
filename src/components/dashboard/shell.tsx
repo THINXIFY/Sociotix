@@ -27,7 +27,7 @@ import {
 import { useDemoOrders, usePreferences, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
 import { TourHost } from "@/components/tour/guided-tour";
-import { GlobalSearch } from "./global-search";
+import { GlobalSearchHost, openGlobalSearch } from "./global-search";
 import { Avatar, TopBar } from "./top-bar";
 
 /* -------------------------------------------------------------------------- */
@@ -471,19 +471,6 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pageInEnglish = display.language !== "en" && !TRANSLATED_PATHS.includes(pathname);
   const collapsed = useCollapsed();
   const hydrated = useHydrated();
-  const [searchOpen, setSearchOpen] = React.useState(false);
-  // Each opening mounts a fresh search (empty field, current recent searches).
-  const [searchSession, setSearchSession] = React.useState(0);
-  const searchIsOpen = React.useRef(false);
-  React.useEffect(() => {
-    searchIsOpen.current = searchOpen;
-  }, [searchOpen]);
-  const openSearch = React.useCallback(() => {
-    // Already open: keep the current search rather than starting over.
-    if (searchIsOpen.current) return;
-    setSearchSession((n) => n + 1);
-    setSearchOpen(true);
-  }, []);
   const { reduceMotion } = usePreferences();
 
   // Language and direction for the dashboard; the marketing site stays English, left to right.
@@ -521,7 +508,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <div className={cn("lg:ps-(--sidebar)", hydrated && "transition-[padding] duration-300 ease-out motion-reduce:transition-none")}>
         <TopBar
-          onOpenSearch={openSearch}
+          onOpenSearch={openGlobalSearch}
           mobileLogo={
             <Link href="/dashboard" aria-label="Sociotix dashboard" className="inline-flex">
               <Logo variant="responsive" className="h-7" />
@@ -536,7 +523,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
 
       <BottomNav />
 
-      <GlobalSearch key={searchSession} open={searchOpen} onOpenChange={setSearchOpen} />
+      <GlobalSearchHost />
       <TourHost tours={["dashboard", "new-order", "search"]} />
     </div>
     </MotionConfig>

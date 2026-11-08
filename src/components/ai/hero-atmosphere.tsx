@@ -33,9 +33,9 @@ export function HeroAtmosphere() {
       {/* Violet field, top centre */}
       <div className="ai-drift-a absolute -top-[22rem] left-1/2 -ml-[38rem] h-[44rem] w-[76rem] rounded-full bg-[radial-gradient(closest-side,rgb(112_71_235/0.16),rgb(112_71_235/0.05)_55%,transparent)] dark:bg-[radial-gradient(closest-side,rgb(112_71_235/0.32),rgb(112_71_235/0.1)_55%,transparent)]" />
       {/* Deeper violet behind the preview */}
-      <div className="ai-drift-b absolute top-[8%] -right-[18rem] h-[40rem] w-[48rem] rounded-full bg-[radial-gradient(closest-side,rgb(140_100_255/0.12),transparent)] dark:bg-[radial-gradient(closest-side,rgb(140_100_255/0.24),transparent)]" />
+      <div className="ai-drift-b absolute top-[6rem] lg:top-[3.5rem] -right-[18rem] h-[40rem] w-[48rem] rounded-full bg-[radial-gradient(closest-side,rgb(140_100_255/0.12),transparent)] dark:bg-[radial-gradient(closest-side,rgb(140_100_255/0.24),transparent)]" />
       {/* Restrained lime highlight */}
-      <div className="ai-drift-c absolute top-[38%] left-[6%] h-[22rem] w-[30rem] rounded-full bg-[radial-gradient(closest-side,rgb(200_255_82/0.13),transparent)] dark:bg-[radial-gradient(closest-side,rgb(200_255_82/0.08),transparent)]" />
+      <div className="ai-drift-c absolute top-[29rem] md:top-[28rem] lg:top-[16rem] left-[6%] h-[22rem] w-[30rem] rounded-full bg-[radial-gradient(closest-side,rgb(200_255_82/0.13),transparent)] dark:bg-[radial-gradient(closest-side,rgb(200_255_82/0.08),transparent)]" />
       {/* Existing grid, kept very faint */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,rgb(32_33_39/0.035)_1px,transparent_1px),linear-gradient(to_bottom,rgb(32_33_39/0.035)_1px,transparent_1px)] bg-[size:48px_48px] [mask-image:radial-gradient(70%_60%_at_50%_0%,black,transparent)] dark:bg-[linear-gradient(to_right,rgb(255_255_255/0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgb(255_255_255/0.04)_1px,transparent_1px)]" />
     </div>

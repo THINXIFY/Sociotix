@@ -102,7 +102,8 @@ export function LiveOverview() {
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
       <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,23rem)] xl:items-start xl:gap-5">
         <div className="contents xl:flex xl:flex-col xl:gap-5">
-          <Panel className={cn("relative isolate order-1 overflow-hidden p-4 sm:p-6 md:col-span-2", a[0].className)} style={a[0].style} aria-labelledby="welcome-title">
+          {/* Main content: shown at first paint (no fade from transparent) so it's what the browser counts as the largest paint. */}
+          <Panel className="relative isolate order-1 overflow-hidden p-4 sm:p-6 md:col-span-2" aria-labelledby="welcome-title">
             <div className="pointer-events-none absolute -end-24 -top-32 -z-10 size-80 rounded-full bg-primary/[0.08] blur-3xl dark:bg-primary/15" aria-hidden />
             <TourHelpButton tour="dashboard" className="absolute end-3 top-3 sm:end-4 sm:top-4" />
             <p className="text-[0.82rem] font-medium text-muted-foreground">

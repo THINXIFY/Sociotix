@@ -3,9 +3,10 @@ import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
 /** The official dark-background logo (white wordmark, violet "tix"), read once from public/brand/web. */
-const LOGO = { file: "public/brand/web/logo-dark.png", width: 504, height: 120 };
+const LOGO = { width: 504, height: 120 };
 let logo: string | null = null;
-const logoDataUri = () => (logo ??= `data:image/png;base64,${readFileSync(join(process.cwd(), LOGO.file)).toString("base64")}`);
+// A literal path (not a variable) lets the build trace exactly this one file instead of the whole project.
+const logoDataUri = () => (logo ??= `data:image/png;base64,${readFileSync(join(process.cwd(), "public/brand/web/logo-dark.png")).toString("base64")}`);
 
 /** Shared 1200×630 social-sharing image (SEO-01): official logo, eyebrow, title and one line. No claims beyond the page's own copy. */
 export const OG_SIZE = { width: 1200, height: 630 };

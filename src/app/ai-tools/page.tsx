@@ -25,7 +25,7 @@ export default function AiToolsPage() {
   return (
     <>
       <Header page="ai" />
-      <main id="main">
+      <main id="main" className="cv-sections">
         <AiLanding />
       </main>
       <Footer page="ai" />

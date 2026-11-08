@@ -32,7 +32,7 @@ export default function HomePage() {
   return (
     <>
       <Header />
-      <main>
+      <main className="cv-sections">
         <Hero />
         <Platforms />
         <Marketplace />

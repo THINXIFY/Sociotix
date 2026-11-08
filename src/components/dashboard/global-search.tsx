@@ -113,7 +113,7 @@ function ItemIcon({ item }: { item: SearchItem }) {
   );
 }
 
-export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {
+export function GlobalSearch({ open, onOpenChange, onPicked }: { open: boolean; onOpenChange: (open: boolean) => void; /** Picking a result navigates away: close at once, without the fade-out. */ onPicked?: () => void }) {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [debounced, setDebounced] = React.useState("");
@@ -149,7 +149,8 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
       const next = [q, ...readRecent().filter((r) => r.toLowerCase() !== q.toLowerCase())].slice(0, RECENT_MAX);
       saveRecent(next);
     }
-    onOpenChange(false);
+    if (onPicked) onPicked();
+    else onOpenChange(false);
     router.push(item.href);
   };
 
@@ -324,6 +325,54 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
         </DialogPrimitive.Popup>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  );
+}
+
+const OPEN_EVENT = "sv-open-search";
+
+/** Set when search is asked for before the dialog is listening (e.g. a shortcut pressed while the page is still starting). */
+let pendingOpen = false;
+
+/** Opens global search from anywhere (top bar, shortcut, tours). */
+export const openGlobalSearch = () => {
+  pendingOpen = true;
+  window.dispatchEvent(new Event(OPEN_EVENT));
+};
+
+/**
+ * Owns whether search is open, so opening it renders only the dialog — not the whole dashboard shell (PF-01).
+ * Each opening mounts a fresh search (empty field, current recent searches); opening while open keeps the current one.
+ */
+export function GlobalSearchHost() {
+  const [open, setOpen] = React.useState(false);
+  const [session, setSession] = React.useState(0);
+  const isOpen = React.useRef(false);
+  React.useEffect(() => {
+    isOpen.current = open;
+  }, [open]);
+  React.useEffect(() => {
+    const onOpen = () => {
+      pendingOpen = false;
+      if (isOpen.current) return;
+      setSession((n) => n + 1);
+      setOpen(true);
+    };
+    window.addEventListener(OPEN_EVENT, onOpen);
+    // A request that arrived before this listener existed still opens search.
+    if (pendingOpen) queueMicrotask(onOpen);
+    return () => window.removeEventListener(OPEN_EVENT, onOpen);
+  }, []);
+  return (
+    <GlobalSearch
+      key={session}
+      open={open}
+      onOpenChange={setOpen}
+      onPicked={() => {
+        // Remounting drops the old dialog immediately, so no half-faded copy lingers over the next page.
+        setOpen(false);
+        setSession((n) => n + 1);
+      }}
+    />
   );
 }
 

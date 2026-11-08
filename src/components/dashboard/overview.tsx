@@ -453,7 +453,8 @@ export function Overview() {
     <div className="mx-auto max-w-[90rem] px-3 py-4 sm:px-6 sm:py-6 lg:px-8">
       <div className="grid grid-cols-1 gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,23rem)] xl:items-start xl:gap-5">
         <div className="contents xl:flex xl:flex-col xl:gap-5">
-          <StartOrder className={cn("order-1 md:col-span-2", a[0].className)} style={a[0].style} />
+          {/* Main content: shown at first paint (no fade from transparent) so it's what the browser counts as the largest paint. */}
+          <StartOrder className="order-1 md:col-span-2" />
           <NeedsAction className={cn("order-2 md:col-span-2", a[1].className)} style={a[1].style} />
           <ActiveOrders className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} />
           <ForYouPanel className={cn("order-3 md:col-span-2", a[2].className)} style={a[2].style} />

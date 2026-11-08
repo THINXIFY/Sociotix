@@ -21,7 +21,7 @@ export default function SocialManagementPage() {
   return (
     <>
       <Header page="other" />
-      <main id="main">
+      <main id="main" className="cv-sections">
         <SocialLanding ready={ready} />
       </main>
       <Footer page="other" />
