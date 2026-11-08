@@ -1,13 +1,14 @@
 import "server-only";
 import { createHash, randomInt } from "node:crypto";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { audit } from "../audit";
 import { notifyUser } from "../support/notifications";
 import type { Db, Executor } from "../db/client";
 import { customerPreferences, customers, users } from "../db/schema";
 import { emailConfigured, sendEmail } from "../email";
-import { existingAccountMessage, passwordChangedMessage, resetPasswordMessage, verifyEmailMessage } from "../email/templates";
+import { flushOutbox } from "../email/events";
+import { existingAccountMessage, passwordChangedMessage, resetPasswordMessage, verifyEmailMessage, welcomeMessage } from "../email/templates";
 import { getEnv } from "../env";
 import { AppError, errors } from "../errors";
 import { logger } from "../log";
@@ -102,9 +103,14 @@ export async function verifyEmail(db: Db, rawToken: string, client: ClientInfo =
   if (client.ip) await enforce(db, "token-ip", client.ip, LIMITS.tokenIp);
   const used = await consumeToken(db, rawToken, "verify_email");
   if (!used) return { status: "invalid" };
-  await db.update(users).set({ emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())`, updatedAt: new Date() }).where(eq(users.id, used.userId));
+  // Only the first confirmation counts as new; a later link for an already-verified address changes nothing.
+  const [first] = await db.update(users).set({ emailVerifiedAt: new Date(), updatedAt: new Date() }).where(and(eq(users.id, used.userId), isNull(users.emailVerifiedAt))).returning({ id: users.id });
   await audit(db, { actorUserId: used.userId, actorType: "customer", action: "auth.email_verified", targetType: "user", targetId: used.userId, ip: client.ip, userAgent: client.userAgent });
   await markReferralVerified(db, used.userId).catch((e) => logger().warn({ error: e instanceof Error ? e.name : "unknown" }, "referral verification note failed"));
+  if (first) {
+    const [c] = await db.select({ id: customers.id }).from(customers).where(eq(customers.userId, used.userId)).limit(1);
+    if (c) await flushOutbox(db, [{ userId: used.userId, pref: null, build: (to, name) => welcomeMessage(to, name) }]);
+  }
   return { status: "verified" };
 }
 

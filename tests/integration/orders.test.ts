@@ -33,6 +33,7 @@ import {
 } from "@/server/orders/orders";
 import { requestRefund } from "@/server/payments/adjustments";
 import { financialSummary, reconcile } from "@/server/payments/reconcile";
+import { capturedEmails } from "@/server/email";
 import { listNotifications } from "@/server/support/notifications";
 import { walletSummary } from "@/server/wallet/wallet";
 import { runMigrations } from "../../scripts/db/migrate";
@@ -248,6 +249,33 @@ describe("customer notifications (NT-01)", () => {
     // Each notification is tied to its order event: the same event can't notify twice.
     const keys = await db.execute(sql`select dedupe_key from notifications where recipient_user_id = ${c.user.id}`);
     expect(new Set(keys.rows.map((r) => (r as { dedupe_key: string }).dedupe_key)).size).toBe(3);
+  });
+
+  it("order emails follow the same events once each, only when update emails are switched on", async () => {
+    const ops = await makeStaff(db, "orders");
+    const s = { userId: ops.user.id };
+    const before = process.env.EMAIL_NOTIFICATIONS;
+    try {
+      process.env.EMAIL_NOTIFICATIONS = "false";
+      resetEnvCache();
+      const quiet = await placed();
+      await approveOrder(db, s, quiet.order.reference);
+      expect(capturedEmails().filter((m) => m.to === quiet.c.email)).toHaveLength(0);
+      process.env.EMAIL_NOTIFICATIONS = "true";
+      resetEnvCache();
+      const { c, order } = await placed();
+      await approveOrder(db, s, order.reference);
+      await assignOrder(db, s, order.reference, {});
+      await requestOrderInfo(db, s, order.reference, { message: "Please make the profile public so we can start." }).catch(() => {});
+      const mine = capturedEmails().filter((m) => m.to === c.email);
+      expect(mine.map((m) => m.kind).sort()).toEqual(["order_accepted", "order_needs_info"]);
+      expect(mine.find((m) => m.kind === "order_needs_info")!.text).toContain("Please make the profile public");
+      expect(mine.every((m) => m.text.includes(`/dashboard/orders?order=${order.reference}`))).toBe(true);
+    } finally {
+      if (before === undefined) delete process.env.EMAIL_NOTIFICATIONS;
+      else process.env.EMAIL_NOTIFICATIONS = before;
+      resetEnvCache();
+    }
   });
 
   it("a request for details carries the team's message", async () => {

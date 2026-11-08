@@ -52,6 +52,8 @@ export const envSchema = z
     EMAIL_TRANSPORT: z.enum(["capture", "resend", "postmark"]).optional(),
     EMAIL_FROM: z.string().trim().min(3).optional(),
     EMAIL_API_KEY: z.string().trim().min(10).optional(),
+    /** Optional update emails (welcome, support, orders). Off until explicitly switched on; security and sign-in emails never depend on it. */
+    EMAIL_NOTIFICATIONS: bool.default(false),
     /** Show the illustrative dashboard/admin records to signed-in users (never in production). */
     DEMO_MODE: bool.default(false),
     /** Trust x-forwarded-for from the hosting platform's proxy for client IPs. */

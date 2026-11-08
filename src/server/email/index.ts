@@ -2,7 +2,7 @@ import "server-only";
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { getEnv } from "../env";
-import { errors } from "../errors";
+import { AppError, errors } from "../errors";
 import { logger } from "../log";
 
 /**
@@ -43,8 +43,13 @@ export const emailConfigured = () => transport() !== null;
 
 const mask = (email: string) => email.replace(/^(.).*?(@.*)$/, "$1***$2");
 
+/** One address, no header tricks: anything else is refused before it reaches a provider. */
+const VALID_TO = /^[^\s@<>",;]{1,64}@[^\s@<>",;]{1,255}\.[^\s@<>",;]{2,}$/;
+
 export async function sendEmail(message: Email): Promise<void> {
   const env = getEnv();
+  if (!VALID_TO.test(message.to) || message.to.length > 254) throw new AppError("VALIDATION_FAILED", "That email address isn't valid.");
+  if (/[\r\n]/.test(message.subject)) throw new AppError("VALIDATION_FAILED", "Email subjects must be one line.");
   const t = transport();
   if (!t) throw errors.unavailable("Email isn't available right now.");
   if (t === "capture") {

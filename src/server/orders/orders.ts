@@ -6,6 +6,8 @@ import { z } from "zod";
 import { CATEGORY_FIELDS, CATEGORY_META, type ServiceCategory } from "@/lib/catalog";
 import { CUSTOMER_CANCELLABLE, type CustomerOrder, OPEN_ORDER_STATUSES, ORDER_STATUS_META, type OrderEventView, type OrderPaymentStatus, type OrderRevenueStatus, type OrderStatus } from "@/lib/orders";
 import { audit } from "../audit";
+import { flushOutbox, type Outbox } from "../email/events";
+import { ORDER_EMAILS, type OrderEmailKind, orderUpdateMessage } from "../email/templates";
 import { notifyUser } from "../support/notifications";
 import { allows } from "../auth/permissions";
 import { loadStaffAccess } from "../auth";
@@ -575,7 +577,7 @@ const ORDER_NOTICES: Record<string, { title: string; body: (service: string, mes
   "order.failed": { title: "Order couldn't be completed", body: (s, m) => m || `${s} couldn't be completed.` },
 };
 
-async function notifyOrderOwner(tx: Executor, o: OrderRow, eventId: string, data?: Record<string, unknown>) {
+async function notifyOrderOwner(tx: Executor, o: OrderRow, eventId: string, data: Record<string, unknown> | undefined, outbox: Outbox) {
   const notice = typeof data?.notify === "string" ? ORDER_NOTICES[data.notify] : undefined;
   if (!notice) return;
   const [owner] = await tx.select({ userId: customers.userId }).from(customers).where(eq(customers.id, o.customerId)).limit(1);
@@ -583,7 +585,10 @@ async function notifyOrderOwner(tx: Executor, o: OrderRow, eventId: string, data
   const snap = o.priceSnapshot as Record<string, unknown>;
   const service = typeof snap?.serviceName === "string" && snap.serviceName ? snap.serviceName : `Order ${o.publicRef}`;
   const message = typeof data?.customerMessage === "string" ? data.customerMessage : "";
-  await notifyUser(tx, { userId: owner.userId, kind: "order", title: notice.title, body: notice.body(service, message), link: `/dashboard/orders?order=${o.publicRef}`, dedupeKey: `order-event:${eventId}` });
+  const fresh = await notifyUser(tx, { userId: owner.userId, kind: "order", title: notice.title, body: notice.body(service, message), link: `/dashboard/orders?order=${o.publicRef}`, dedupeKey: `order-event:${eventId}` });
+  const key = data!.notify as string;
+  if (fresh && key in ORDER_EMAILS)
+    outbox.push({ userId: owner.userId, pref: key === "order.needs_info" ? "orderAttention" : "orderUpdates", build: (to) => orderUpdateMessage(to, key as OrderEmailKind, { reference: o.publicRef, service, message }) });
 }
 
 async function staffTransition(
@@ -595,6 +600,7 @@ async function staffTransition(
   client: Client = {},
 ) {
   if (!REF.test(reference)) throw errors.notFound("That order");
+  const outbox: Outbox = [];
   await db.transaction(async (tx) => {
     const o = await lockOrder(tx, eq(orders.publicRef, reference));
     const result = await run(tx as unknown as Db, o);
@@ -605,10 +611,11 @@ async function staffTransition(
         .insert(orderEvents)
         .values({ orderId: o.id, type: ev.type, fromStatus: ev.to ? o.status : null, toStatus: ev.to ?? null, actorType: ev.type === "funds_released" ? "system" : "staff", actorId: ev.type === "funds_released" ? null : staff.userId, data: ev.data ?? {} })
         .returning({ id: orderEvents.id });
-      await notifyOrderOwner(tx, o, row.id, ev.data);
+      await notifyOrderOwner(tx, o, row.id, ev.data, outbox);
     }
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: `order.${action}`, targetType: "order", targetId: o.id, after: { from: o.status, to: result.set.status ?? o.status }, ip: client.ip, userAgent: client.userAgent });
   });
+  await flushOutbox(db, outbox);
 }
 
 export const approveOrder = (db: Db, staff: Staff, reference: string, client?: Client) =>

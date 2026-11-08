@@ -6,7 +6,7 @@ import { HELP_ARTICLE_BY_SLUG } from "./lib/help/articles";
 import { resolvePublicSlug } from "./server/blog/posts";
 import { getDb } from "./server/db/client";
 import { resolvePublicProductSlug } from "./server/digital-products/products";
-import { EnvError } from "./server/env";
+import { EnvError, getEnv } from "./server/env";
 import { AppError } from "./server/errors";
 
 /**
@@ -53,6 +53,16 @@ async function productRoute(request: NextRequest, pathname: string) {
 
 export async function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+  // Development tools (dev mailbox, email previews) are a real 404 everywhere but local development, before any page code runs.
+  if (pathname === "/dev" || pathname.startsWith("/dev/")) {
+    let development = false;
+    try {
+      development = getEnv().APP_ENV === "development";
+    } catch {
+      development = false;
+    }
+    if (!development) return NextResponse.rewrite(new URL("/__not-found", request.url));
+  }
   // Public AI pages: unknown tools are a real 404 (streamed pages can't change status later); known ones pass through untouched and stay indexable.
   if (pathname.startsWith("/ai-tools/")) {
     // The first segment names the tool; deeper paths (e.g. its opengraph-image) are resolved, or 404'd, by Next itself.

@@ -5,6 +5,8 @@ import { alias } from "drizzle-orm/pg-core";
 import { z } from "zod";
 import { CATEGORIES, EVENT_LABEL, PRIORITY_LABEL, REOPEN_DAYS, STATUS_META, type TicketCategory, type TicketEventView, type TicketMessageView, type TicketPriority, type TicketStatus, type TicketSummary } from "@/lib/support";
 import { audit } from "../audit";
+import { flushOutbox, type Outbox } from "../email/events";
+import { ticketCreatedMessage, ticketReplyMessage, ticketStatusMessage } from "../email/templates";
 import { notifyUser } from "./notifications";
 import { allows } from "../auth/permissions";
 import { loadStaffAccess } from "../auth";
@@ -41,7 +43,7 @@ function checkText(...values: string[]) {
 }
 
 async function notify(tx: Executor, userId: string, title: string, body: string, reference: string, dedupeKey: string) {
-  await notifyUser(tx, { userId, kind: "support", title, body, link: `/dashboard/support?ticket=${reference}`, dedupeKey });
+  return notifyUser(tx, { userId, kind: "support", title, body, link: `/dashboard/support?ticket=${reference}`, dedupeKey });
 }
 
 async function event(tx: Executor, ticketId: string, type: string, actor: { type: "customer" | "staff" | "system"; userId?: string | null }, opts: { from?: string | null; to?: string | null; customerVisible?: boolean } = {}) {
@@ -77,7 +79,7 @@ export async function createTicket(db: Db, actor: Customer, raw: unknown, client
     orderId = o.id;
   }
   try {
-    return await db.transaction(async (tx) => {
+    const created = await db.transaction(async (tx) => {
       const now = new Date();
       const [t] = await tx
         .insert(tickets)
@@ -88,6 +90,8 @@ export async function createTicket(db: Db, actor: Customer, raw: unknown, client
       await audit(tx, { actorUserId: actor.userId, actorType: "customer", action: "ticket.created", targetType: "ticket", targetId: t.id, after: { category: input.category, order: input.orderRef || null }, ip: client.ip, userAgent: client.userAgent });
       return { reference: t.ref, duplicate: false };
     });
+    await flushOutbox(db, [{ userId: actor.userId, pref: "support", build: (to) => ticketCreatedMessage(to, { reference: created.reference, subject: input.subject }) }]);
+    return created;
   } catch (e) {
     // Two identical submissions racing: the unique key keeps one; return it.
     const [again] = await db.select({ ref: tickets.publicRef }).from(tickets).where(and(eq(tickets.customerId, actor.customerId), eq(tickets.idempotencyKey, input.key))).limit(1);
@@ -395,6 +399,7 @@ export const staffReplySchema = z.strictObject({
 
 export async function staffReply(db: Db, staff: Staff, reference: string, raw: unknown, client: Client = {}) {
   const { body, key, status } = staffReplySchema.parse(raw);
+  const outbox: Outbox = [];
   await db.transaction(async (tx) => {
     const t = await lockAny(tx, reference);
     if (t.status === "closed") throw errors.conflict("This ticket is closed. Reopen it before replying.");
@@ -406,9 +411,11 @@ export async function staffReply(db: Db, staff: Staff, reference: string, raw: u
     if (status !== t.status) await event(tx, t.id, "status_changed", { type: "staff", userId: staff.userId }, { from: t.status, to: status });
     if (!t.assignedTo) await event(tx, t.id, "assigned", { type: "staff", userId: staff.userId }, { to: (await staffName(tx, staff.staffId)) ?? "Staff", customerVisible: false });
     const owner = await customerUser(tx, t.customerId);
-    if (owner) await notify(tx, owner, status === "resolved" ? `We've resolved: ${t.subject}` : `New reply on: ${t.subject}`, body, t.publicRef, `ticket-message:${inserted[0].id}`);
+    if (owner && (await notify(tx, owner, status === "resolved" ? `We've resolved: ${t.subject}` : `New reply on: ${t.subject}`, body, t.publicRef, `ticket-message:${inserted[0].id}`)))
+      outbox.push({ userId: owner, pref: "support", build: (to) => ticketReplyMessage(to, { reference: t.publicRef, subject: t.subject }, body, status === "resolved") });
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: "ticket.staff_replied", targetType: "ticket", targetId: t.id, after: { status }, ip: client.ip, userAgent: client.userAgent });
   });
+  await flushOutbox(db, outbox);
 }
 
 async function staffName(tx: Executor, staffId: string) {
@@ -420,6 +427,7 @@ export const statusSchema = z.strictObject({ status: z.enum(["awaiting", "in_pro
 
 export async function setStatus(db: Db, staff: Staff, reference: string, raw: unknown, client: Client = {}) {
   const { status } = statusSchema.parse(raw);
+  const outbox: Outbox = [];
   await db.transaction(async (tx) => {
     const t = await lockAny(tx, reference);
     if (t.status === status) return;
@@ -427,9 +435,11 @@ export async function setStatus(db: Db, staff: Staff, reference: string, raw: un
     await tx.update(tickets).set({ status, resolvedAt: status === "resolved" ? now : t.resolvedAt, closedAt: status === "closed" ? now : null, updatedAt: now }).where(eq(tickets.id, t.id));
     await event(tx, t.id, t.status === "closed" || t.status === "resolved" ? (OPEN.includes(status) ? "reopened" : "status_changed") : "status_changed", { type: "staff", userId: staff.userId }, { from: t.status, to: status });
     const owner = await customerUser(tx, t.customerId);
-    if (owner) await notify(tx, owner, `Ticket update: ${STATUS_META[status].customer}`, `${t.subject}. ${STATUS_META[status].customerExplain}`, t.publicRef, `ticket-status:${t.id}:${status}:${now.getTime()}`);
+    if (owner && (await notify(tx, owner, `Ticket update: ${STATUS_META[status].customer}`, `${t.subject}. ${STATUS_META[status].customerExplain}`, t.publicRef, `ticket-status:${t.id}:${status}:${now.getTime()}`)))
+      outbox.push({ userId: owner, pref: "support", build: (to) => ticketStatusMessage(to, { reference: t.publicRef, subject: t.subject }, STATUS_META[status].customer, STATUS_META[status].customerExplain) });
     await audit(tx, { actorUserId: staff.userId, actorType: "staff", action: "ticket.status_changed", targetType: "ticket", targetId: t.id, before: { status: t.status }, after: { status }, ip: client.ip, userAgent: client.userAgent });
   });
+  await flushOutbox(db, outbox);
 }
 
 export const prioritySchema = z.strictObject({ priority: z.enum(["low", "normal", "high", "urgent"]) });
