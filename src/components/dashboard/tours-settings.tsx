@@ -12,7 +12,8 @@ export function GuidedToursRow() {
   const done = useCompletedTours();
   return (
     <SettingRow title="Guided tours" description="Short walkthroughs of the dashboard, New Order, AI tools and search. Take one any time.">
-      <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+      {/* A fixed width keeps the list inside the row (the control column never shrinks); text wraps within it. */}
+      <ul className="grid w-full grid-cols-1 gap-1.5 sm:w-80">
         {ORDER.map((id) => (
           <li key={id}>
             <button

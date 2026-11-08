@@ -106,6 +106,9 @@ describe("read state and isolation", () => {
     expect((await listNotifications(db, c.user.id)).items).toHaveLength(1);
     await expect(db.insert(notifications).values({ recipientUserId: c.user.id, kind: "promo", title: "Buy now" })).rejects.toThrow();
     await expect(db.insert(notifications).values({ recipientUserId: c.user.id, kind: "order", title: "x", link: "https://evil.example" })).rejects.toThrow();
+    // The helper also drops links that would leave the site, which the database rule alone allows.
+    for (const [i, bad] of ["//evil.example/x", "/\\evil.example", "/ path"].entries()) await notifyUser(db, { userId: c.user.id, kind: "order", title: "t", link: bad, dedupeKey: `bad-link:${i}` });
+    expect((await listNotifications(db, c.user.id, { limit: 50 })).items.filter((i) => i.title === "t").every((i) => i.link === null)).toBe(true);
   });
 });
 

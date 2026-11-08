@@ -13,9 +13,11 @@ import { NOTIFICATION_KIND } from "../db/schema/enums";
  * The dedupe key names the event, so a retried or replayed event never notifies twice.
  */
 export async function notifyUser(tx: Executor, n: { userId: string; kind: NotificationKind; title: string; body?: string | null; link?: string | null; dedupeKey: string }) {
+  // Same-site paths only: "//host" and "/\host" would leave the site when opened (the database only checks for a leading "/").
+  const link = n.link && /^\/(?![/\\])[^\s]*$/.test(n.link) ? n.link : null;
   const inserted = await tx
     .insert(notifications)
-    .values({ recipientUserId: n.userId, kind: n.kind, title: n.title.slice(0, 160), body: n.body ? n.body.slice(0, 200) : null, link: n.link ?? null, dedupeKey: n.dedupeKey })
+    .values({ recipientUserId: n.userId, kind: n.kind, title: n.title.slice(0, 160), body: n.body ? n.body.slice(0, 200) : null, link, dedupeKey: n.dedupeKey })
     .onConflictDoNothing({ target: [notifications.recipientUserId, notifications.dedupeKey] })
     .returning({ id: notifications.id });
   /** True when this event is new — the signal for any follow-up (e.g. an update email). */
