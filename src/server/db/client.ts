@@ -41,6 +41,16 @@ export function getDb(): Db {
   return holder.__svDb;
 }
 
+/**
+ * The database's current time. Date ranges that end "now" use this rather than the app server's clock, because rows
+ * are timestamped by the database: a few milliseconds of skew (or more between separate machines) would otherwise
+ * leave the newest records outside the range.
+ */
+export async function databaseNow(db: Executor): Promise<Date> {
+  const r = await db.execute<{ now: Date | string }>(sql`select now() as now`);
+  return new Date(r.rows[0].now);
+}
+
 export type DatabaseHealth = "ok" | "not_configured" | "unreachable";
 
 export async function pingDatabase(db?: Db): Promise<DatabaseHealth> {

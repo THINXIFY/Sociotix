@@ -12,6 +12,7 @@ import { createDb, type Db } from "@/server/db/client";
 import { auditLog, customers, platformSettings, serviceEligibility, servicePriceVersions, sessions } from "@/server/db/schema";
 import { getEnv, resetEnvCache } from "@/server/env";
 import { approveOrder, assignOrder, completeOrder, createOrder, startFulfillment } from "@/server/orders/orders";
+import { reportRequest } from "@/server/analytics/request";
 import { REPORTING_KEY } from "@/server/settings/reporting";
 import { runMigrations } from "../../scripts/db/migrate";
 import { seedReferenceData } from "../../scripts/db/seed";
@@ -152,6 +153,20 @@ describe("CSV safety", () => {
     const res = await get(exportGet, "report=customers&range=7d");
     expect(res.status).toBe(400);
     expect((await res.json()).error.message).toMatch(/limit is 25.*Narrow the date range/);
+  });
+
+  it("ranges end at the database's clock, so a record created a moment ago is always inside them", async () => {
+    // The app server's clock 5 seconds behind the database (in practice: milliseconds on one machine, more across machines).
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(Date.now() - 5_000));
+    try {
+      const c = await makeCustomer(db);
+      const [{ createdAt }] = await db.select({ createdAt: customers.createdAt }).from(customers).where(eq(customers.id, c.customer.id));
+      const { range } = await reportRequest(db, "http://localhost:3000/api/admin/reports?report=customers&range=7d");
+      expect(range.end.getTime()).toBeGreaterThanOrEqual(createdAt.getTime());
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("rate-limits exports and audits each one without personal data", async () => {

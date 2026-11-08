@@ -7,7 +7,7 @@ import { resolveRange } from "@/lib/admin-overview";
 import { DEFAULT_ACCESS } from "@/lib/admin-staff";
 import { audit } from "@/server/audit";
 import { adminOverview } from "@/server/analytics/overview";
-import { createDb, type Db } from "@/server/db/client";
+import { createDb, databaseNow, type Db } from "@/server/db/client";
 import { auditLog, customers, platformSettings, serviceEligibility, servicePriceVersions } from "@/server/db/schema";
 import { getEnv, resetEnvCache } from "@/server/env";
 import { balanceSummary, financialSummary } from "@/server/payments/reconcile";
@@ -57,7 +57,7 @@ const done = { evidenceNote: "Delivered 1,000 followers, checked on the profile.
 
 describe("empty platform", () => {
   it("reports zeros and no history instead of inventing any", async () => {
-    const o = await adminOverview(db, getEnv(), OWNER, resolveRange("7d")!);
+    const o = await adminOverview(db, getEnv(), OWNER, resolveRange("7d", null, null, await databaseNow(db))!);
     expect(o.dataSince).toBeNull();
     expect(o.customers).toMatchObject({ total: 0, new: { value: 0, previous: null } });
     expect(o.customers!.series).toHaveLength(7);
@@ -101,7 +101,7 @@ describe("controlled fixtures", () => {
   });
 
   it("counts real records and keeps revenue, order value, funding and wallets apart", async () => {
-    const o = await adminOverview(db, getEnv(), OWNER, resolveRange("7d")!);
+    const o = await adminOverview(db, getEnv(), OWNER, resolveRange("7d", null, null, await databaseNow(db))!);
     expect(o.customers).toMatchObject({ total: 3, new: { value: 2, previous: 0 } });
     expect(o.customers!.series.reduce((x, p) => x + p.value, 0)).toBe(2);
     expect(o.orders!.placed).toEqual({ value: 2, previous: 0 });
@@ -126,7 +126,7 @@ describe("controlled fixtures", () => {
   });
 
   it("applies the same UTC boundaries everywhere", async () => {
-    const r = resolveRange("7d")!;
+    const r = resolveRange("7d", null, null, await databaseNow(db))!;
     const c = await makeCustomer(db);
     const edge = await makeCustomer(db);
     await db.update(customers).set({ createdAt: new Date(r.start.getTime() - 1) }).where(eq(customers.id, c.customer.id));
@@ -137,7 +137,7 @@ describe("controlled fixtures", () => {
     expect(o.customers!.series[0].value).toBe(1);
     expect(o.customers!.series.reduce((x, p) => x + p.value, 0)).toBe(o.customers!.new.value);
 
-    const today = await adminOverview(db, getEnv(), OWNER, resolveRange("today")!);
+    const today = await adminOverview(db, getEnv(), OWNER, resolveRange("today", null, null, await databaseNow(db))!);
     expect(today.range.unit).toBe("hour");
     expect(today.customers!.series).toHaveLength(new Date().getUTCHours() + 1);
   });
