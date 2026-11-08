@@ -11,6 +11,7 @@ import { AiPlatformIcon } from "./platform-icon";
 import { type AdvisorResult, AdvisorResults, type RecommenderResult, RecommenderResults, type RoadmapResult, RoadmapResults } from "./growth-results";
 import { type CalendarResult, CalendarResults, type CaptionResult, CaptionResults, type HashtagResult, HashtagResults, type IdeasResult, IdeasResults } from "./results";
 import { type OrderAssistantResult, OrderAssistantResults } from "./order-assistant-results";
+import { TourHelpButton, TourHost } from "@/components/tour/guided-tour";
 import { useToolStatus } from "./use-ai-status";
 
 /*
@@ -269,6 +270,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
         "rounded-[1.75rem] shadow-[0_1px_2px_rgb(32_33_39/0.05),0_40px_90px_-48px_rgb(64_38_160/0.5)] ring-1 ring-primary/[0.06] sm:rounded-[2rem] dark:shadow-[0_40px_90px_-40px_rgb(0_0_0/0.85)] dark:ring-white/[0.04]",
       )}
     >
+      <TourHost tours={["ai"]} />
       {tool.fields.length ? (
         <WorkflowSteps
           steps={[
@@ -302,15 +304,18 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 <span className="hidden sm:inline">{copy.long ?? tool.description}</span>
               </p>
             </div>
-            {locked ? (
-              <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                <Lock className="size-3" aria-hidden /> Preview
-              </span>
-            ) : remaining !== null ? (
-              <span className="shrink-0 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-semibold text-primary tabular-nums dark:bg-primary/20 dark:text-[#c9bcff]">
-                {remaining} of {usage!.allowance} left today
-              </span>
-            ) : null}
+            <div className="flex shrink-0 items-center gap-1">
+              {locked ? (
+                <span className="inline-flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                  <Lock className="size-3" aria-hidden /> Preview
+                </span>
+              ) : remaining !== null ? (
+                <span className="shrink-0 rounded-full bg-primary/[0.08] px-2.5 py-1 text-xs font-semibold text-primary tabular-nums dark:bg-primary/20 dark:text-[#c9bcff]">
+                  {remaining} of {usage!.allowance} left today
+                </span>
+              ) : null}
+              <TourHelpButton tour="ai" />
+            </div>
           </div>
 
           {locked ? (
@@ -370,7 +375,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                   onExample={applyExample}
                 />
               ) : null}
-              <fieldset disabled={formLocked} className={cn("space-y-5", primary && "mt-5")}>
+              <fieldset disabled={formLocked} data-tour="ai-customize" className={cn("space-y-5", primary && "mt-5")}>
                 {primary && rest.length ? <legend className="mb-3 text-[0.7rem] font-bold tracking-wider text-muted-foreground uppercase">Customize</legend> : null}
                 {rest.map(field)}
               </fieldset>
@@ -402,7 +407,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 </p>
               ) : null}
 
-              <div className="mt-6">
+              <div className="mt-6" data-tour="ai-generate">
                 {live && account === "signed_out" ? (
                   <div className="grid grid-cols-2 gap-2">
                     <Link href="/login" className="inline-flex h-12 items-center justify-center rounded-full border bg-card text-sm font-semibold hover:bg-muted">
@@ -451,6 +456,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
 
         {/* ── Results ───────────────────────────────────────────────────── */}
         <section
+          data-tour="ai-results"
           aria-labelledby={`${formId}-out`}
           aria-busy={run.kind === "loading" || undefined}
           className={cn(
@@ -592,7 +598,7 @@ function Composer({
   const errId = error ? `${id}-error` : undefined;
   const near = Boolean(f.maxLength && value.length > f.maxLength * 0.9);
   return (
-    <div>
+    <div data-tour="ai-composer">
       <label htmlFor={id} className="sr-only">
         {f.label}
       </label>
@@ -619,7 +625,7 @@ function Composer({
         {/* Phones: one sideways-scrolling row of examples beside the counter, instead of a stack of wrapped chips. */}
         <div className="flex items-center justify-between gap-x-3 gap-y-2 border-t border-dashed px-3 py-1.5 sm:flex-wrap sm:px-4 sm:py-2.5">
           {examples.length ? (
-            <div className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain [mask-image:linear-gradient(to_right,black_82%,transparent)] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:[mask-image:none] [&::-webkit-scrollbar]:hidden">
+            <div data-tour="ai-examples" className="flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto overscroll-x-contain [mask-image:linear-gradient(to_right,black_82%,transparent)] [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:[mask-image:none] [&::-webkit-scrollbar]:hidden">
               <span className="inline-flex shrink-0 items-center gap-1 text-[0.75rem] font-medium text-muted-foreground">
                 <Wand2 className="size-3.5" aria-hidden /> Try
               </span>

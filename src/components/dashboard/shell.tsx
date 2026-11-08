@@ -26,6 +26,7 @@ import {
 } from "./shared";
 import { useDemoOrders, usePreferences, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
+import { TourHost } from "@/components/tour/guided-tour";
 import { GlobalSearch } from "./global-search";
 import { Avatar, TopBar } from "./top-bar";
 
@@ -220,11 +221,11 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
         <SidebarLogo collapsed={collapsed} />
       </div>
 
-      <div className="relative px-3 pt-4 pb-1">
+      <div className="relative px-3 pt-4 pb-1" data-tour="new-order">
         <SidebarNewOrder collapsed={collapsed} />
       </div>
 
-      <nav aria-label={t("nav.primary")} className="relative flex-1 overflow-y-auto px-3 pt-3 scrollbar-inverse">
+      <nav aria-label={t("nav.primary")} data-tour="nav" className="relative flex-1 overflow-y-auto px-3 pt-3 scrollbar-inverse">
         <p
           className={cn(
             "mb-1.5 px-2 text-[0.64rem] font-bold tracking-[0.14em] text-white/50 uppercase",
@@ -250,7 +251,7 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
           {t("nav.ai")}
         </p>
         {collapsed ? <div className="mx-auto mt-5 mb-3 h-px w-8 bg-white/10" aria-hidden /> : null}
-        <ul className="space-y-0.5">
+        <ul className="space-y-0.5" data-tour="ai">
           {AI_NAV.map((item) => (
             <li key={item.id}>
               <SidebarItem item={item} collapsed={collapsed} />
@@ -343,6 +344,7 @@ function BottomNav() {
     <>
       <nav
         aria-label={t("nav.primary")}
+        data-tour="nav"
         className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden"
       >
         <ul className="mx-auto grid h-16 max-w-xl grid-cols-5 px-1">
@@ -352,7 +354,7 @@ function BottomNav() {
             const active = id === activeId;
             if (id === "new-order") {
               return (
-                <li key={id}>
+                <li key={id} data-tour="new-order">
                   <NavTarget id={id} className={cn(tabClass, "font-semibold text-foreground")}>
                     <span className="grid h-9 w-12 place-items-center rounded-2xl bg-primary text-primary-foreground shadow-[0_6px_16px_-8px_rgb(112_71_235/0.9)] transition-transform group-active/tab:scale-95 group-focus-visible/tab:ring-3 group-focus-visible/tab:ring-primary/40 motion-reduce:transition-none">
                       <Plus className="size-5" strokeWidth={2.6} aria-hidden />
@@ -535,6 +537,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
       <BottomNav />
 
       <GlobalSearch key={searchSession} open={searchOpen} onOpenChange={setSearchOpen} />
+      <TourHost tours={["dashboard", "new-order", "search"]} />
     </div>
     </MotionConfig>
     </DirectionProvider>

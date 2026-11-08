@@ -328,10 +328,11 @@ export function GlobalSearch({ open, onOpenChange }: { open: boolean; onOpenChan
 }
 
 /** The compact top-bar trigger; Ctrl/⌘ K opens the same dialog. */
-export function GlobalSearchTrigger({ onOpen, className }: { onOpen: () => void; className?: string }) {
+export function GlobalSearchTrigger({ onOpen, className, ...rest }: { onOpen: () => void; className?: string; "data-tour"?: string }) {
   return (
     <button
       type="button"
+      {...rest}
       onClick={onOpen}
       aria-keyshortcuts="Control+K Meta+K"
       className={cn("group flex h-10 w-full items-center gap-2.5 rounded-full border bg-card ps-3.5 pe-2 text-sm text-muted-foreground shadow-xs transition-colors hover:border-primary/30 hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/15 focus-visible:outline-none", className)}

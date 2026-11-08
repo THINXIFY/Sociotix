@@ -110,7 +110,7 @@ export function LiveNotifications() {
 
   return (
     <Popover.Root open={open} onOpenChange={(o) => (setOpen(o), o && load())}>
-      <Popover.Trigger className={iconButton} aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
+      <Popover.Trigger className={iconButton} data-tour="notifications" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}>
         <Bell className="size-[1.1rem]" aria-hidden />
         {unread ? <span className="absolute top-1 end-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[0.6rem] font-bold text-primary-foreground ring-2 ring-background tabular-nums">{unread > 9 ? "9+" : unread}</span> : null}
       </Popover.Trigger>

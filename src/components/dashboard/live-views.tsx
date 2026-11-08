@@ -27,6 +27,7 @@ import type { CustomerDeposit } from "@/lib/deposits";
 import { useLiveAccount } from "./live-account";
 import { BankInstructionsPanel, DepositStatusBadge } from "./live-deposit";
 import { CardIcon, DigitalProductsCard, FinderCard, HelpCard, splitAmount, useGreeting, WalletCard } from "./overview-parts";
+import { TourHelpButton } from "@/components/tour/guided-tour";
 import { ForYouPanel } from "./onboarding";
 import { dashButton, enter, FINDER_ROUTE, Pagination, Panel, PanelHeader, ROUTES } from "./shared";
 import { Select } from "@/components/ui/select";
@@ -103,6 +104,7 @@ export function LiveOverview() {
         <div className="contents xl:flex xl:flex-col xl:gap-5">
           <Panel className={cn("relative isolate order-1 overflow-hidden p-4 sm:p-6 md:col-span-2", a[0].className)} style={a[0].style} aria-labelledby="welcome-title">
             <div className="pointer-events-none absolute -end-24 -top-32 -z-10 size-80 rounded-full bg-primary/[0.08] blur-3xl dark:bg-primary/15" aria-hidden />
+            <TourHelpButton tour="dashboard" className="absolute end-3 top-3 sm:end-4 sm:top-4" />
             <p className="text-[0.82rem] font-medium text-muted-foreground">
               {greeting}, {profile.displayName || profile.firstName}
             </p>

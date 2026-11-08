@@ -24,6 +24,7 @@ import {
   X,
 } from "lucide-react";
 import { PlatformIcon, PlatformTile } from "@/components/brand";
+import { TourHelpButton } from "@/components/tour/guided-tour";
 import { CATEGORY_ICONS } from "@/components/site/primitives";
 import {
   CATALOG_TOTALS,
@@ -410,7 +411,10 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
           >
             <ArrowLeft className="size-4 rtl:-scale-x-100" aria-hidden /> {backLink.label}
           </Link>
-          <h1 className="mt-1.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">New Order</h1>
+          <div className="mt-1.5 flex items-center gap-1.5">
+            <h1 className="font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">New Order</h1>
+            <TourHelpButton tour="new-order" />
+          </div>
         </div>
         <p className="text-sm text-muted-foreground">
           {CATALOG_TOTALS.services} services across {CATALOG_TOTALS.platforms} platforms

@@ -10,6 +10,7 @@ import { formatMoneyParts, isConverted, t, useDisplay } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { type LocalOrder, useDemoActivity, useDemoOrders, useFavorites, useProfile, whenLabel } from "./demo-store";
 import { CardIcon, DigitalProductsCard, FinderCard, HelpCard, useGreeting, WalletCard } from "./overview-parts";
+import { TourHelpButton } from "@/components/tour/guided-tour";
 import { ForYouPanel } from "./onboarding";
 import { dashButton, DemoTag, enter, newOrderHref, ordersHref, OrderStatusBadge, Panel, PanelHeader, ROUTES, useDestinations } from "./shared";
 import { ACTIVITY_ICONS } from "./top-bar";
@@ -44,6 +45,7 @@ function StartOrder({ className, style }: CardProps) {
   return (
     <Panel className={cn("relative isolate overflow-hidden", className)} style={style} aria-labelledby="welcome-title">
       <div className="pointer-events-none absolute -end-24 -top-32 -z-10 size-80 rounded-full bg-primary/[0.08] blur-3xl dark:bg-primary/15" aria-hidden />
+      <TourHelpButton tour="dashboard" className="absolute end-3 top-3 sm:end-4 sm:top-4" />
 
       <div className="p-4 sm:p-6">
         <p className="flex flex-wrap items-center gap-2 text-[0.82rem] font-medium text-muted-foreground">

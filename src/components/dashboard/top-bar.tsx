@@ -65,7 +65,7 @@ function Notifications() {
 
   return (
     <Popover.Root>
-      <Popover.Trigger className={iconButton} aria-label={unread ? t("notif.unreadCount", { count: unread }) : t("notif.title")}>
+      <Popover.Trigger className={iconButton} data-tour="notifications" aria-label={unread ? t("notif.unreadCount", { count: unread }) : t("notif.title")}>
         <Bell className="size-[1.1rem]" aria-hidden />
         {unread ? (
           <span className="absolute top-1 end-1 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[0.6rem] font-bold text-primary-foreground ring-2 ring-background">
@@ -280,10 +280,10 @@ export function TopBar({ mobileLogo, onOpenSearch }: { mobileLogo: React.ReactNo
       <div className="mx-auto flex h-16 max-w-[90rem] items-center gap-2 px-4 sm:gap-3 sm:px-6 lg:px-8">
         <div className="lg:hidden">{mobileLogo}</div>
 
-        <GlobalSearchTrigger onOpen={onOpenSearch} className="hidden max-w-md flex-1 md:flex" />
+        <GlobalSearchTrigger onOpen={onOpenSearch} className="hidden max-w-md flex-1 md:flex" data-tour="search" />
 
         <div className="ms-auto flex items-center gap-1 sm:gap-1.5">
-          <button type="button" className={cn(iconButton, "md:hidden")} aria-label={t("search.label")} onClick={onOpenSearch}>
+          <button type="button" className={cn(iconButton, "md:hidden")} data-tour="search" aria-label={t("search.label")} onClick={onOpenSearch}>
             <Search className="size-[1.1rem]" aria-hidden />
           </button>
 
@@ -291,6 +291,7 @@ export function TopBar({ mobileLogo, onOpenSearch }: { mobileLogo: React.ReactNo
             type="button"
             onClick={() => go(live ? "transactions" : "add-funds")}
             className="group me-1 flex h-9 items-center gap-2 rounded-full border bg-card pe-1 ps-3 text-sm shadow-xs transition-colors hover:border-primary/40 focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
+            data-tour="wallet"
             aria-label={live ? `Wallet balance ${balance}. View wallet history` : t("topbar.balance", { amount: balance })}
           >
             <Wallet className="size-4 text-primary" aria-hidden />

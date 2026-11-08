@@ -34,6 +34,7 @@ import { ConfirmDialog, PendingBadge, SavedNote, Section, SettingRow, Switch, us
 import { resetDemoData, savePreferences, usePreferences, useProfile } from "./demo-store";
 import { useLiveAccount } from "./live-account";
 import { OnboardingSettingsButton } from "./onboarding";
+import { GuidedToursRow } from "./tours-settings";
 import { CurrencyPicker, LanguagePicker, offersLanguages } from "./region";
 import { enter, Panel, ROUTES, useHydrated } from "./shared";
 import { Select } from "@/components/ui/select";
@@ -444,6 +445,7 @@ function PreferencesSection() {
       <SettingRow title={t("preferences.platform")} description={t("preferences.platformDesc")}>
         <OnboardingSettingsButton className={quietButton}>{t("preferences.platformAction")}</OnboardingSettingsButton>
       </SettingRow>
+      <GuidedToursRow />
       {/* Sociotix AI personalisation (AI-09) is saved on the server; this reopens the short introduction. */}
       <SettingRow title={t("preferences.ai")} description={t("preferences.aiDesc")}>
         <Link href="/dashboard/ai/welcome" className={quietButton}>
