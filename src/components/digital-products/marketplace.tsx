@@ -234,7 +234,7 @@ export function DigitalMarketplace({ products, preview }: { products: DigitalPro
                     )}
                   >
                     {c.name}
-                    <span className={cn("grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[0.7rem] font-semibold tabular-nums", active ? "bg-white/20 text-white" : "bg-background text-muted-foreground dark:bg-white/10")}>
+                    <span className={cn("grid h-6 min-w-6 place-items-center rounded-full px-1.5 text-[0.7rem] font-semibold tabular-nums", active ? "bg-black/15 text-white" : "bg-background text-muted-foreground dark:bg-white/10")}>
                       {n}
                       <span className="sr-only"> {n === 1 ? "product" : "products"}</span>
                     </span>

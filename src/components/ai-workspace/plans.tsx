@@ -120,15 +120,17 @@ export function PlanComparison() {
       </div>
       <div className="space-y-3 sm:hidden">
         {PLANS.map((p) => (
-          <dl key={p.id} className="rounded-2xl border bg-card p-4">
+          <div key={p.id} className="rounded-2xl border bg-card p-4">
             <p className="font-heading font-extrabold">{p.name}</p>
-            {PLAN_COMPARISON.map((row) => (
-              <div key={row.label} className="mt-2 flex justify-between gap-4 border-t pt-2 text-sm">
-                <dt className="text-muted-foreground">{row.label}</dt>
-                <dd className="text-right font-medium">{row.values[p.id]}</dd>
-              </div>
-            ))}
-          </dl>
+            <dl>
+              {PLAN_COMPARISON.map((row) => (
+                <div key={row.label} className="mt-2 flex justify-between gap-4 border-t pt-2 text-sm">
+                  <dt className="text-muted-foreground">{row.label}</dt>
+                  <dd className="text-right font-medium">{row.values[p.id]}</dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         ))}
       </div>
     </>

@@ -225,7 +225,7 @@ export function LiveWallet() {
               <RetryButton onClick={overall.retry} />
             </div>
           ) : (
-            <dl className="my-auto grid grid-cols-3 gap-2 py-3">
+            <div className="my-auto grid grid-cols-3 gap-2 py-3">
               {[
                 { label: "Money in", value: overall.data ? cents(overall.data.totals.inCents) : null, Icon: ArrowDownLeft, tone: "bg-ok-soft text-ok" },
                 { label: "Money out", value: overall.data ? cents(overall.data.totals.outCents) : null, Icon: ArrowUpRight, tone: "bg-muted text-foreground/75" },
@@ -235,15 +235,15 @@ export function LiveWallet() {
                   <span className={cn("hidden size-9 shrink-0 place-items-center rounded-xl sm:grid", s.tone)} aria-hidden>
                     <s.Icon className="size-4" />
                   </span>
-                  <div className="min-w-0">
+                  <dl className="min-w-0">
                     <dt className="text-xs text-muted-foreground">{s.label}</dt>
                     <dd className="truncate font-heading text-base leading-tight font-extrabold tabular-nums sm:text-lg">
                       {s.value ?? <span className="inline-block h-5 w-16 animate-pulse rounded bg-muted align-middle motion-reduce:animate-none" aria-label="Loading" />}
                     </dd>
-                  </div>
+                  </dl>
                 </div>
               ))}
-            </dl>
+            </div>
           )}
           <p className="border-t pt-3 text-xs leading-relaxed text-muted-foreground">
             Your balance is used to pay for orders. Cancelled orders return the full amount here. Deposits, withdrawals and refunds aren&apos;t open yet.
