@@ -50,6 +50,7 @@ import { formatPrice, useDisplay } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { FavoriteButton } from "./favorite-button";
 import { FINDER_ROUTE, Panel, ROUTES } from "./shared";
+import { FINDER_QUERY_KEY } from "./finder-key";
 
 /* -------------------------------------------------------------------------- */
 /*  State & URL                                                               */
@@ -57,9 +58,6 @@ import { FINDER_ROUTE, Panel, ROUTES } from "./shared";
 
 const STEPS = ["Goal", "Platform", "Refine", "Results"] as const;
 type Step = 0 | 1 | 2 | 3;
-
-/** Lets New Order link back to the finder with the same answers. */
-export const FINDER_QUERY_KEY = "sv-finder-query";
 
 const GOAL_ICONS: Record<GoalId, LucideIcon> = {
   audience: Users,

@@ -58,7 +58,7 @@ import {
 } from "./demo-store";
 import { useLiveAccount } from "./live-account";
 import { FavoriteButton } from "./favorite-button";
-import { FINDER_QUERY_KEY } from "./service-finder";
+import { FINDER_QUERY_KEY } from "./finder-key";
 import { FxNote } from "./region";
 import { dashButton, DemoTag, FINDER_ROUTE, ordersHref, Panel, ROUTES, useHydrated } from "./shared";
 import { Select } from "@/components/ui/select";
