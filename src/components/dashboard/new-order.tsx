@@ -284,20 +284,32 @@ export function NewOrderSkeleton() {
   );
 }
 
+const noopSubscribe = () => () => {};
+/** The Service Finder answers kept for the "back" link (this browser only; empty on the server). */
+function readFinderQuery() {
+  try {
+    return sessionStorage.getItem(FINDER_QUERY_KEY) ?? "";
+  } catch {
+    return "";
+  }
+}
+
 export function NewOrder() {
   // Re-render when language, currency, time zone or date format change.
   useDisplay();
   const params = useSearchParams();
-  // Favorites and reorder drafts live in this browser, so wait until they can be read.
   const hydrated = useHydrated();
   const key = ["service", "platform", "reorder", "view", "quantity"].map((k) => params.get(k) ?? "").join("|");
-  if (!hydrated) return <NewOrderSkeleton />;
+  // A reorder (its past orders and edits) and the Favorites tab are made of data kept in this browser, so only they wait for it.
+  // Everything else renders on the server and at first paint; favorites and recent services fill in once the browser's copy is read.
+  if ((params.get("reorder") || params.get("view") === "favorites") && !hydrated) return <NewOrderSkeleton />;
   // A new preselection (e.g. picked from the top-bar search) starts a fresh order.
   return <OrderFlow key={key} params={params} />;
 }
 
 function OrderFlow({ params }: { params: URLSearchParams }) {
   const router = useRouter();
+  const hydrated = useHydrated();
   const { orders } = useDemoOrders();
   const [initial] = React.useState(() => initialState(params, orders));
   const [step, setStep] = React.useState<Step>(initial.step);
@@ -308,14 +320,9 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
   const [submitted, setSubmitted] = React.useState(false);
   const reorder = initial.reorder;
   // Coming from the Service Finder, link back to the same answers.
-  const [backLink] = React.useState(() => {
-    if (params.get("from") !== "finder") return { href: ROUTES.overview, label: "Overview" };
-    let query = "";
-    try {
-      query = sessionStorage.getItem(FINDER_QUERY_KEY) ?? "";
-    } catch {}
-    return { href: query ? `${FINDER_ROUTE}?${query}` : FINDER_ROUTE, label: "Service Finder" };
-  });
+  const fromFinder = params.get("from") === "finder";
+  const finderQuery = React.useSyncExternalStore(noopSubscribe, readFinderQuery, () => "");
+  const backLink = fromFinder ? { href: finderQuery ? `${FINDER_ROUTE}?${finderQuery}` : FINDER_ROUTE, label: "Service Finder" } : { href: ROUTES.overview, label: "Overview" };
   const [initialView] = React.useState<BrowseView>(() => (params.get("view") === "favorites" ? "favorites" : "browse"));
   // Edits to a reorder are kept as a draft so a refresh doesn't lose them.
   const keepDraft = (id: string | null, next: Values) => {
@@ -402,7 +409,9 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
   };
 
   return (
-    <div className="mx-auto max-w-[90rem] px-3 pt-4 pb-6 sm:px-6 sm:pt-6 lg:px-8">
+    // The server paints this page before its script has loaded. Until then taps and typing would be lost
+    // (nothing is listening yet), so it's inert for that moment; it becomes interactive the instant it's ready.
+    <div inert={!hydrated} aria-busy={!hydrated || undefined} className="mx-auto max-w-[90rem] px-3 pt-4 pb-6 sm:px-6 sm:pt-6 lg:px-8">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <div className="min-w-0">
           <Link
@@ -820,9 +829,12 @@ const SERVICE_COUNT = Object.fromEntries(PLATFORMS.map((p) => [p.id, SERVICES.fi
 /** Favorites first, in the order they were when the list opened, so cards don't jump when a heart is toggled. */
 function useFavoritesFirst() {
   const favorites = useFavorites();
-  const [pinned] = React.useState(() => new Set(favorites.ids));
+  const hydrated = useHydrated();
+  // Pinned once, the moment this browser's favorites are first known (the server renders without them).
+  const [pinned, setPinned] = React.useState<Set<string> | null>(null);
+  if (hydrated && pinned === null) setPinned(new Set(favorites.ids));
   return React.useCallback(
-    (list: Service[]) => (pinned.size ? [...list].sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id))) : list),
+    (list: Service[]) => (pinned?.size ? [...list].sort((a, b) => Number(pinned.has(b.id)) - Number(pinned.has(a.id))) : list),
     [pinned],
   );
 }
