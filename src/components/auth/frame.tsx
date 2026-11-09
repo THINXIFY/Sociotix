@@ -53,7 +53,7 @@ function CustomerFrame({ children }: { children: React.ReactNode }) {
 
       <footer className="mx-auto w-full max-w-6xl px-5 pb-6 text-center text-xs text-muted-foreground sm:px-8 lg:text-start">
         Sociotix ·{" "}
-        <Link href="/" className="underline-offset-4 hover:text-foreground hover:underline">
+        <Link href="/" className="relative after:absolute after:inset-x-0 after:content-[''] after:-inset-y-1.5 underline-offset-4 hover:text-foreground hover:underline">
           Back to website
         </Link>
       </footer>

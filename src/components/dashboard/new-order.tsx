@@ -411,6 +411,14 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
   return (
     // The server paints this page before its script has loaded. Until then taps and typing would be lost
     // (nothing is listening yet), so it's inert for that moment; it becomes interactive the instant it's ready.
+    <>
+    {/* Says so while it waits (an inert page is hidden from assistive tech and looks ready). It sits in the page's top padding,
+        out of the flow, so it moves nothing, and it's gone the moment the page is ready. */}
+    <div className="relative mx-auto max-w-[90rem]">
+      <p role="status" className="pointer-events-none absolute end-3 top-0.5 text-[0.7rem] leading-4 text-muted-foreground sm:end-6 sm:top-1 lg:end-8">
+        {hydrated ? null : "Getting ready…"}
+      </p>
+    </div>
     <div inert={!hydrated} aria-busy={!hydrated || undefined} className="mx-auto max-w-[90rem] px-3 pt-4 pb-6 sm:px-6 sm:pt-6 lg:px-8">
       <header className="flex flex-wrap items-end justify-between gap-x-6 gap-y-1">
         <div className="min-w-0">
@@ -459,6 +467,7 @@ function OrderFlow({ params }: { params: URLSearchParams }) {
 
       <MobileActionBar ctx={ctx} />
     </div>
+    </>
   );
 }
 

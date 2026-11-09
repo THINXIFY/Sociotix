@@ -20,7 +20,7 @@ type FooterLink = { label: string; href?: string; onClick?: () => void; soon?: b
 
 // Underline reveal on hover/focus; colour transition only under reduced motion.
 const linkClass =
-  "rounded-sm bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 text-left text-[0.88rem] text-muted-foreground transition-[color,background-size] duration-300 ease-out hover:bg-[length:100%_1px] hover:text-primary focus-visible:bg-[length:100%_1px] focus-visible:text-primary dark:hover:text-[#c9bcff] dark:focus-visible:text-[#c9bcff] focus-visible:outline-none motion-reduce:transition-none";
+  "relative after:absolute after:inset-x-0 after:content-[''] after:-inset-y-1 rounded-sm bg-[linear-gradient(currentColor,currentColor)] bg-[length:0%_1px] bg-left-bottom bg-no-repeat pb-0.5 text-left text-[0.88rem] text-muted-foreground transition-[color,background-size] duration-300 ease-out hover:bg-[length:100%_1px] hover:text-primary focus-visible:bg-[length:100%_1px] focus-visible:text-primary dark:hover:text-[#c9bcff] dark:focus-visible:text-[#c9bcff] focus-visible:outline-none motion-reduce:transition-none";
 
 function FooterLinkItem({ link }: { link: FooterLink }) {
   if (link.soon) {
@@ -186,7 +186,7 @@ export function Footer({ page = "home" }: { page?: "home" | "ai" | "other" }) {
                 {/* Not published yet (written policy needed before launch): labelled, never a dead link. */}
                 {legal.map((l) =>
                   l.href ? (
-                    <Link key={l.label} href={l.href} className="rounded-sm text-[0.8rem] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
+                    <Link key={l.label} href={l.href} className="relative after:absolute after:inset-x-0 after:content-[''] after:-inset-y-1 rounded-sm text-[0.8rem] text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none">
                       {l.label}
                     </Link>
                   ) : (

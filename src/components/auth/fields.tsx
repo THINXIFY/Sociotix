@@ -142,6 +142,6 @@ export function AuthFooter({ children }: { children: React.ReactNode }) {
   return <div className="mt-2 border-t pt-6 text-center text-[0.9rem] text-muted-foreground">{children}</div>;
 }
 
-export const textLink = "font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none";
+export const textLink = "relative after:absolute after:inset-x-0 after:content-[''] after:-inset-y-1 font-semibold text-primary underline-offset-4 hover:underline focus-visible:rounded focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:outline-none";
 export const ghostButton =
   "inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border bg-background px-5 text-[0.95rem] font-semibold transition-colors hover:bg-muted focus-visible:ring-4 focus-visible:ring-primary/25 focus-visible:outline-none motion-reduce:transition-none dark:bg-white/[0.03]";
