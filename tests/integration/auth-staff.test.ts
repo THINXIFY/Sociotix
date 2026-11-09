@@ -1,5 +1,5 @@
 import { eq, sql } from "drizzle-orm";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { getStaffSession, requireStaffSession } from "@/server/auth";
 import { hashPassword } from "@/server/auth/password";
 import { validateSession } from "@/server/auth/sessions";
@@ -100,7 +100,15 @@ describe("owner bootstrap → setup → mandatory MFA", () => {
     expect(await code(requireStaffSession())).toBe("MFA_REQUIRED");
   });
 
+  // This test is about one authenticator code being used once. Its logins take long enough (password hashing) that, on a loaded
+  // machine, the clock can cross into the next 30-second step — whose code is then legitimately fresh, not a replay. So the
+  // clock is held still for the test; the assertions themselves are unchanged.
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it("enrollment: secret encrypted at rest, wrong codes rejected, correct code activates owner + 10 hashed recovery codes", async () => {
+    vi.useFakeTimers({ toFake: ["Date"], now: Date.now() });
     const session = (await validateSession(db, staffToken, "staff"))!;
     const { secret, uri, qr } = await beginMfaEnrollment(db, session);
     expect(uri).toContain("otpauth://totp/");
