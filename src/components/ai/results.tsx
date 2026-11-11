@@ -4,6 +4,7 @@ import * as React from "react";
 import { CalendarDays, Check, Copy, Download, List, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiPlatformIcon } from "./platform-icon";
+import { SaveToLibraryButton } from "./save-to-library";
 
 /*
  * Content Studio results (AI-02). Generated text is untrusted: it's only ever
@@ -152,6 +153,7 @@ export function CaptionResults({ result }: { result: CaptionResult }) {
                   <span className="flex items-center gap-1">
                     <span className="text-[0.7rem] text-muted-foreground tabular-nums">{text.length.toLocaleString("en-US")} chars</span>
                     <CopyButton text={text} label={`Copy ${platform.platform} caption ${i + 1}`} />
+                    <SaveToLibraryButton text={text} platform={platform.platform} label={`Save ${platform.platform} caption ${i + 1} to your Content Library`} />
                   </span>
                 </div>
                 <EditableText label={`${platform.platform} caption option ${i + 1}`} value={text} rows={Math.min(10, Math.max(3, Math.ceil(text.length / 60) + text.split("\n").length - 1))} onChange={(nv) => setDrafts((d) => d.map((row, r) => (r === active ? row.map((t, c) => (c === i ? nv : t)) : row)))} />

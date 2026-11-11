@@ -3,15 +3,17 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Ban, CalendarClock, Check, CircleAlert, Clock, Film, ImageIcon, Lock, Save, Send, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Ban, BookmarkPlus, CalendarClock, Check, CircleAlert, Clock, Film, FileText, FolderOpen, Hash, ImageIcon, Lock, Plus, Save, Send, Sparkles, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/dashboard/account-ui";
 import { Panel, useHydrated } from "@/components/dashboard/shared";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTime, useDisplay } from "@/lib/i18n";
+import { formatBytes, HASHTAGS_MAX, MEDIA_PER_POST_MAX, NOTES_MAX, parseHashtags, withHashtags, type MediaView, type TemplateView } from "@/lib/social/content";
 import { SOCIAL_PLATFORM, SOCIAL_PLATFORMS, type SocialProviderId } from "@/lib/social/platforms";
-import { charCount, MEDIA_RULES, POST_TEXT_MAX, postHref, PUBLISH_RULES, PUBLISHING_ROUTES, textFor, validateForPlatform, type PostContent, type PostView, type PublishingData } from "@/lib/social/publishing";
+import { charCount, POST_TEXT_MAX, postHref, PUBLISH_RULES, PUBLISHING_ROUTES, textFor, validateForPlatform, type PostContent, type PostView, type PublishingData } from "@/lib/social/publishing";
 import { browserTimeZone, utcToZonedInput } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { MediaPicker, MediaThumb } from "./content-parts";
 import { page, primaryButton, quietButton, SocialNav, SocialTile } from "./parts";
 import { postsApi, StateBadge, useUnsavedWarning } from "./publishing-parts";
 
@@ -130,6 +132,19 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
   const [message, setMessage] = React.useState<{ ok: boolean; text: string } | null>(null);
   const [scheduleOpen, setScheduleOpen] = React.useState(false);
   const [leaving, setLeaving] = React.useState(false);
+  // Content Library: hashtags, notes, folder, attached images, templates, and how saving is going.
+  const [hashtagText, setHashtagText] = React.useState((post?.hashtags ?? []).map((t) => `#${t}`).join(" "));
+  const [notes, setNotes] = React.useState(post?.notes ?? "");
+  const [folderId, setFolderId] = React.useState<string | null>(post?.folderId ?? null);
+  const [mediaIds, setMediaIds] = React.useState<string[]>(post?.mediaIds ?? []);
+  const [library, setLibrary] = React.useState<MediaView[]>(data.content.media);
+  const [templates, setTemplates] = React.useState<TemplateView[]>(data.content.templates);
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [templatesOpen, setTemplatesOpen] = React.useState(false);
+  const [postId, setPostId] = React.useState<string | null>(post?.id ?? null);
+  const [version, setVersion] = React.useState(post?.version ?? 1);
+  const [savedAt, setSavedAt] = React.useState<string | null>(post?.updatedAt ?? null);
+  const [saveState, setSaveState] = React.useState<"idle" | "saving" | "error" | "conflict">("idle");
   useUnsavedWarning(dirty);
 
   const touch = <T,>(set: (v: T) => void) => (v: T) => {
@@ -137,7 +152,15 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
     setDirty(true);
     setMessage(null);
   };
-  const content: PostContent = { text, title, media: [], variants };
+  const { tags, invalid: badTags } = parseHashtags(hashtagText);
+  const attached = mediaIds.map((id) => library.find((m) => m.id === id)).filter((m): m is MediaView => !!m);
+  // Previews and the platform checks see the caption the way a platform would: with its hashtags after it.
+  const content: PostContent = {
+    text: withHashtags(text, tags),
+    title,
+    media: attached.map((m) => ({ kind: "image", name: m.name, bytes: m.sizeBytes, type: m.mime })),
+    variants: Object.fromEntries(Object.entries(variants).filter(([, v]) => v?.trim()).map(([k, v]) => [k, withHashtags(v!, tags)])),
+  };
   const shown = previewOf && providers.includes(previewOf) ? previewOf : (providers[0] ?? null);
   const issues = providers.flatMap((p) => validateForPlatform(content, p));
   const accounts = data.workspace.accounts.filter((a) => providers.includes(a.provider));
@@ -153,22 +176,88 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
   const editValue = editing === "all" ? text : (variants[editing] ?? "");
   const setEditValue = (v: string) => (editing === "all" ? touch(setText)(v) : touch(setVariants)({ ...variants, [editing]: v }));
   const limit = editing === "all" ? Math.min(POST_TEXT_MAX, ...providers.map((p) => PUBLISH_RULES[p].textMax)) : PUBLISH_RULES[editing].textMax;
-  const used = charCount(editValue);
+  const used = charCount(withHashtags(editValue, tags));
 
-  async function save(): Promise<PostView | null> {
-    setBusy("save");
-    const body = JSON.stringify({ title: title || null, text, variants: Object.fromEntries(Object.entries(variants).filter(([k, v]) => providers.includes(k as SocialProviderId) && v?.trim())), providers, plannedLocal: planned || null, timezone: tz });
-    const r = post ? await postsApi<{ post: PostView }>(`/api/social/posts/${post.id}`, { method: "PATCH", body }) : await postsApi<{ post: PostView }>("/api/social/posts", { method: "POST", body });
-    setBusy(null);
+  const snapshot = JSON.stringify([title, text, variants, providers, planned, tags, notes, folderId, mediaIds]);
+  const snapRef = React.useRef(snapshot);
+  React.useEffect(() => {
+    snapRef.current = snapshot;
+  });
+  const savingRef = React.useRef(false);
+  const failedRef = React.useRef<string | null>(null);
+
+  /** Saves the draft. `auto` saves quietly in the background (no banner, no page refresh) and only reports through the status line. */
+  async function save(auto = false): Promise<PostView | null> {
+    if (savingRef.current) return null;
+    savingRef.current = true;
+    const started = snapRef.current;
+    if (!auto) setBusy("save");
+    setSaveState("saving");
+    const body = JSON.stringify({
+      title: title || null,
+      text,
+      variants: Object.fromEntries(Object.entries(variants).filter(([k, v]) => providers.includes(k as SocialProviderId) && v?.trim())),
+      providers,
+      plannedLocal: planned || null,
+      timezone: tz,
+      hashtags: tags,
+      notes,
+      folderId,
+      mediaIds,
+      ...(postId ? { expectedVersion: version } : {}),
+    });
+    const r = postId ? await postsApi<{ post: PostView }>(`/api/social/posts/${postId}`, { method: "PATCH", body }) : await postsApi<{ post: PostView }>("/api/social/posts", { method: "POST", body });
+    savingRef.current = false;
+    if (!auto) setBusy(null);
     if (!r.ok) {
-      setMessage({ ok: false, text: r.message });
+      failedRef.current = started;
+      const stale = /changed somewhere else/i.test(r.message);
+      setSaveState(stale ? "conflict" : "error");
+      if (!auto || stale) setMessage({ ok: false, text: r.message });
       return null;
     }
-    setDirty(false);
-    setMessage({ ok: true, text: "Draft saved." });
-    if (!post) router.replace(postHref(r.data.post.id));
-    else router.refresh();
+    failedRef.current = null;
+    setSaveState("idle");
+    setVersion(r.data.post.version);
+    setSavedAt(r.data.post.updatedAt);
+    // Edits made while this save was in flight stay "unsaved" and are saved next.
+    if (snapRef.current === started) setDirty(false);
+    if (!auto) setMessage({ ok: true, text: "Draft saved." });
+    if (!postId) {
+      setPostId(r.data.post.id);
+      window.history.replaceState(null, "", postHref(r.data.post.id));
+    } else if (!auto) router.refresh();
     return r.data.post;
+  }
+
+  // Autosave: shortly after the last edit, as long as there is something to keep and the last attempt with these same edits didn't fail.
+  const saveRef = React.useRef(save);
+  React.useEffect(() => {
+    saveRef.current = save;
+  });
+  const meaningful = !!(text.trim() || title.trim() || tags.length || notes.trim() || mediaIds.length || Object.values(variants).some((v) => v?.trim()));
+  React.useEffect(() => {
+    if (!dirty || locked || busy !== null || !meaningful || saveState === "conflict" || failedRef.current === snapshot) return;
+    const h = window.setTimeout(() => void saveRef.current(true), 1800);
+    return () => window.clearTimeout(h);
+  }, [dirty, locked, busy, meaningful, saveState, snapshot]);
+
+  async function saveAsTemplate() {
+    const saved = dirty || !postId ? await save() : { id: postId };
+    if (!saved) return;
+    const r = await postsApi<{ template: TemplateView }>("/api/content/templates", { method: "POST", body: JSON.stringify({ fromPostId: saved.id }) });
+    if (r.ok) setTemplates((t) => [r.data.template, ...t]);
+    setMessage(r.ok ? { ok: true, text: `Saved as the template “${r.data.template.name}”. Rename or edit it in the Content Library.` } : { ok: false, text: r.message });
+  }
+
+  function applyTemplate(t: TemplateView) {
+    touch(setText)(t.body);
+    setHashtagText(t.hashtags.map((x) => `#${x}`).join(" "));
+    if (t.providers.length) setProviders(t.providers);
+    setVariants({});
+    setEditing("all");
+    setTemplatesOpen(false);
+    setMessage({ ok: true, text: `Template “${t.name}” applied. Edit it, then it saves automatically.` });
   }
 
   async function cancelSchedule() {
@@ -204,7 +293,19 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
               <h1 className="truncate font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{post ? "Edit post" : "New post"}</h1>
               <p className="flex items-center gap-2 text-[0.82rem] text-muted-foreground">
                 {post ? <StateBadge state={post.state} /> : null}
-                {dirty ? <span className="text-soon">Unsaved changes</span> : post ? `Saved ${formatDateTime(post.updatedAt)}` : "Not saved yet"}
+                <span role="status" aria-live="polite" className={cn(saveState === "error" || saveState === "conflict" ? "font-semibold text-destructive" : dirty && saveState !== "saving" ? "text-soon" : undefined)}>
+                  {saveState === "saving"
+                    ? "Saving…"
+                    : saveState === "conflict"
+                      ? "Changed elsewhere — reload to continue"
+                      : saveState === "error"
+                        ? "Couldn't save — your text is still here. Try Save draft."
+                        : dirty
+                          ? "Unsaved changes — saving shortly"
+                          : savedAt
+                            ? `Saved ${formatDateTime(savedAt)}`
+                            : "Not saved yet"}
+                </span>
               </p>
             </div>
           </div>
@@ -227,7 +328,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
                   {scheduleBlocker ? <Lock className="size-4" aria-hidden /> : <CalendarClock className="size-4" aria-hidden />} Schedule
                   {scheduleBlocker ? <span className="sr-only"> (not available yet)</span> : null}
                 </button>
-                <button type="button" className={primaryButton} onClick={save} disabled={busy !== null || (!dirty && !!post)}>
+                <button type="button" className={primaryButton} onClick={() => void save()} disabled={busy !== null || (!dirty && !!postId)}>
                   <Save className="size-4" aria-hidden /> {busy === "save" ? "Saving…" : "Save draft"}
                 </button>
               </>
@@ -301,17 +402,89 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
                 </span>
               </p>
             </div>
+
+            <div className="mt-5">
+              <label className="block">
+                <span className={label}>
+                  <Hash className="me-1 inline size-3.5 align-[-2px]" aria-hidden />
+                  Hashtags <span className="font-normal text-muted-foreground">(optional — added after your text)</span>
+                </span>
+                <input value={hashtagText} onChange={(e) => touch(setHashtagText)(e.target.value)} className={cn(field, "mt-1.5")} placeholder="#launch #summer" autoCapitalize="none" spellCheck={false} aria-describedby="hashtag-help" />
+              </label>
+              <p id="hashtag-help" className={cn("mt-1.5 text-[0.72rem]", badTags.length || tags.length > HASHTAGS_MAX ? "font-semibold text-destructive" : "text-muted-foreground")}>
+                {badTags.length
+                  ? `Left out: ${badTags.slice(0, 3).join(", ")}. Hashtags use letters, numbers and underscores.`
+                  : tags.length > HASHTAGS_MAX
+                    ? `Use up to ${HASHTAGS_MAX} hashtags.`
+                    : `${tags.length} / ${HASHTAGS_MAX}. Separate with spaces or commas.`}
+              </p>
+            </div>
+
+            <label className="mt-5 block">
+              <span className={label}>
+                <FileText className="me-1 inline size-3.5 align-[-2px]" aria-hidden />
+                Notes <span className="font-normal text-muted-foreground">(optional, only you see them)</span>
+              </span>
+              <textarea value={notes} maxLength={NOTES_MAX} onChange={(e) => touch(setNotes)(e.target.value)} rows={3} className={cn(field, "mt-1.5 resize-y leading-relaxed")} placeholder="Reminders, links or approval notes" />
+            </label>
           </Panel>
 
           <Panel className="p-4 sm:p-5">
-            <p className={label}>Media</p>
-            <div className="mt-2.5 flex items-start gap-3 rounded-2xl border border-dashed p-4">
-              <ImageIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
-              <div className="text-[0.8rem] leading-relaxed text-muted-foreground">
-                <p className="font-semibold text-foreground">Media uploads aren&apos;t available yet</p>
-                <p className="mt-0.5">Secure media storage switches on with publishing. Accepted then: images ({MEDIA_RULES.image.label}) and videos ({MEDIA_RULES.video.label}).</p>
-              </div>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className={label}>Images</p>
+              <button type="button" className={cn(quietButton, "h-9 sm:h-9")} onClick={() => setPickerOpen(true)} disabled={mediaIds.length >= MEDIA_PER_POST_MAX}>
+                <Plus className="size-4" aria-hidden /> Add images
+              </button>
             </div>
+            {attached.length ? (
+              <ul className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-4" aria-label="Attached images">
+                {attached.map((m) => (
+                  <li key={m.id} className="group relative">
+                    <div className="aspect-square overflow-hidden rounded-xl border bg-muted">
+                      <MediaThumb id={m.id} name={m.name} />
+                    </div>
+                    <button type="button" onClick={() => touch(setMediaIds)(mediaIds.filter((x) => x !== m.id))} className="absolute end-1 top-1 grid size-7 place-items-center rounded-full bg-black/65 text-white outline-none transition-colors hover:bg-black/80 focus-visible:ring-3 focus-visible:ring-primary/50" aria-label={`Remove ${m.name}`}>
+                      <X className="size-3.5" aria-hidden />
+                    </button>
+                    <p className="mt-1 truncate text-[0.7rem] text-muted-foreground">
+                      {m.name} · {formatBytes(m.sizeBytes)}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="mt-2.5 flex items-start gap-3 rounded-2xl border border-dashed p-4">
+                <ImageIcon className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+                <p className="text-[0.8rem] leading-relaxed text-muted-foreground">No images yet. Add one from your media library or upload a new JPEG, PNG or WebP (up to 5 MB). Video isn&apos;t supported yet.</p>
+              </div>
+            )}
+          </Panel>
+
+          <Panel className="p-4 sm:p-5">
+            <p className={label}>Organise</p>
+            <label className="mt-2.5 block">
+              <span className="text-[0.74rem] text-muted-foreground">
+                <FolderOpen className="me-1 inline size-3.5 align-[-2px]" aria-hidden />
+                Folder
+              </span>
+              <select value={folderId ?? ""} onChange={(e) => touch(setFolderId)(e.target.value || null)} className={cn(field, "mt-1")}>
+                <option value="">No folder</option>
+                {data.content.folders.map((fo) => (
+                  <option key={fo.id} value={fo.id}>
+                    {fo.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button type="button" className={cn(quietButton, "h-9 sm:h-9")} onClick={() => setTemplatesOpen(true)} disabled={!templates.length}>
+                <FileText className="size-4" aria-hidden /> Use a template
+              </button>
+              <button type="button" className={cn(quietButton, "h-9 sm:h-9")} onClick={saveAsTemplate} disabled={busy !== null || !meaningful}>
+                <BookmarkPlus className="size-4" aria-hidden /> Save as template
+              </button>
+            </div>
+            {!templates.length ? <p className="mt-2 text-[0.72rem] text-muted-foreground">Templates you save appear here, ready to reuse.</p> : null}
           </Panel>
 
           <Panel className="p-4 sm:p-5">
@@ -413,7 +586,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
               busy={busy === "schedule"}
               onCancel={() => setScheduleOpen(false)}
               onSchedule={async (when, ids) => {
-                const saved = dirty || !post ? await save() : post;
+                const saved = dirty || !postId ? await save() : { id: postId };
                 if (!saved) return;
                 setBusy("schedule");
                 const r = await postsApi<{ ambiguous: boolean }>(`/api/social/posts/${saved.id}/schedule`, { method: "POST", body: JSON.stringify({ when, timezone: tz, connectionIds: ids }) });
@@ -447,6 +620,34 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
           </div>
           </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <MediaPicker open={pickerOpen} onOpenChange={setPickerOpen} library={library} onLibraryChange={setLibrary} selected={mediaIds} onChange={(ids) => touch(setMediaIds)(ids)} max={MEDIA_PER_POST_MAX} />
+
+      <Dialog open={templatesOpen} onOpenChange={setTemplatesOpen}>
+        <DialogContent className="max-h-[88dvh] gap-0 overflow-hidden p-0 sm:max-w-md" showCloseButton={false}>
+          <div className="border-b px-5 pt-5 pb-4">
+            <DialogTitle className="font-heading text-lg font-extrabold">Use a template</DialogTitle>
+            <DialogDescription className="mt-1 text-[0.82rem] text-muted-foreground">
+              {text.trim() || tags.length ? "This replaces the text and hashtags you have now." : "Starts your text and hashtags from a template you saved."}
+            </DialogDescription>
+          </div>
+          <ul className="max-h-[56dvh] space-y-2 overflow-y-auto p-4">
+            {templates.map((t) => (
+              <li key={t.id}>
+                <button type="button" onClick={() => applyTemplate(t)} className="w-full rounded-2xl border bg-card px-4 py-3 text-start transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/30">
+                  <span className="block truncate text-sm font-semibold">{t.name}</span>
+                  <span className="mt-0.5 line-clamp-2 block text-[0.78rem] text-muted-foreground">{t.body || "No text"}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="flex justify-end border-t px-5 py-3.5">
+            <button type="button" className={quietButton} onClick={() => setTemplatesOpen(false)}>
+              Cancel
+            </button>
+          </div>
         </DialogContent>
       </Dialog>
 

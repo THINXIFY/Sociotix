@@ -70,6 +70,7 @@ export const platformName = (id: SocialProviderId) => SOCIAL_PLATFORM[id].name;
 
 const TABS = [
   { href: SOCIAL_ROUTES.overview, label: "Overview" },
+  { href: "/dashboard/social/content", label: "Content" },
   { href: "/dashboard/social/publishing", label: "Publishing" },
   { href: "/dashboard/social/calendar", label: "Calendar" },
   { href: "/dashboard/social/campaigns", label: "Campaigns" },

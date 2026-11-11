@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createdAt, oneOf, ts, updatedAt } from "./helpers";
 import { customers } from "./identity";
 import { SOCIAL_PROVIDERS, socialConnections } from "./social";
@@ -14,6 +14,24 @@ import { SOCIAL_PROVIDERS, socialConnections } from "./social";
 
 export const POST_STATUS = ["draft", "scheduled", "cancelled"] as const;
 export const TARGET_STATUS = ["scheduled", "publishing", "published", "failed", "cancelled", "reconciliation_required"] as const;
+
+/** Customer-made folders for organising content (CM-01). Deleting a folder keeps its posts. */
+export const contentFolders = pgTable(
+  "content_folders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("content_folders_name_idx").on(t.customerId, sql`lower(${t.name})`),
+    check("content_folders_name_check", sql`char_length(btrim(${t.name})) between 1 and 40`),
+  ],
+);
 
 export const socialPosts = pgTable(
   "social_posts",
@@ -37,11 +55,21 @@ export const socialPosts = pgTable(
     timezone: text("timezone").notNull().default("UTC"),
     /** Explicit customer approval to publish, set only by the schedule action. */
     approvedAt: ts("approved_at"),
+    /** Content Library (CM-01): organisation and notes live on the post itself, so there is one source of truth. */
+    favorite: boolean("favorite").notNull().default(false),
+    archivedAt: ts("archived_at"),
+    folderId: uuid("folder_id").references(() => contentFolders.id, { onDelete: "set null" }),
+    hashtags: text("hashtags").array().notNull().default(sql`'{}'::text[]`),
+    notes: text("notes").notNull().default(""),
+    /** Bumped on every edit so two tabs can't silently overwrite each other. */
+    version: integer("version").notNull().default(1),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
   (t) => [
     index("social_posts_customer_idx").on(t.customerId, t.updatedAt),
+    index("social_posts_folder_idx").on(t.folderId),
+    check("social_posts_content_check", sql`char_length(${t.notes}) <= 2000 and cardinality(${t.hashtags}) <= 30`),
     check("social_posts_status_check", oneOf(t.status, POST_STATUS)),
     check("social_posts_body_check", sql`char_length(${t.body}) <= 5000 and (${t.title} is null or char_length(${t.title}) <= 100)`),
     check("social_posts_scheduled_check", sql`${t.status} <> 'scheduled' or (${t.scheduledAt} is not null and ${t.approvedAt} is not null)`),

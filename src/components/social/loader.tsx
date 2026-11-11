@@ -5,6 +5,7 @@ import { ServiceUnavailable } from "@/components/auth/states";
 import { SOCIAL_PROVIDER_IDS, type SocialWorkspace } from "@/lib/social/platforms";
 import type { PublishingData } from "@/lib/social/publishing";
 import { listPosts, publishingAvailability } from "@/server/social/publishing";
+import { contentMeta } from "@/server/content";
 import { customerPage } from "@/server/auth/pages";
 import { getDb } from "@/server/db/client";
 import { getEnv } from "@/server/env";
@@ -47,14 +48,33 @@ async function LoadPublishing({ render }: { render: (data: PublishingData) => Re
   const r = await customerPage();
   if (r.status !== "ok") return <ServiceUnavailable />;
   const env = getEnv();
-  const [workspace, posts] = await Promise.all([socialWorkspace(getDb(), r.viewer.customerId, env), listPosts(getDb(), r.viewer.customerId)]);
+  const [workspace, posts, content] = await Promise.all([socialWorkspace(getDb(), r.viewer.customerId, env), listPosts(getDb(), r.viewer.customerId), contentMeta(getDb(), r.viewer.customerId)]);
   const publishing = Object.fromEntries(
     SOCIAL_PROVIDER_IDS.map((id) => {
       const a = publishingAvailability(env, id);
       return [id, { ok: a.ok, reason: a.ok ? null : a.reason }];
     }),
   ) as PublishingData["publishing"];
-  return <>{render({ workspace, posts, publishing, mediaStorage: false })}</>;
+  return <>{render({ workspace, posts, publishing, mediaStorage: true, content })}</>;
+}
+
+/** The Content Library: every post including archived ones (organised by folder, favorite and state), plus folders, templates and media. */
+async function LoadContent({ render }: { render: (data: PublishingData) => React.ReactNode }) {
+  await connection();
+  const r = await customerPage();
+  if (r.status !== "ok") return <ServiceUnavailable />;
+  const env = getEnv();
+  const [workspace, posts, content] = await Promise.all([socialWorkspace(getDb(), r.viewer.customerId, env), listPosts(getDb(), r.viewer.customerId, "include"), contentMeta(getDb(), r.viewer.customerId)]);
+  const publishing = Object.fromEntries(SOCIAL_PROVIDER_IDS.map((id) => [id, { ok: false, reason: null }])) as PublishingData["publishing"];
+  return <>{render({ workspace, posts, publishing, mediaStorage: true, content })}</>;
+}
+
+export function ContentPage({ render }: { render: (data: PublishingData) => React.ReactNode }) {
+  return (
+    <Suspense fallback={<Fallback />}>
+      <LoadContent render={render} />
+    </Suspense>
+  );
 }
 
 export function PublishingPage({ render }: { render: (data: PublishingData) => React.ReactNode }) {

@@ -90,6 +90,7 @@ describe("existing customers", () => {
         }
       };
       // Back to the schema before onboarding, add customers (one with saved preferences), then migrate forward.
+      await run("drizzle/rollback/0022_content_workspace.down.sql");
       await run("drizzle/rollback/0021_notification_center.down.sql");
       await run("drizzle/rollback/0020_customer_onboarding.down.sql");
       const older = await makeCustomer(db2);

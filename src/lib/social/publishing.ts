@@ -223,6 +223,16 @@ export interface PostView {
   scheduledAt: string | null;
   timezone: string;
   targets: PostTargetView[];
+  /** Content Library (CM-01). */
+  favorite: boolean;
+  archivedAt: string | null;
+  folderId: string | null;
+  hashtags: string[];
+  notes: string;
+  /** Ids of the library images attached, in order (`media` above is their summary). */
+  mediaIds: string[];
+  /** Changes on every edit; sent back with a save so a stale tab can't overwrite newer work. */
+  version: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -233,8 +243,10 @@ export interface PublishingData {
   posts: PostView[];
   /** Per platform: can posts be published there right now, and if not, why. */
   publishing: Record<SocialProviderId, { ok: boolean; reason: string | null }>;
-  /** Whether media uploads are configured (not in this build). */
+  /** Whether images can be attached (the customer's media library). */
   mediaStorage: boolean;
+  /** Folders, templates and library images for the editor. */
+  content: import("./content").ContentMeta;
 }
 
 export const PUBLISHING_ROUTES = {

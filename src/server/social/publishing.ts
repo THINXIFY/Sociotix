@@ -1,15 +1,16 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { and, count, desc, eq, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { z } from "zod";
 import { isSocialProvider, SOCIAL_PLATFORM, SOCIAL_PROVIDER_IDS, type SocialProviderId } from "@/lib/social/platforms";
 import { type PostContent, type PostTargetView, type PostView, POST_TEXT_MAX, POST_TITLE_MAX, postState, type PostStatus, type TargetStatus, validateForPlatform } from "@/lib/social/publishing";
+import { HASHTAGS_MAX, MEDIA_PER_POST_MAX, NOTES_MAX, withHashtags } from "@/lib/social/content";
 import { isTimeZone, zonedToUtc } from "@/lib/social/time";
 import { audit } from "../audit";
 import { decrypt } from "../auth/crypto";
 import { hit } from "../auth/rate-limit";
 import type { Db, Executor } from "../db/client";
-import { socialConnections, socialEvents, socialPosts, socialPostTargets } from "../db/schema";
+import { contentFolders, contentMedia, contentPostMedia, socialConnections, socialEvents, socialPosts, socialPostTargets } from "../db/schema";
 import type { Env } from "../env";
 import { AppError, errors, pgErrorOf } from "../errors";
 import { logger } from "../log";
@@ -76,13 +77,24 @@ export const draftInput = z
     providers: z.array(z.enum(SOCIAL_PROVIDER_IDS)).max(6).default([]).transform((a) => [...new Set(a)]),
     plannedLocal: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
     timezone: z.string().refine(isTimeZone, "Unknown time zone."),
-    // Media storage isn't configured in this build; references can't be attached yet.
-    media: z.array(z.never()).max(0, "Media uploads aren't available yet.").optional().default([]),
+    // Images are attached by id from the customer's own media library (mediaIds); raw references are not accepted.
+    media: z.array(z.never()).max(0, "Attach images from your media library.").optional().default([]),
+    /** Content Library (CM-01). A field that is left out keeps its current value. */
+    hashtags: z
+      .array(z.string().transform((x) => x.normalize("NFC")).pipe(z.string().regex(/^[\p{L}\p{N}_]{1,50}$/u, "Hashtags can use letters, numbers and underscores.")))
+      .max(HASHTAGS_MAX, `Use up to ${HASHTAGS_MAX} hashtags.`)
+      .transform((a) => a.filter((t, i) => a.findIndex((u) => u.toLowerCase() === t.toLowerCase()) === i))
+      .optional(),
+    notes: cleanText(NOTES_MAX).optional(),
+    folderId: z.string().uuid().nullable().optional(),
+    mediaIds: z.array(z.string().uuid()).max(MEDIA_PER_POST_MAX, `Attach up to ${MEDIA_PER_POST_MAX} images.`).optional(),
+    /** The version this edit started from; a mismatch means the draft changed elsewhere. */
+    expectedVersion: z.number().int().min(1).optional(),
   })
   .strict();
 export type DraftInput = z.input<typeof draftInput>;
 
-function toUtc(local: string, tz: string): { iso: string; ambiguous: boolean } {
+export function toUtc(local: string, tz: string): { iso: string; ambiguous: boolean } {
   const r = zonedToUtc(local, tz);
   if (!r.ok) throw new AppError("VALIDATION_FAILED", r.reason === "nonexistent" ? "That time doesn't exist in your time zone (the clocks skip it for daylight saving). Pick another time." : "That date or time isn't valid.", { details: { field: "when" } });
   return { iso: r.iso, ambiguous: r.ambiguous };
@@ -119,6 +131,11 @@ const TARGET_NOTE: Record<string, string> = {
 
 async function views(db: Executor, customerId: string, rows: PostRow[]): Promise<PostView[]> {
   if (!rows.length) return [];
+  const attached = await db
+    .select({ postId: contentPostMedia.postId, mediaId: contentPostMedia.mediaId })
+    .from(contentPostMedia)
+    .where(and(eq(contentPostMedia.customerId, customerId), inArray(contentPostMedia.postId, rows.map((r) => r.id))))
+    .orderBy(asc(contentPostMedia.position));
   const targets = await db
     .select({ t: socialPostTargets, accountName: socialConnections.displayName })
     .from(socialPostTargets)
@@ -153,18 +170,27 @@ async function views(db: Executor, customerId: string, rows: PostRow[]): Promise
       scheduledAt: r.scheduledAt?.toISOString() ?? null,
       timezone: r.timezone,
       targets: mine,
+      favorite: r.favorite,
+      archivedAt: r.archivedAt?.toISOString() ?? null,
+      folderId: r.folderId,
+      hashtags: r.hashtags,
+      notes: r.notes,
+      mediaIds: attached.filter((a) => a.postId === r.id).map((a) => a.mediaId),
+      version: r.version,
       createdAt: r.createdAt.toISOString(),
       updatedAt: r.updatedAt.toISOString(),
     };
   });
 }
 
-export async function listPosts(db: Db, customerId: string): Promise<PostView[]> {
-  const rows = await db.select().from(socialPosts).where(eq(socialPosts.customerId, customerId)).orderBy(desc(socialPosts.updatedAt)).limit(300);
+/** The customer's posts. Archived ones are left out unless asked for (the calendar and publishing pages never show them). */
+export async function listPosts(db: Db, customerId: string, archived: "exclude" | "include" | "only" = "exclude"): Promise<PostView[]> {
+  const where = and(eq(socialPosts.customerId, customerId), archived === "exclude" ? isNull(socialPosts.archivedAt) : archived === "only" ? isNotNull(socialPosts.archivedAt) : undefined);
+  const rows = await db.select().from(socialPosts).where(where).orderBy(desc(socialPosts.updatedAt)).limit(500);
   return views(db, customerId, rows);
 }
 
-async function ownPost(db: Executor, customerId: string, id: string, lock = false) {
+export async function ownPost(db: Executor, customerId: string, id: string, lock = false) {
   if (!/^[0-9a-f-]{36}$/i.test(id)) throw errors.notFound("That post");
   const q = db.select().from(socialPosts).where(and(eq(socialPosts.id, id), eq(socialPosts.customerId, customerId))).limit(1);
   const [row] = lock ? await q.for("update") : await q;
@@ -185,28 +211,78 @@ async function limitWrites(db: Db, customerId: string) {
   if (!r.ok) throw new AppError("RATE_LIMITED", "You've made a lot of changes in a short time. Please wait a few minutes.");
 }
 
+/** Rebuilds a post's image summary from the library images attached to it (names and sizes can change). */
+export async function rebuildPostMedia(db: Executor, customerId: string, postId: string) {
+  const rows = await db
+    .select({ name: contentMedia.name, mime: contentMedia.mime, sizeBytes: contentMedia.sizeBytes })
+    .from(contentPostMedia)
+    .innerJoin(contentMedia, eq(contentMedia.id, contentPostMedia.mediaId))
+    .where(and(eq(contentPostMedia.postId, postId), eq(contentPostMedia.customerId, customerId), eq(contentMedia.customerId, customerId)))
+    .orderBy(asc(contentPostMedia.position));
+  await db.update(socialPosts).set({ media: rows.map((r) => ({ kind: "image", name: r.name, bytes: r.sizeBytes, type: r.mime })) }).where(and(eq(socialPosts.id, postId), eq(socialPosts.customerId, customerId)));
+}
+
+/** Attaches the given library images (in order) to a post, only if every one belongs to this customer. */
+async function attachMedia(tx: Executor, customerId: string, postId: string, mediaIds: string[]) {
+  const unique = [...new Set(mediaIds)];
+  if (unique.length) {
+    const own = await tx.select({ id: contentMedia.id }).from(contentMedia).where(and(eq(contentMedia.customerId, customerId), inArray(contentMedia.id, unique)));
+    if (own.length !== unique.length) throw new AppError("VALIDATION_FAILED", "One of those images isn't in your media library any more.", { details: { field: "mediaIds" } });
+  }
+  await tx.delete(contentPostMedia).where(and(eq(contentPostMedia.postId, postId), eq(contentPostMedia.customerId, customerId)));
+  if (unique.length) await tx.insert(contentPostMedia).values(unique.map((mediaId, position) => ({ postId, mediaId, customerId, position })));
+  await rebuildPostMedia(tx, customerId, postId);
+}
+
+async function assertOwnFolder(tx: Executor, customerId: string, folderId: string | null | undefined) {
+  if (!folderId) return;
+  const [f] = await tx.select({ id: contentFolders.id }).from(contentFolders).where(and(eq(contentFolders.id, folderId), eq(contentFolders.customerId, customerId)));
+  if (!f) throw new AppError("VALIDATION_FAILED", "That folder isn't available.", { details: { field: "folderId" } });
+}
+
 /** Creates (id = null) or updates a draft. Scheduled posts must be cancelled before they can be edited. */
 export async function saveDraft(db: Db, customerId: string, id: string | null, raw: unknown): Promise<PostView> {
   const input = draftInput.parse(raw);
   await limitWrites(db, customerId);
   const planned = input.plannedLocal ? toUtc(input.plannedLocal, input.timezone).iso : null;
-  const values = { title: input.title?.trim() || null, body: input.text, variants: input.variants, providers: input.providers, plannedAt: planned ? new Date(planned) : null, timezone: input.timezone, updatedAt: new Date() };
+  const values = {
+    title: input.title?.trim() || null,
+    body: input.text,
+    variants: input.variants,
+    providers: input.providers,
+    plannedAt: planned ? new Date(planned) : null,
+    timezone: input.timezone,
+    updatedAt: new Date(),
+    ...(input.hashtags !== undefined && { hashtags: input.hashtags }),
+    ...(input.notes !== undefined && { notes: input.notes }),
+    ...(input.folderId !== undefined && { folderId: input.folderId }),
+  };
   try {
     if (!id) {
-      const [{ n }] = (await db.select({ n: count() }).from(socialPosts).where(eq(socialPosts.customerId, customerId))) as [{ n: number }];
-      if (n >= MAX_POSTS) throw errors.conflict(`You can keep up to ${MAX_POSTS} posts. Delete some old drafts first.`);
-      const [row] = await db.insert(socialPosts).values({ customerId, ...values }).returning();
-      return (await views(db, customerId, [row!]))[0]!;
+      const row = await db.transaction(async (tx) => {
+        const [{ n }] = (await tx.select({ n: count() }).from(socialPosts).where(eq(socialPosts.customerId, customerId))) as [{ n: number }];
+        if (n >= MAX_POSTS) throw errors.conflict(`You can keep up to ${MAX_POSTS} posts. Delete some old drafts first.`);
+        await assertOwnFolder(tx, customerId, input.folderId);
+        const [created] = await tx.insert(socialPosts).values({ customerId, ...values }).returning();
+        if (input.mediaIds?.length) await attachMedia(tx, customerId, created!.id, input.mediaIds);
+        const [fresh] = await tx.select().from(socialPosts).where(eq(socialPosts.id, created!.id));
+        return fresh!;
+      });
+      return (await views(db, customerId, [row]))[0]!;
     }
     const row = await db.transaction(async (tx) => {
       const p = await ownPost(tx, customerId, id, true);
       if (p.status === "scheduled") throw errors.conflict("This post is scheduled. Cancel the schedule to edit it.");
+      if (input.expectedVersion !== undefined && input.expectedVersion !== p.version) throw errors.conflict("This draft was changed somewhere else (another tab or device). Reload to see the latest version before editing.");
+      await assertOwnFolder(tx, customerId, input.folderId);
       const [u] = await tx
         .update(socialPosts)
-        .set({ ...values, status: "draft" })
+        .set({ ...values, status: "draft", version: sql`${socialPosts.version} + 1` })
         .where(and(eq(socialPosts.id, id), eq(socialPosts.customerId, customerId)))
         .returning();
-      return u!;
+      if (input.mediaIds !== undefined) await attachMedia(tx, customerId, id, input.mediaIds);
+      const [fresh] = await tx.select().from(socialPosts).where(eq(socialPosts.id, u!.id));
+      return fresh!;
     });
     return (await views(db, customerId, [row]))[0]!;
   } catch (e) {
@@ -216,7 +292,8 @@ export async function saveDraft(db: Db, customerId: string, id: string | null, r
 
 export async function duplicatePost(db: Db, customerId: string, id: string): Promise<PostView> {
   const p = await ownPost(db, customerId, id);
-  return saveDraft(db, customerId, null, { title: p.title ? `${p.title}`.slice(0, POST_TITLE_MAX - 7) + " (copy)" : null, text: p.body, variants: p.variants, providers: p.providers.filter(isSocialProvider), timezone: p.timezone, plannedLocal: null });
+  const media = await db.select({ id: contentPostMedia.mediaId }).from(contentPostMedia).where(and(eq(contentPostMedia.postId, id), eq(contentPostMedia.customerId, customerId))).orderBy(asc(contentPostMedia.position));
+  return saveDraft(db, customerId, null, { title: p.title ? `${p.title}`.slice(0, POST_TITLE_MAX - 7) + " (copy)" : null, text: p.body, variants: p.variants, providers: p.providers.filter(isSocialProvider), timezone: p.timezone, plannedLocal: null, hashtags: p.hashtags, notes: p.notes, folderId: p.folderId, mediaIds: media.map((m) => m.id) });
 }
 
 /** Deletes a draft or a cancelled post that never reached a platform. */
@@ -239,7 +316,13 @@ export async function deletePost(db: Db, customerId: string, id: string) {
 
 const scheduleInput = z.object({ when: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/), timezone: z.string().refine(isTimeZone, "Unknown time zone."), connectionIds: z.array(z.string().uuid()).min(1).max(12) }).strict();
 
-const contentOf = (p: PostRow): PostContent => ({ text: p.body, title: p.title, media: p.media as PostContent["media"], variants: p.variants as PostContent["variants"] });
+/** What a platform would receive: the caption (or its per-platform version) followed by the hashtags. */
+const contentOf = (p: PostRow): PostContent => ({
+  text: withHashtags(p.body, p.hashtags),
+  title: p.title,
+  media: p.media as PostContent["media"],
+  variants: Object.fromEntries(Object.entries(p.variants as Record<string, string>).map(([k, v]) => [k, withHashtags(v, p.hashtags)])) as PostContent["variants"],
+});
 
 async function event(db: Executor, e: { customerId: string; provider: SocialProviderId; type: "post_scheduled" | "post_cancelled" | "post_published" | "post_failed" | "post_unconfirmed"; message: string; connectionId?: string | null; code?: string | null }) {
   await db.insert(socialEvents).values({ customerId: e.customerId, provider: e.provider, type: e.type, message: e.message.slice(0, 600), connectionId: e.connectionId ?? null, code: e.code ?? null });
@@ -266,6 +349,7 @@ export async function schedulePost(db: Db, customerId: string, id: string, raw: 
 
   const row = await db.transaction(async (tx) => {
     const p = await ownPost(tx, customerId, id, true);
+    if (p.archivedAt) throw errors.conflict("Restore this post from the archive before scheduling it.");
     const content = contentOf(p);
     for (const c of connections) {
       const provider = c.provider as SocialProviderId;

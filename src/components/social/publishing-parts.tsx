@@ -37,7 +37,7 @@ export function StateBadge({ state, className }: { state: PostState; className?:
 export function PlatformStack({ providers, max = 4 }: { providers: SocialProviderId[]; max?: number }) {
   if (!providers.length) return <span className="text-[0.75rem] text-muted-foreground">No platforms yet</span>;
   return (
-    <span className="flex items-center -space-x-1.5" aria-label={providers.map((p) => SOCIAL_PLATFORM[p].name).join(", ")}>
+    <span className="flex items-center -space-x-1.5" role="img" aria-label={providers.map((p) => SOCIAL_PLATFORM[p].name).join(", ")}>
       {providers.slice(0, max).map((p) => (
         <SocialTile key={p} provider={p} size="xs" className="ring-2 ring-card" />
       ))}
