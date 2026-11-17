@@ -3,13 +3,16 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, ChevronLeft, ChevronRight, PenLine } from "lucide-react";
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight, Folder, ImageIcon, Library, PenLine, Trash2 } from "lucide-react";
 import { Panel, useHydrated } from "@/components/dashboard/shared";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
+import { CONTENT_ROUTES, MEDIA_PER_POST_MAX, type MediaView } from "@/lib/social/content";
 import { SOCIAL_PLATFORM, type SocialProviderId } from "@/lib/social/platforms";
 import { postHref, PUBLISHING_ROUTES, type PostView, type PublishingData } from "@/lib/social/publishing";
 import { browserTimeZone, dayKey, utcToZonedInput } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { MediaPicker, MediaThumb } from "./content-parts";
+import { ContentPicker, plannable } from "./content-picker";
 import { page, primaryButton, quietButton, SocialHeader, SocialTile } from "./parts";
 import { EmptyIllustration, PlatformStack, postsApi, StateBadge, stateDot } from "./publishing-parts";
 
@@ -54,6 +57,13 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
   const [date, setDate] = React.useState("");
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  // CM-02: the content picker, notices, and image editing for a planned draft.
+  const [pickerOpen, setPickerOpen] = React.useState(false);
+  const [notice, setNotice] = React.useState<string | null>(null);
+  const [mediaOpen, setMediaOpen] = React.useState(false);
+  const [mediaDraft, setMediaDraft] = React.useState<string[]>([]);
+  const [library, setLibrary] = React.useState<MediaView[]>(data.content.media);
+  const canPlan = data.posts.some(plannable);
 
   const anchor = cursor ?? today ?? "2026-01-01";
   const [ay, am] = anchor.split("-").map(Number) as [number, number];
@@ -86,15 +96,38 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
   function openPost(p: PostView) {
     setOpen(p);
     setError(null);
+    setMediaDraft(p.mediaIds);
     setDate(p.plannedAt ? utcToZonedInput(p.plannedAt, tz) : "");
   }
-  async function savePlanned() {
-    if (!open) return;
+  /** Plans (or re-plans, or clears) the existing post. Only its date changes: its text, images and version are untouched, and nothing is posted. */
+  async function savePlanned(clear = false) {
+    if (!open || busy) return;
     setBusy(true);
-    const r = await postsApi(`/api/social/posts/${open.id}`, { method: "PATCH", body: JSON.stringify({ title: open.title, text: open.text, variants: open.variants, providers: open.providers, plannedLocal: date || null, timezone: tz }) });
+    setError(null);
+    const local = clear ? null : date || null;
+    const r = await postsApi(`/api/content/posts/${open.id}/flags`, { method: "PATCH", body: JSON.stringify({ plannedLocal: local, ...(local ? { timezone: tz } : {}) }) });
     setBusy(false);
     if (!r.ok) return setError(r.message);
+    setNotice(local ? "Planned date saved. Nothing will be posted." : "Removed from your calendar. The draft is still in your Content Library.");
     setOpen(null);
+    router.refresh();
+  }
+
+  /** Saves the chosen library images on the open draft (order kept). Needs the version last seen, so a stale tab can't overwrite newer work. */
+  async function saveMedia() {
+    if (!open) return;
+    const same = mediaDraft.length === open.mediaIds.length && mediaDraft.every((id, i) => id === open.mediaIds[i]);
+    if (same) return;
+    setBusy(true);
+    setError(null);
+    const r = await postsApi<{ version: number; mediaIds: string[] }>(`/api/content/posts/${open.id}/media`, { method: "PATCH", body: JSON.stringify({ mediaIds: mediaDraft, expectedVersion: open.version }) });
+    setBusy(false);
+    if (!r.ok) {
+      setMediaDraft(open.mediaIds);
+      return setError(r.message);
+    }
+    setOpen({ ...open, mediaIds: r.data.mediaIds, version: r.data.version });
+    setNotice("Images updated.");
     router.refresh();
   }
 
@@ -104,11 +137,25 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
         title="Calendar"
         subtitle="Every planned and scheduled post — by month, week or as a list."
         action={
-          <Link href={PUBLISHING_ROUTES.compose} className={primaryButton}>
-            <PenLine className="size-4" aria-hidden /> New post
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" className={quietButton} onClick={() => setPickerOpen(true)}>
+              <Library className="size-4" aria-hidden /> Add from library
+            </button>
+            <Link href={PUBLISHING_ROUTES.compose} className={primaryButton}>
+              <PenLine className="size-4" aria-hidden /> New post
+            </Link>
+          </div>
         }
       />
+
+      {notice ? (
+        <p role="status" className="mt-5 flex items-start justify-between gap-3 rounded-2xl bg-ok-soft px-4 py-3 text-sm font-medium text-ok">
+          <span>{notice}</span>
+          <button type="button" onClick={() => setNotice(null)} className="shrink-0 rounded-full px-1 text-xs font-semibold underline-offset-2 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-current">
+            Dismiss
+          </button>
+        </p>
+      ) : null}
 
       <div className="mt-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center gap-2">
@@ -221,9 +268,16 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
               <EmptyIllustration icon={CalendarDays} />
               <h2 className="mt-4 font-heading text-lg font-bold">Nothing planned yet</h2>
               <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">Give a draft a planned date and it appears here. Planning never posts anything — it just keeps your month organised.</p>
-              <Link href={PUBLISHING_ROUTES.compose} className={cn(quietButton, "mt-5")}>
-                <PenLine className="size-4" aria-hidden /> Plan a post
-              </Link>
+              <div className="mt-5 flex flex-wrap justify-center gap-2">
+                {canPlan ? (
+                  <button type="button" className={primaryButton} onClick={() => setPickerOpen(true)}>
+                    <CalendarPlus className="size-4" aria-hidden /> Plan a saved draft
+                  </button>
+                ) : null}
+                <Link href={PUBLISHING_ROUTES.compose} className={quietButton}>
+                  <PenLine className="size-4" aria-hidden /> Write a new post
+                </Link>
+              </div>
             </Panel>
           ) : !visibleItems.length ? (
             <p className={cn("mt-4 rounded-2xl border border-dashed px-4 py-6 text-center text-sm text-muted-foreground", view !== "list" && "md:hidden")}>Nothing planned in this {view === "week" ? "week" : "month"}.</p>
@@ -231,7 +285,33 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
         </>
       )}
 
-      <Dialog open={open !== null} onOpenChange={(o) => !o && setOpen(null)}>
+      <ContentPicker
+        key={`picker-${pickerOpen}`}
+        open={pickerOpen}
+        onOpenChange={setPickerOpen}
+        posts={data.posts}
+        folders={data.content.folders}
+        tz={tz}
+        onPlanned={(m) => {
+          setNotice(m);
+          router.refresh();
+        }}
+      />
+
+      <MediaPicker
+        open={mediaOpen}
+        onOpenChange={(o) => {
+          setMediaOpen(o);
+          if (!o) void saveMedia();
+        }}
+        library={library}
+        onLibraryChange={setLibrary}
+        selected={mediaDraft}
+        onChange={setMediaDraft}
+        max={MEDIA_PER_POST_MAX}
+      />
+
+      <Dialog open={open !== null} onOpenChange={(o) => !o && !mediaOpen && setOpen(null)}>
         <DialogContent className="gap-0 p-0 sm:max-w-md">
           {open ? (
             <>
@@ -246,6 +326,41 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
                   <StateBadge state={open.state} />
                 </div>
                 <p className="line-clamp-4 rounded-2xl bg-muted/50 px-3.5 py-3 text-[0.85rem] whitespace-pre-wrap dark:bg-white/[0.03]">{open.text || "No text yet."}</p>
+                {open.hashtags.length ? <p className="text-[0.78rem] break-words text-primary dark:text-[#c4b5ff]">{open.hashtags.map((t) => `#${t}`).join(" ")}</p> : null}
+                {(() => {
+                  const editable = open.status === "draft" || open.status === "cancelled";
+                  const folder = data.content.folders.find((fo) => fo.id === open.folderId);
+                  return (
+                    <div>
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="flex items-center gap-1.5 text-[0.78rem] font-semibold">
+                          <ImageIcon className="size-3.5 text-muted-foreground" aria-hidden /> Images
+                          {folder ? (
+                            <span className="ms-2 inline-flex items-center gap-1 font-normal text-muted-foreground">
+                              <Folder className="size-3" aria-hidden /> {folder.name}
+                            </span>
+                          ) : null}
+                        </p>
+                        {editable ? (
+                          <button type="button" className="text-[0.78rem] font-semibold text-primary outline-none hover:underline focus-visible:underline disabled:opacity-50" disabled={busy || mediaOpen} onClick={() => { setMediaDraft(open.mediaIds); setMediaOpen(true); }}>
+                            {open.mediaIds.length ? "Change images" : "Add images"}
+                          </button>
+                        ) : null}
+                      </div>
+                      {open.mediaIds.length ? (
+                        <ul className="mt-2 flex flex-wrap gap-1.5" aria-label="Attached images">
+                          {open.mediaIds.map((id, i) => (
+                            <li key={id} className="size-14 overflow-hidden rounded-xl border bg-muted">
+                              <MediaThumb id={id} name={`Image ${i + 1}`} />
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className="mt-1.5 text-[0.75rem] text-muted-foreground">No images attached.</p>
+                      )}
+                    </div>
+                  );
+                })()}
                 {open.status === "draft" || open.status === "cancelled" ? (
                   <label className="block">
                     <span className="text-[0.78rem] font-semibold">Planned date</span>
@@ -270,12 +385,22 @@ export function PublishingCalendar({ data }: { data: PublishingData }) {
               </div>
               <div className="flex flex-wrap justify-end gap-2 border-t bg-muted/40 px-6 py-4">
                 <Link href={postHref(open.id)} className={quietButton}>
-                  <PenLine className="size-4" aria-hidden /> Open post
+                  <PenLine className="size-4" aria-hidden /> Open in editor
+                </Link>
+                <Link href={CONTENT_ROUTES.library} className={quietButton}>
+                  <Library className="size-4" aria-hidden /> Content Library
                 </Link>
                 {open.status === "draft" || open.status === "cancelled" ? (
-                  <button type="button" className={primaryButton} onClick={savePlanned} disabled={busy}>
-                    {busy ? "Saving…" : "Save date"}
-                  </button>
+                  <>
+                    {open.plannedAt ? (
+                      <button type="button" className={quietButton} onClick={() => void savePlanned(true)} disabled={busy}>
+                        <Trash2 className="size-4" aria-hidden /> Remove from calendar
+                      </button>
+                    ) : null}
+                    <button type="button" className={primaryButton} onClick={() => void savePlanned()} disabled={busy || !date}>
+                      {busy ? "Saving…" : "Save date"}
+                    </button>
+                  </>
                 ) : null}
               </div>
             </>

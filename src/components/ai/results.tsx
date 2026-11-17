@@ -4,7 +4,8 @@ import * as React from "react";
 import { CalendarDays, Check, Copy, Download, List, Printer } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AiPlatformIcon } from "./platform-icon";
-import { SaveToLibraryButton } from "./save-to-library";
+import { HASHTAGS_MAX, IMPORT_MAX } from "@/lib/social/content";
+import { SaveToLibrary, type SaveItem } from "./save-to-library";
 
 /*
  * Content Studio results (AI-02). Generated text is untrusted: it's only ever
@@ -153,7 +154,7 @@ export function CaptionResults({ result }: { result: CaptionResult }) {
                   <span className="flex items-center gap-1">
                     <span className="text-[0.7rem] text-muted-foreground tabular-nums">{text.length.toLocaleString("en-US")} chars</span>
                     <CopyButton text={text} label={`Copy ${platform.platform} caption ${i + 1}`} />
-                    <SaveToLibraryButton text={text} platform={platform.platform} label={`Save ${platform.platform} caption ${i + 1} to your Content Library`} />
+                    <SaveToLibrary source="caption-generator" items={[{ title: `${platform.platform} · ${v.angle}`, text, platform: platform.platform }]} label={`Save ${platform.platform} caption ${i + 1} to your Content Library`} />
                   </span>
                 </div>
                 <EditableText label={`${platform.platform} caption option ${i + 1}`} value={text} rows={Math.min(10, Math.max(3, Math.ceil(text.length / 60) + text.split("\n").length - 1))} onChange={(nv) => setDrafts((d) => d.map((row, r) => (r === active ? row.map((t, c) => (c === i ? nv : t)) : row)))} />
@@ -183,9 +184,12 @@ export function HashtagResults({ result }: { result: HashtagResult }) {
           <span className="font-heading font-extrabold tabular-nums">{all.length}</span> <span className="text-muted-foreground">hashtags ·</span>{" "}
           <span className="font-heading font-extrabold tabular-nums">{result.keywords.length}</span> <span className="text-muted-foreground">keywords</span>
         </p>
-        <CopyButton text={all.join(" ")} label={`Copy all ${all.length} hashtags`}>
-          Copy all hashtags
-        </CopyButton>
+        <span className="flex flex-wrap gap-1.5">
+          <CopyButton text={all.join(" ")} label={`Copy all ${all.length} hashtags`}>
+            Copy all hashtags
+          </CopyButton>
+          {all.length > 0 && all.length <= HASHTAGS_MAX ? <SaveToLibrary source="hashtag-finder" variant="text" items={[{ title: "Hashtag set", hashtags: all }]} label={`Save all ${all.length} hashtags as a template`}>Save as template</SaveToLibrary> : null}
+        </span>
       </div>
       <p className="text-xs text-muted-foreground">Suggestions only — no search volume, popularity or trend data. Select a tag to copy it.</p>
       {result.groups.map((g) => (
@@ -196,9 +200,12 @@ export function HashtagResults({ result }: { result: HashtagResult }) {
               {g.group}
               {GROUP_NOTE[g.group] ? <span className="hidden font-normal text-muted-foreground sm:inline">· {GROUP_NOTE[g.group]}</span> : null}
             </h3>
-            <CopyButton text={g.tags.join(" ")} label={`Copy group: ${g.group} hashtags`}>
-              Copy
-            </CopyButton>
+            <span className="flex items-center gap-1.5">
+              <CopyButton text={g.tags.join(" ")} label={`Copy group: ${g.group} hashtags`}>
+                Copy
+              </CopyButton>
+              {g.tags.length > 0 && g.tags.length <= HASHTAGS_MAX ? <SaveToLibrary source="hashtag-finder" items={[{ title: `${g.group} hashtags`, hashtags: g.tags }]} label={`Save the ${g.group} hashtags as a template`} /> : null}
+            </span>
           </div>
           <ul className="mt-2.5 flex flex-wrap gap-1.5">
             {g.tags.map((t) => (
@@ -263,6 +270,8 @@ function TagChip({ tag, keyword = false }: { tag: string; keyword?: boolean }) {
 
 /* ── Post ideas ───────────────────────────────────────────────────────── */
 
+/** An idea as a draft: the hook is the starting text; the outline and format stay with it as private notes. */
+const ideaItem = (i: IdeasResult["ideas"][number]): SaveItem => ({ title: i.title, text: i.hook, notes: [`${i.category} · ${i.format}`, ...i.outline.map((o) => `- ${o}`)].join("\n"), platform: i.platform });
 const ideaText = (i: IdeasResult["ideas"][number]) => `${i.title}\n${i.category} · ${i.format} · ${i.platform}\nHook: ${i.hook}\n${i.outline.map((o) => `- ${o}`).join("\n")}`;
 
 export function IdeasResults({ result }: { result: IdeasResult }) {
@@ -277,9 +286,16 @@ export function IdeasResults({ result }: { result: IdeasResult }) {
             {c ?? `All ${result.ideas.length}`}
           </button>
         ))}
-        <CopyButton text={shown.map(ideaText).join("\n\n")} label={`Copy ${filter ? "these" : "all"} ideas`} className="ml-auto">
-          Copy {filter ? "these" : "all"}
-        </CopyButton>
+        <span className="ml-auto flex flex-wrap gap-1.5">
+          {shown.length > 1 && shown.length <= IMPORT_MAX ? (
+            <SaveToLibrary source="post-ideas" variant="text" items={shown.map(ideaItem)} label={`Save ${filter ? "these" : "all"} ${shown.length} ideas as drafts`}>
+              Save {filter ? "these" : "all"} as drafts
+            </SaveToLibrary>
+          ) : null}
+          <CopyButton text={shown.map(ideaText).join("\n\n")} label={`Copy ${filter ? "these" : "all"} ideas`}>
+            Copy {filter ? "these" : "all"}
+          </CopyButton>
+        </span>
       </div>
       <ol className="grid grid-cols-1 gap-3 xl:grid-cols-2">
         {shown.map((idea) => (
@@ -293,7 +309,10 @@ export function IdeasResults({ result }: { result: IdeasResult }) {
                   <span className="rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{idea.platform}</span>
                 </p>
               </div>
-              <CopyButton text={ideaText(idea)} label={`Copy idea: ${idea.title}`} />
+              <span className="flex shrink-0 items-center">
+                <SaveToLibrary source="post-ideas" items={[ideaItem(idea)]} label={`Save idea as a draft: ${idea.title}`} />
+                <CopyButton text={ideaText(idea)} label={`Copy idea: ${idea.title}`} />
+              </span>
             </div>
             <p className="mt-3 rounded-xl bg-subtle px-3 py-2 text-sm dark:bg-white/[0.03]">
               <span className="font-semibold">Hook: </span>
@@ -328,6 +347,14 @@ export function calendarCsv(weeks: CalendarResult["weeks"], posts: CalendarResul
 
 const calendarText = (weeks: CalendarResult["weeks"], posts: CalendarResult["posts"]) =>
   weeks.map((w) => [`Week ${w.week} (days ${w.startDay}–${w.endDay}): ${w.theme}`, ...posts.filter((p) => p.week === w.week).map((p) => `Day ${p.day} · ${p.platform} · ${p.format}: ${p.topic}${p.notes ? ` — ${p.notes}` : ""}`)].join("\n")).join("\n\n");
+
+/** A planned slot as a draft. The plan has day numbers, not dates, so nothing gets a date: the customer plans it on the calendar. */
+const slotItem = (p: CalendarResult["posts"][number], theme: string): SaveItem => ({
+  title: `Day ${p.day} · ${p.topic}`.slice(0, 100),
+  text: p.topic,
+  notes: [`Day ${p.day}, week ${p.week}${theme ? `: ${theme}` : ""}`, p.format, p.notes].filter(Boolean).join(" · "),
+  platform: p.platform,
+});
 
 export function CalendarResults({ result }: { result: CalendarResult }) {
   const [weeks, setWeeks] = React.useState(result.weeks);
@@ -378,6 +405,11 @@ export function CalendarResults({ result }: { result: CalendarResult }) {
               </button>
             ))}
           </div>
+          {posts.length > 1 && posts.length <= IMPORT_MAX ? (
+            <SaveToLibrary source="content-calendar" variant="text" items={posts.map((p) => slotItem(p, weeks.find((w) => w.week === p.week)?.theme ?? ""))} label={`Save all ${posts.length} planned posts as drafts`}>
+              Save all as drafts
+            </SaveToLibrary>
+          ) : null}
           <CopyButton text={calendarText(weeks, posts)} label="Copy the plan as text">
             Copy
           </CopyButton>
@@ -410,9 +442,14 @@ export function CalendarResults({ result }: { result: CalendarResult }) {
                     <span className="text-sm leading-tight font-bold tabular-nums">{p.day}</span>
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-muted-foreground">
-                      {p.platform} · {p.format}
-                    </p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-medium text-muted-foreground">
+                        {p.platform} · {p.format}
+                      </p>
+                      <span className="print:hidden">
+                        <SaveToLibrary source="content-calendar" items={[slotItem(p, w.theme)]} label={`Save day ${p.day} as a draft`} />
+                      </span>
+                    </div>
                     <textarea rows={Math.max(1, Math.ceil(p.topic.length / 48))} aria-label={`Day ${p.day} topic`} value={p.topic} onChange={(e) => edit(i, "topic", e.target.value)} className={cn(field, "-ml-1.5 resize-none text-sm font-medium")} />
                     <textarea rows={Math.max(1, Math.ceil(p.notes.length / 56))} aria-label={`Day ${p.day} notes`} placeholder="Add a note" value={p.notes} onChange={(e) => edit(i, "notes", e.target.value)} className={cn(field, "-ml-1.5 resize-none text-xs text-muted-foreground print:placeholder:text-transparent")} />
                   </div>

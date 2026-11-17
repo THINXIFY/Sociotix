@@ -15,7 +15,30 @@ export const MEDIA_PER_POST_MAX = 10;
 export const MEDIA_NAME_MAX = 100;
 export const BULK_MAX = 100;
 
+export const IMPORT_MAX = 31;
+
 export const CONTENT_ROUTES = { library: "/dashboard/social/content" } as const;
+
+/**
+ * AI tools whose results can become Content Library items, and what each becomes. Everything else the AI Tools
+ * produce (growth advice, service recommendations, order help, support answers, automations) is reference
+ * material, not a social post, and stays copy-only.
+ */
+export const AI_SAVE_SOURCES = {
+  "caption-generator": { label: "AI Caption Generator", kind: "draft" },
+  "post-ideas": { label: "AI Post Ideas", kind: "draft" },
+  "content-calendar": { label: "AI Content Calendar", kind: "draft" },
+  "hashtag-finder": { label: "AI Hashtag Finder", kind: "template" },
+} as const;
+export type AiSaveSource = keyof typeof AI_SAVE_SOURCES;
+
+/** Sociotix's own platform for an AI result's platform name ("Instagram", "X / Twitter"…); undefined for ones it doesn't have (Pinterest, Threads). */
+export function providerFromName(name: string | undefined | null): SocialProviderId | undefined {
+  const n = (name ?? "").trim().toLowerCase();
+  if (!n) return undefined;
+  if (n === "x" || n.startsWith("x /") || n === "twitter" || n === "x (twitter)") return "x";
+  return (["instagram", "facebook", "tiktok", "youtube", "linkedin"] as const).find((p) => n === p || n.startsWith(p));
+}
 
 /** Where a library image is served (to its owner only). */
 export const mediaUrl = (id: string) => `/media/library/${id}`;

@@ -223,7 +223,7 @@ export async function rebuildPostMedia(db: Executor, customerId: string, postId:
 }
 
 /** Attaches the given library images (in order) to a post, only if every one belongs to this customer. */
-async function attachMedia(tx: Executor, customerId: string, postId: string, mediaIds: string[]) {
+export async function attachMedia(tx: Executor, customerId: string, postId: string, mediaIds: string[]) {
   const unique = [...new Set(mediaIds)];
   if (unique.length) {
     const own = await tx.select({ id: contentMedia.id }).from(contentMedia).where(and(eq(contentMedia.customerId, customerId), inArray(contentMedia.id, unique)));

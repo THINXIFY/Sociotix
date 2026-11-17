@@ -3,12 +3,16 @@ import { createHash } from "node:crypto";
 import { and, count, eq, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
+  AI_SAVE_SOURCES,
   BULK_MAX,
+  IMPORT_MAX,
+  NOTES_MAX,
   FOLDER_NAME_MAX,
   FOLDERS_MAX,
   HASHTAGS_MAX,
   MEDIA_FILES_MAX,
   MEDIA_NAME_MAX,
+  MEDIA_PER_POST_MAX,
   MEDIA_TOTAL_BYTES,
   TEMPLATE_NAME_MAX,
   TEMPLATES_MAX,
@@ -23,7 +27,7 @@ import { inspectImage } from "../blog/media";
 import type { Db, Executor } from "../db/client";
 import { contentFolders, contentMedia, contentPostMedia, contentTemplates, socialPosts } from "../db/schema";
 import { AppError, errors, pgErrorOf } from "../errors";
-import { deletePost, ownPost, rebuildPostMedia, saveDraft, toUtc } from "../social/publishing";
+import { attachMedia, deletePost, ownPost, rebuildPostMedia, saveDraft, toUtc } from "../social/publishing";
 
 /**
  * The content workspace (CM-01): organising posts (favorites, archive, folders), reusable templates and
@@ -78,6 +82,11 @@ export async function contentMeta(db: Db, customerId: string): Promise<ContentMe
 /* -------------------------------------------------------------------------- */
 /*  Folders                                                                   */
 /* -------------------------------------------------------------------------- */
+
+export async function listFolders(db: Db, customerId: string) {
+  const rows = await db.select({ id: contentFolders.id, name: contentFolders.name }).from(contentFolders).where(eq(contentFolders.customerId, customerId)).orderBy(sql`lower(${contentFolders.name})`);
+  return rows;
+}
 
 const folderInput = z.strictObject({ name: name(FOLDER_NAME_MAX, "A folder name") });
 
@@ -143,6 +152,8 @@ async function applyFlags(tx: Executor, customerId: string, id: string, f: PostF
   const set: Partial<typeof socialPosts.$inferInsert> = {};
   if (f.archived === true && p.status === "scheduled") throw errors.conflict("This post is scheduled. Cancel the schedule before archiving it.");
   if (f.plannedLocal !== undefined && p.status === "scheduled") throw errors.conflict("This post is scheduled. Cancel the schedule to change its planned date.");
+  // Archived content stays out of planning: restore it first (clearing a date is always allowed).
+  if (f.plannedLocal && (p.archivedAt ? f.archived !== false : false)) throw errors.conflict("This post is archived. Restore it before planning it on the calendar.");
   if (f.favorite !== undefined) set.favorite = f.favorite;
   if (f.archived !== undefined) set.archivedAt = f.archived ? (p.archivedAt ?? new Date()) : null;
   if (f.folderId !== undefined) {
@@ -164,6 +175,30 @@ export async function setPostFlags(db: Db, customerId: string, id: string, raw: 
   const flags = flagsInput.parse(raw);
   await limitWrites(db, customerId);
   await db.transaction((tx) => applyFlags(tx, customerId, id, flags));
+}
+
+const mediaInput = z.strictObject({ mediaIds: z.array(z.string().uuid()).max(MEDIA_PER_POST_MAX, `Attach up to ${MEDIA_PER_POST_MAX} images.`), expectedVersion: z.number().int().min(1) });
+
+/**
+ * Replaces the images attached to one of the caller's own drafts (order kept) without touching its text, planned
+ * date or anything else. Like any content edit it needs the version the caller last saw, so a stale tab can't
+ * overwrite newer work, and it bumps the version.
+ */
+export async function setPostMedia(db: Db, customerId: string, id: string, raw: unknown) {
+  const input = mediaInput.parse(raw);
+  await limitWrites(db, customerId);
+  return db.transaction(async (tx) => {
+    const p = await ownPost(tx, customerId, id, true);
+    if (p.status === "scheduled") throw errors.conflict("This post is scheduled. Cancel the schedule to change its images.");
+    if (p.version !== input.expectedVersion) throw errors.conflict("This draft was changed somewhere else (another tab or device). Reload to see the latest version before editing.");
+    await attachMedia(tx, customerId, id, input.mediaIds);
+    const [u] = await tx
+      .update(socialPosts)
+      .set({ version: sql`${socialPosts.version} + 1`, updatedAt: new Date() })
+      .where(and(eq(socialPosts.id, id), eq(socialPosts.customerId, customerId)))
+      .returning({ version: socialPosts.version });
+    return { version: u!.version, mediaIds: [...new Set(input.mediaIds)] };
+  });
 }
 
 const bulkInput = z.discriminatedUnion("action", [
@@ -274,6 +309,98 @@ export async function useTemplate(db: Db, customerId: string, id: string, raw: u
   const [t] = await db.select().from(contentTemplates).where(and(eq(contentTemplates.id, id), eq(contentTemplates.customerId, customerId)));
   if (!t) throw errors.notFound("That template");
   return saveDraft(db, customerId, null, { title: t.name, text: t.body, providers: t.providers.filter(isSocialProvider), hashtags: t.hashtags, timezone });
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Saving AI results (CM-03)                                                 */
+/* -------------------------------------------------------------------------- */
+
+const importItem = z.strictObject({
+  title: z.string().transform(tidy).default(""),
+  text: body.default(""),
+  notes: z
+    .string()
+    .transform((s) => s.normalize("NFC").replace(/\r\n?/g, "\n").replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, ""))
+    .default(""),
+  providers: providers.default([]),
+  hashtags: tagList.default([]),
+});
+const importInput = z.strictObject({
+  source: z.enum(Object.keys(AI_SAVE_SOURCES) as [keyof typeof AI_SAVE_SOURCES, ...(keyof typeof AI_SAVE_SOURCES)[]]),
+  kind: z.enum(["draft", "template"]),
+  folderId: z.string().uuid().nullable().optional(),
+  timezone: z.string().refine(isTimeZone, "Unknown time zone."),
+  items: z.array(importItem).min(1, "There's nothing to save.").max(IMPORT_MAX, `Save up to ${IMPORT_MAX} items at a time.`),
+});
+
+const DUPLICATE_WINDOW_MS = 30 * 60_000;
+const sameSet = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+
+export interface ImportResult {
+  kind: "draft" | "template";
+  /** Saved now. */
+  created: { id: string; name: string }[];
+  /** Already saved from the same result a moment ago (a repeated click or request), so nothing new was made. */
+  duplicates: { id: string; name: string }[];
+  /** Items that couldn't be saved, with the reason. */
+  skipped: { index: number; reason: string }[];
+}
+
+/**
+ * Saves results the customer is looking at from an AI tool: social-content results become drafts (the same
+ * social_posts records the editor, library and calendar use), hashtag sets become templates. Only text that is
+ * really there is saved; blank items are refused, never padded. Saving the same thing again within a few minutes
+ * returns what was saved before instead of making a second copy. Nothing is planned, scheduled or published.
+ */
+export async function importAiContent(db: Db, customerId: string, raw: unknown): Promise<ImportResult> {
+  const input = importInput.parse(raw);
+  const source = AI_SAVE_SOURCES[input.source];
+  if (source.kind !== input.kind) throw new AppError("VALIDATION_FAILED", input.kind === "draft" ? "Hashtag sets are saved as templates." : "Those results are saved as drafts.");
+  await limitWrites(db, customerId);
+  if (input.folderId) {
+    const [own] = await db.select({ id: contentFolders.id }).from(contentFolders).where(and(eq(contentFolders.id, input.folderId), eq(contentFolders.customerId, customerId)));
+    if (!own) throw new AppError("VALIDATION_FAILED", "That folder isn't available.", { details: { field: "folderId" } });
+  }
+  const provenance = `Saved from ${source.label}.`;
+  const since = new Date(Date.now() - DUPLICATE_WINDOW_MS);
+  const out: ImportResult = { kind: input.kind, created: [], duplicates: [], skipped: [] };
+
+  for (const [index, it] of input.items.entries()) {
+    try {
+      if (input.kind === "template") {
+        if (!it.title) throw new AppError("VALIDATION_FAILED", "Give the template a name.");
+        if (!it.hashtags.length && !it.text.trim()) throw new AppError("VALIDATION_FAILED", "There are no hashtags to save.");
+        const name = Array.from(it.title).slice(0, TEMPLATE_NAME_MAX).join("");
+        const recent = await db.select().from(contentTemplates).where(and(eq(contentTemplates.customerId, customerId), eq(contentTemplates.name, name), sql`${contentTemplates.createdAt} > ${since}`));
+        const dupe = recent.find((t) => t.body === it.text && sameSet(t.hashtags, it.hashtags) && sameSet(t.providers, it.providers));
+        if (dupe) {
+          out.duplicates.push({ id: dupe.id, name: dupe.name });
+          continue;
+        }
+        const t = await createTemplate(db, customerId, { name, text: it.text, hashtags: it.hashtags, providers: it.providers });
+        out.created.push({ id: t.id, name: t.name });
+        continue;
+      }
+      if (!it.text.trim()) throw new AppError("VALIDATION_FAILED", "There's no text to save yet.");
+      const title = it.title ? Array.from(it.title).slice(0, 100).join("") : null;
+      const notes = (it.notes.trim() ? `${provenance}\n\n${it.notes.trim()}` : provenance).slice(0, NOTES_MAX);
+      const recent = await db
+        .select({ id: socialPosts.id, title: socialPosts.title, providers: socialPosts.providers, hashtags: socialPosts.hashtags })
+        .from(socialPosts)
+        .where(and(eq(socialPosts.customerId, customerId), eq(socialPosts.body, it.text), sql`${socialPosts.archivedAt} is null`, sql`${socialPosts.createdAt} > ${since}`, sql`${socialPosts.notes} like 'Saved from AI%'`));
+      const dupe = recent.find((p) => (p.title ?? null) === title && sameSet(p.providers, it.providers) && sameSet(p.hashtags, it.hashtags));
+      if (dupe) {
+        out.duplicates.push({ id: dupe.id, name: title ?? "Draft" });
+        continue;
+      }
+      const post = await saveDraft(db, customerId, null, { title, text: it.text, providers: it.providers, hashtags: it.hashtags, notes, folderId: input.folderId ?? null, timezone: input.timezone });
+      out.created.push({ id: post.id, name: title ?? "Draft" });
+    } catch (e) {
+      if (!(e instanceof AppError) && !(e instanceof z.ZodError)) throw e;
+      out.skipped.push({ index, reason: e instanceof z.ZodError ? (e.issues[0]?.message ?? "That couldn't be saved.") : e.message });
+    }
+  }
+  return out;
 }
 
 /* -------------------------------------------------------------------------- */

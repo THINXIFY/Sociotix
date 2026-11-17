@@ -548,7 +548,7 @@ function Item({ post: p, layout, hydrated, checked, onCheck, folderName, busy, a
                   <Menu.Item className={menuItem} onClick={actions.move}>
                     <FolderInput className="size-4" aria-hidden /> Move to folder…
                   </Menu.Item>
-                  {!locked ? (
+                  {!locked && !p.archivedAt ? (
                     <Menu.Item className={menuItem} onClick={actions.plan}>
                       <CalendarDays className="size-4" aria-hidden /> {p.plannedAt ? "Change planned date…" : "Plan on calendar…"}
                     </Menu.Item>
