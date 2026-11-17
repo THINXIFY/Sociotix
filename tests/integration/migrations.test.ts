@@ -51,16 +51,20 @@ describe("migrations", () => {
   it("applies cleanly and is idempotent", async () => {
     await runMigrations(url);
     const first = await inspect();
-    expect(first.tables).toBe(76);
+    expect(first.tables).toBe(81);
     expect(first.triggers).toBeGreaterThanOrEqual(25);
     expect(first.views).toBe(1);
-    expect(first.applied).toBe(23);
+    expect(first.applied).toBe(25);
     await runMigrations(url);
     expect(await inspect()).toEqual(first);
   });
 
   it("rolls back in reverse order and re-applies", async () => {
     const latest = await inspect();
+    await runFile("drizzle/rollback/0024_campaign_planner.down.sql");
+    expect(await inspect()).toEqual({ ...latest, tables: 77, applied: 24 }); // campaigns, campaign_milestones, campaign_tasks, campaign_templates and the campaign link on social_posts
+    await runFile("drizzle/rollback/0023_brand_kit.down.sql");
+    expect(await inspect()).toEqual({ ...latest, tables: 76, applied: 23 }); // brands and the brand link on social_posts
     await runFile("drizzle/rollback/0022_content_workspace.down.sql");
     expect(await inspect()).toEqual({ ...latest, tables: 72, applied: 22 }); // content_folders, content_media, content_post_media, content_templates and the organisation columns on social_posts
     await runFile("drizzle/rollback/0021_notification_center.down.sql");

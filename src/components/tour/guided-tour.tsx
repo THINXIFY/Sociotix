@@ -48,7 +48,7 @@ export const TOURS: Record<TourId, Tour> = {
       { target: '[data-tour="nav"]', title: "Find your way around", body: "Orders, wallet, support and your account live here. On phones, the main pages sit in the bar at the bottom." },
       { target: '[data-tour="new-order"]', title: "Start a new order", body: "Choose a platform and a service, then set it up. Ordering isn't open yet, so you can explore everything without being charged." },
       { target: '[data-tour="wallet"]', title: "Your wallet", body: "Your balance, straight from your account ledger. Adding funds opens together with checkout." },
-      { target: '[data-tour="ai"]', title: "Sociotix AI", body: "Your AI and social workspaces. AI generation isn't switched on yet. You can already see how each tool will work." },
+      { target: '[data-tour="ai"]', title: "Marketing", body: "Write posts, plan them on a calendar, keep launches organised and set up your brand. Open “Start here” for a step-by-step checklist." },
       { target: '[data-tour="notifications"]', title: "Notifications", body: "Order updates, support replies and security alerts show up here." },
       { target: '[data-tour="search"]', title: "Search everything", body: <>Find services, tools, pages and help. Press <Kbd>Ctrl</Kbd><Kbd>K</Kbd> (<Kbd>⌘</Kbd><Kbd>K</Kbd> on Mac) from any page.</> },
     ],

@@ -3,16 +3,20 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Ban, BookmarkPlus, CalendarClock, Check, CircleAlert, Clock, Film, FileText, FolderOpen, Hash, ImageIcon, Lock, Plus, Save, Send, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Ban, BookmarkPlus, CalendarClock, Check, CircleAlert, Clock, Film, FileText, FolderOpen, Hash, ImageIcon, Lock, Palette, Plus, Save, Send, Sparkles, X, Flag } from "lucide-react";
+import { BrandContextCard } from "@/components/brand/brand-context";
+import { BrandSelect } from "@/components/brand/brand-parts";
 import { ConfirmDialog } from "@/components/dashboard/account-ui";
+import { BRAND_ROUTES } from "@/lib/brand";
 import { Panel, useHydrated } from "@/components/dashboard/shared";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { formatDateTime, useDisplay } from "@/lib/i18n";
-import { formatBytes, HASHTAGS_MAX, MEDIA_PER_POST_MAX, NOTES_MAX, parseHashtags, withHashtags, type MediaView, type TemplateView } from "@/lib/social/content";
+import { CONTENT_ROUTES, formatBytes, HASHTAGS_MAX, MEDIA_PER_POST_MAX, NOTES_MAX, parseHashtags, withHashtags, type MediaView, type TemplateView } from "@/lib/social/content";
 import { SOCIAL_PLATFORM, SOCIAL_PLATFORMS, type SocialProviderId } from "@/lib/social/platforms";
 import { charCount, POST_TEXT_MAX, postHref, PUBLISH_RULES, PUBLISHING_ROUTES, textFor, validateForPlatform, type PostContent, type PostView, type PublishingData } from "@/lib/social/publishing";
 import { browserTimeZone, utcToZonedInput } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { campaignHref } from "@/lib/campaign";
 import { MediaPicker, MediaThumb } from "./content-parts";
 import { page, primaryButton, quietButton, SocialNav, SocialTile } from "./parts";
 import { postsApi, StateBadge, useUnsavedWarning } from "./publishing-parts";
@@ -136,6 +140,8 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
   const [hashtagText, setHashtagText] = React.useState((post?.hashtags ?? []).map((t) => `#${t}`).join(" "));
   const [notes, setNotes] = React.useState(post?.notes ?? "");
   const [folderId, setFolderId] = React.useState<string | null>(post?.folderId ?? null);
+  // A new draft starts with the default brand (the customer can change it or choose none); an existing draft keeps its own.
+  const [brandId, setBrandId] = React.useState<string | null>(post ? post.brandId : (data.content.brands.find((b) => b.isDefault)?.id ?? null));
   const [mediaIds, setMediaIds] = React.useState<string[]>(post?.mediaIds ?? []);
   const [library, setLibrary] = React.useState<MediaView[]>(data.content.media);
   const [templates, setTemplates] = React.useState<TemplateView[]>(data.content.templates);
@@ -178,7 +184,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
   const limit = editing === "all" ? Math.min(POST_TEXT_MAX, ...providers.map((p) => PUBLISH_RULES[p].textMax)) : PUBLISH_RULES[editing].textMax;
   const used = charCount(withHashtags(editValue, tags));
 
-  const snapshot = JSON.stringify([title, text, variants, providers, planned, tags, notes, folderId, mediaIds]);
+  const snapshot = JSON.stringify([title, text, variants, providers, planned, tags, notes, folderId, brandId, mediaIds]);
   const snapRef = React.useRef(snapshot);
   React.useEffect(() => {
     snapRef.current = snapshot;
@@ -203,6 +209,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
       hashtags: tags,
       notes,
       folderId,
+      brandId,
       mediaIds,
       ...(postId ? { expectedVersion: version } : {}),
     });
@@ -277,7 +284,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-3">
             <Link
-              href={PUBLISHING_ROUTES.library}
+              href={CONTENT_ROUTES.library}
               onClick={(e) => {
                 if (dirty) {
                   e.preventDefault();
@@ -285,7 +292,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
                 }
               }}
               className="grid size-10 shrink-0 place-items-center rounded-full border bg-card text-muted-foreground transition-colors hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none"
-              aria-label="Back to Publishing"
+              aria-label="Back to Posts"
             >
               <ArrowLeft className="size-4" aria-hidden />
             </Link>
@@ -476,6 +483,34 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
                 ))}
               </select>
             </label>
+            <div className="mt-3">
+              <label htmlFor="composer-brand" className="text-[0.74rem] text-muted-foreground">
+                <Palette className="me-1 inline size-3.5 align-[-2px]" aria-hidden />
+                Brand
+              </label>
+              <BrandSelect id="composer-brand" brands={data.content.brands} value={brandId} onChange={(v) => touch(setBrandId)(v)} className="mt-1" disabled={locked} />
+            </div>
+            {!data.content.brands.length ? (
+              <p className="mt-1.5 text-[0.74rem] text-muted-foreground">
+                <Link href={BRAND_ROUTES.create} className="font-semibold text-primary hover:underline">
+                  Create a brand
+                </Link>{" "}
+                to keep its voice and rules beside your drafts.
+              </p>
+            ) : null}
+            {(() => {
+              // Campaign Planner (CP-01): the campaign this draft belongs to (linking happens from the campaign).
+              const camp = post?.campaignId ? data.content.campaigns.find((x) => x.id === post.campaignId) : undefined;
+              return camp ? (
+                <p className="mt-2 flex items-center gap-1.5 text-[0.76rem] text-muted-foreground">
+                  <Flag className="size-3.5 text-primary" aria-hidden /> Plan:{" "}
+                  <Link href={campaignHref(camp.id, "content")} className="min-w-0 truncate font-semibold text-primary hover:underline">
+                    {camp.name}
+                  </Link>
+                </p>
+              ) : null;
+            })()}
+            <BrandContextCard brandId={brandId} text={`${text}\n${Object.values(variants).join("\n")}`} hashtags={tags} onAddHashtags={(add) => touch(setHashtagText)([...tags, ...add].map((t) => `#${t}`).join(" "))} />
             <div className="mt-3 flex flex-wrap gap-2">
               <button type="button" className={cn(quietButton, "h-9 sm:h-9")} onClick={() => setTemplatesOpen(true)} disabled={!templates.length}>
                 <FileText className="size-4" aria-hidden /> Use a template
@@ -651,7 +686,7 @@ export function Composer({ data, post }: { data: PublishingData; post: PostView 
         </DialogContent>
       </Dialog>
 
-      <ConfirmDialog open={leaving} onOpenChange={setLeaving} tone="danger" title="Leave without saving?" description="Your changes to this post haven't been saved." confirmLabel="Leave" cancelLabel="Keep editing" onConfirm={() => router.push(PUBLISHING_ROUTES.library)} />
+      <ConfirmDialog open={leaving} onOpenChange={setLeaving} tone="danger" title="Leave without saving?" description="Your changes to this post haven't been saved." confirmLabel="Leave" cancelLabel="Keep editing" onConfirm={() => router.push(CONTENT_ROUTES.library)} />
     </div>
   );
 }

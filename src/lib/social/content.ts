@@ -1,3 +1,5 @@
+import type { BrandSummary } from "../brand";
+import type { CampaignSummary } from "../campaign";
 import type { SocialProviderId } from "./platforms";
 
 /* Content workspace (CM-01): limits and small helpers shared by the server, the editor and the library. */
@@ -103,6 +105,10 @@ export interface MediaView {
 /** What the editor and library need besides the posts themselves. */
 export interface ContentMeta {
   folders: FolderView[];
+  /** The customer's brand profiles (BR-01), default first. */
+  brands: BrandSummary[];
+  /** The customer's campaigns (CP-01): names, milestones and dates for the library, composer and calendar. */
+  campaigns: CampaignSummary[];
   templates: TemplateView[];
   media: MediaView[];
   mediaBytes: number;

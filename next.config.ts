@@ -55,6 +55,8 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       { source: "/help/what-is-socivanta", destination: "/help/what-is-sociotix", permanent: true },
+      // Marketing area: Publishing and the Content Library listed the same posts; there is one "Posts" page now.
+      { source: "/dashboard/social/publishing", destination: "/dashboard/social/content", permanent: false },
       { source: "/help/what-are-socivanta-ai-tools", destination: "/help/what-are-sociotix-ai-tools", permanent: true },
       // Refund and return policy URLs land on the refund terms, once the Terms of Service are published.
       ...(termsPublished() ? REFUND_POLICY_ALIASES.map((source) => ({ source, destination: `${TERMS_PATH}#${REFUNDS_ANCHOR}`, permanent: true })) : []),

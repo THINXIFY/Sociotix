@@ -1,14 +1,12 @@
 "use client";
 
 import * as React from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { CircleAlert, CircleCheck, CircleDashed, CirclePause, RefreshCw, type LucideIcon } from "lucide-react";
 import { PlatformTile } from "@/components/brand";
 import { useHydrated } from "@/components/dashboard/shared";
 import { PLATFORMS } from "@/lib/catalog";
 import { formatDateTime, formatNumber, formatRelative, useDisplay } from "@/lib/i18n";
-import { type SocialHealth, type SocialProviderId, SOCIAL_PLATFORM, SOCIAL_ROUTES } from "@/lib/social/platforms";
+import { type SocialHealth, type SocialProviderId, SOCIAL_PLATFORM } from "@/lib/social/platforms";
 import { cn } from "@/lib/utils";
 
 /* Shared building blocks for the Social workspace (AI-06). */
@@ -68,57 +66,23 @@ export const metricValue = (n: number) => formatNumber(n);
 
 export const platformName = (id: SocialProviderId) => SOCIAL_PLATFORM[id].name;
 
-const TABS = [
-  { href: SOCIAL_ROUTES.overview, label: "Overview" },
-  { href: "/dashboard/social/content", label: "Content" },
-  { href: "/dashboard/social/publishing", label: "Publishing" },
-  { href: "/dashboard/social/calendar", label: "Calendar" },
-  { href: "/dashboard/social/campaigns", label: "Campaigns" },
-  { href: "/dashboard/social/automations", label: "Automations" },
-  { href: SOCIAL_ROUTES.accounts, label: "Accounts" },
-  { href: SOCIAL_ROUTES.activity, label: "Activity" },
-] as const;
-
-/** The Social area's own compact navigation, so the main dashboard sidebar stays as it is. */
-export function SocialNav({ className }: { className?: string }) {
-  const pathname = usePathname();
-  return (
-    <nav aria-label="Social workspace" className={cn("-mx-3 overflow-x-auto px-3 no-scrollbar sm:-mx-1 sm:px-1", className)}>
-      <ul className="inline-flex gap-1 rounded-full border bg-card p-1 shadow-soft">
-        {TABS.map((t) => {
-          const active = pathname === t.href || (t.href !== SOCIAL_ROUTES.overview && pathname.startsWith(`${t.href}/`));
-          return (
-            <li key={t.href}>
-              <Link
-                href={t.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex h-11 items-center rounded-full px-4 text-sm font-semibold whitespace-nowrap sm:h-9 transition-colors focus-visible:ring-3 focus-visible:ring-primary/30 focus-visible:outline-none",
-                  active ? "bg-graphite text-white dark:bg-white dark:text-graphite" : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
-  );
+/** The old Social tab bar. Every page now has its own item in the dashboard menu, so this renders nothing. */
+export function SocialNav(): null {
+  return null;
 }
 
-export function SocialHeader({ title, subtitle, action }: { title: string; subtitle: string; action?: React.ReactNode }) {
+export function SocialHeader({ title, subtitle, action, guide }: { title: string; subtitle: string; action?: React.ReactNode; guide?: React.ReactNode }) {
   return (
     <header className="flex flex-col gap-5">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="min-w-0">
-          <p className={cn(eyebrow, "text-primary")}>Sociotix AI · Social</p>
+          <p className={cn(eyebrow, "text-primary")}>Marketing</p>
           <h1 className="mt-1.5 font-heading text-[1.6rem] leading-tight font-extrabold tracking-tight sm:text-[1.9rem]">{title}</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground sm:text-[0.95rem]">{subtitle}</p>
         </div>
         {action}
       </div>
-      <SocialNav />
+      {guide}
     </header>
   );
 }

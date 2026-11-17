@@ -13,6 +13,7 @@ import { ACTION_META, type AutomationData, automationHref, AUTOMATION_ROUTES, ty
 import { postHref } from "@/lib/social/publishing";
 import { browserTimeZone } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { PageGuide } from "@/components/dashboard/page-guide";
 import { automationApi, AutomationBadge, FlowPreview, RunBadge, TEMPLATE_ICON } from "./automation-parts";
 import { page, primaryButton, quietButton, SocialHeader, When } from "./parts";
 import { EmptyIllustration } from "./publishing-parts";
@@ -265,7 +266,18 @@ export function AutomationStudio({ data }: { data: AutomationData & { accounts: 
   const header = (
     <SocialHeader
       title="Automations"
-      subtitle="Simple routines that keep your content on track — reminders, checklists and checks that run on your schedule."
+      subtitle="Repeating routines that keep you on track: reminders, checklists and checks on your schedule. They never post anything."
+      guide={
+        <PageGuide
+          id="automations"
+          open={data.automations.length === 0}
+          steps={[
+            { title: "Pick a template", body: "Start from a ready-made routine below, or create your own." },
+            { title: "Choose when and what", body: "When: every week, every day, once, or when drafts are due soon. Do: a reminder, a checklist or a review." },
+            { title: "Turn it on", body: "Review it and activate it. Results appear in your inbox here. Pause or delete it any time." },
+          ]}
+        />
+      }
       action={
         <Link href={AUTOMATION_ROUTES.create} className={primaryButton}>
           <Plus className="size-4" aria-hidden /> Create automation

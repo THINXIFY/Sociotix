@@ -90,6 +90,9 @@ export function MediaPicker({
   selected,
   onChange,
   max,
+  single = false,
+  title = "Add images",
+  description,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -98,6 +101,10 @@ export function MediaPicker({
   selected: string[];
   onChange: (ids: string[]) => void;
   max: number;
+  /** Choose exactly one image (a logo, a cover): picking another replaces it. */
+  single?: boolean;
+  title?: string;
+  description?: string;
 }) {
   const [busy, setBusy] = React.useState(false);
   const [problems, setProblems] = React.useState<string[]>([]);
@@ -118,19 +125,21 @@ export function MediaPicker({
     });
     setProblems(out);
     const room = max - selected.length;
-    if (added.length && room > 0) onChange([...selected, ...added.filter((id) => !selected.includes(id)).slice(0, room)]);
+    if (single) {
+      if (added.length) onChange([added[0]!]);
+    } else if (added.length && room > 0) onChange([...selected, ...added.filter((id) => !selected.includes(id)).slice(0, room)]);
     setBusy(false);
   }
 
-  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : selected.length >= max ? selected : [...selected, id]);
+  const toggle = (id: string) => onChange(selected.includes(id) ? selected.filter((x) => x !== id) : single ? [id] : selected.length >= max ? selected : [...selected, id]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[88dvh] gap-0 overflow-hidden p-0 sm:max-w-2xl" showCloseButton={false}>
         <div className="border-b px-5 pt-5 pb-4">
-          <DialogTitle className="font-heading text-lg font-extrabold">Add images</DialogTitle>
+          <DialogTitle className="font-heading text-lg font-extrabold">{title}</DialogTitle>
           <DialogDescription className="mt-1 text-[0.82rem] text-muted-foreground">
-            Pick from your media library or upload new images (JPEG, PNG or WebP, up to 5 MB each). Up to {max} per post.
+            {description ?? `Pick from your media library or upload new images (JPEG, PNG or WebP, up to 5 MB each). Up to ${max} per post.`}
           </DialogDescription>
         </div>
         <div className="max-h-[56dvh] overflow-y-auto px-5 py-4">

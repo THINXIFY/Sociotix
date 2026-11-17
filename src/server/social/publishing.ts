@@ -9,8 +9,9 @@ import { isTimeZone, zonedToUtc } from "@/lib/social/time";
 import { audit } from "../audit";
 import { decrypt } from "../auth/crypto";
 import { hit } from "../auth/rate-limit";
+import { assertBrandFitsCampaign } from "../campaign/rules";
 import type { Db, Executor } from "../db/client";
-import { contentFolders, contentMedia, contentPostMedia, socialConnections, socialEvents, socialPosts, socialPostTargets } from "../db/schema";
+import { brands, contentFolders, contentMedia, contentPostMedia, socialConnections, socialEvents, socialPosts, socialPostTargets } from "../db/schema";
 import type { Env } from "../env";
 import { AppError, errors, pgErrorOf } from "../errors";
 import { logger } from "../log";
@@ -87,6 +88,8 @@ export const draftInput = z
       .optional(),
     notes: cleanText(NOTES_MAX).optional(),
     folderId: z.string().uuid().nullable().optional(),
+    /** Brand Kit (BR-01): the brand this draft is for, or null for none. */
+    brandId: z.string().uuid().nullable().optional(),
     mediaIds: z.array(z.string().uuid()).max(MEDIA_PER_POST_MAX, `Attach up to ${MEDIA_PER_POST_MAX} images.`).optional(),
     /** The version this edit started from; a mismatch means the draft changed elsewhere. */
     expectedVersion: z.number().int().min(1).optional(),
@@ -173,6 +176,8 @@ async function views(db: Executor, customerId: string, rows: PostRow[]): Promise
       favorite: r.favorite,
       archivedAt: r.archivedAt?.toISOString() ?? null,
       folderId: r.folderId,
+      brandId: r.brandId,
+      campaignId: r.campaignId,
       hashtags: r.hashtags,
       notes: r.notes,
       mediaIds: attached.filter((a) => a.postId === r.id).map((a) => a.mediaId),
@@ -234,6 +239,12 @@ export async function attachMedia(tx: Executor, customerId: string, postId: stri
   await rebuildPostMedia(tx, customerId, postId);
 }
 
+async function assertOwnBrandOf(tx: Executor, customerId: string, brandId: string | null | undefined) {
+  if (!brandId) return;
+  const [b] = await tx.select({ id: brands.id }).from(brands).where(and(eq(brands.id, brandId), eq(brands.customerId, customerId)));
+  if (!b) throw new AppError("VALIDATION_FAILED", "That brand isn't available.", { details: { field: "brandId" } });
+}
+
 async function assertOwnFolder(tx: Executor, customerId: string, folderId: string | null | undefined) {
   if (!folderId) return;
   const [f] = await tx.select({ id: contentFolders.id }).from(contentFolders).where(and(eq(contentFolders.id, folderId), eq(contentFolders.customerId, customerId)));
@@ -256,6 +267,7 @@ export async function saveDraft(db: Db, customerId: string, id: string | null, r
     ...(input.hashtags !== undefined && { hashtags: input.hashtags }),
     ...(input.notes !== undefined && { notes: input.notes }),
     ...(input.folderId !== undefined && { folderId: input.folderId }),
+    ...(input.brandId !== undefined && { brandId: input.brandId }),
   };
   try {
     if (!id) {
@@ -263,6 +275,7 @@ export async function saveDraft(db: Db, customerId: string, id: string | null, r
         const [{ n }] = (await tx.select({ n: count() }).from(socialPosts).where(eq(socialPosts.customerId, customerId))) as [{ n: number }];
         if (n >= MAX_POSTS) throw errors.conflict(`You can keep up to ${MAX_POSTS} posts. Delete some old drafts first.`);
         await assertOwnFolder(tx, customerId, input.folderId);
+        await assertOwnBrandOf(tx, customerId, input.brandId);
         const [created] = await tx.insert(socialPosts).values({ customerId, ...values }).returning();
         if (input.mediaIds?.length) await attachMedia(tx, customerId, created!.id, input.mediaIds);
         const [fresh] = await tx.select().from(socialPosts).where(eq(socialPosts.id, created!.id));
@@ -275,6 +288,8 @@ export async function saveDraft(db: Db, customerId: string, id: string | null, r
       if (p.status === "scheduled") throw errors.conflict("This post is scheduled. Cancel the schedule to edit it.");
       if (input.expectedVersion !== undefined && input.expectedVersion !== p.version) throw errors.conflict("This draft was changed somewhere else (another tab or device). Reload to see the latest version before editing.");
       await assertOwnFolder(tx, customerId, input.folderId);
+      await assertOwnBrandOf(tx, customerId, input.brandId);
+      await assertBrandFitsCampaign(tx, customerId, p.campaignId, input.brandId);
       const [u] = await tx
         .update(socialPosts)
         .set({ ...values, status: "draft", version: sql`${socialPosts.version} + 1` })
@@ -293,7 +308,7 @@ export async function saveDraft(db: Db, customerId: string, id: string | null, r
 export async function duplicatePost(db: Db, customerId: string, id: string): Promise<PostView> {
   const p = await ownPost(db, customerId, id);
   const media = await db.select({ id: contentPostMedia.mediaId }).from(contentPostMedia).where(and(eq(contentPostMedia.postId, id), eq(contentPostMedia.customerId, customerId))).orderBy(asc(contentPostMedia.position));
-  return saveDraft(db, customerId, null, { title: p.title ? `${p.title}`.slice(0, POST_TITLE_MAX - 7) + " (copy)" : null, text: p.body, variants: p.variants, providers: p.providers.filter(isSocialProvider), timezone: p.timezone, plannedLocal: null, hashtags: p.hashtags, notes: p.notes, folderId: p.folderId, mediaIds: media.map((m) => m.id) });
+  return saveDraft(db, customerId, null, { title: p.title ? `${p.title}`.slice(0, POST_TITLE_MAX - 7) + " (copy)" : null, text: p.body, variants: p.variants, providers: p.providers.filter(isSocialProvider), timezone: p.timezone, plannedLocal: null, hashtags: p.hashtags, notes: p.notes, folderId: p.folderId, brandId: p.brandId, mediaIds: media.map((m) => m.id) });
 }
 
 /** Deletes a draft or a cancelled post that never reached a platform. */

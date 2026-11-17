@@ -12,6 +12,7 @@ export * from "./ledger";
 export * from "./social";
 export * from "./publishing";
 export * from "./content";
+export * from "./campaigns";
 export * from "./automations";
 export * from "./blog";
 export * from "./digital-products";

@@ -3,7 +3,9 @@
 import * as React from "react";
 import Link from "next/link";
 import { BookmarkPlus, Check, Loader2 } from "lucide-react";
+import { BrandSelect } from "@/components/brand/brand-parts";
 import { fieldClass, labelClass } from "@/components/social/content-parts";
+import type { BrandSummary } from "@/lib/brand";
 import { primaryButton, quietButton } from "@/components/social/parts";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { AI_SAVE_SOURCES, CONTENT_ROUTES, HASHTAGS_MAX, NOTES_MAX, parseHashtags, providerFromName, TEMPLATE_NAME_MAX, type AiSaveSource } from "@/lib/social/content";
@@ -11,6 +13,7 @@ import { SOCIAL_PLATFORMS, type SocialProviderId } from "@/lib/social/platforms"
 import { charCount, POST_TEXT_MAX, postHref, PUBLISH_RULES } from "@/lib/social/publishing";
 import { browserTimeZone } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { useBrandSelection } from "./brand-selection";
 
 /*
  * "Save to Library" for AI tool results (CM-03). It appears only next to a result that is really on screen, and
@@ -93,6 +96,9 @@ function SaveDialog({ source, items, done, onDone, onClose }: { source: AiSaveSo
   const mapped = providerFromName(first.platform);
   const [providers, setProviders] = React.useState<SocialProviderId[]>(mapped ? [mapped] : []);
   const [folderId, setFolderId] = React.useState("");
+  const selected = useBrandSelection();
+  const [brandId, setBrandId] = React.useState<string | null>(template ? null : selected.brandId);
+  const [brands, setBrands] = React.useState<BrandSummary[]>([]);
   const [folders, setFolders] = React.useState<{ id: string; name: string }[] | null>(null);
   const [problem, setProblem] = React.useState<Problem | null>(null);
   const [busy, setBusy] = React.useState(false);
@@ -110,6 +116,23 @@ function SaveDialog({ source, items, done, onDone, onClose }: { source: AiSaveSo
         else setFolders([]);
       })
       .catch(() => live && setFolders([]));
+    return () => {
+      live = false;
+    };
+  }, [done, template]);
+
+  // The customer's brands (drafts can be filed under one; a hashtag template has no brand). A brand that is gone is ignored.
+  React.useEffect(() => {
+    if (done || template) return;
+    let live = true;
+    fetch("/api/brands")
+      .then(async (r) => (r.ok ? ((await r.json()) as { brands: BrandSummary[] }).brands : []))
+      .then((list) => {
+        if (!live) return;
+        setBrands(list);
+        setBrandId((cur) => (cur && list.some((b) => b.id === cur) ? cur : null));
+      })
+      .catch(() => {});
     return () => {
       live = false;
     };
@@ -134,7 +157,7 @@ function SaveDialog({ source, items, done, onDone, onClose }: { source: AiSaveSo
         ? items.map((it) => ({ title: it.title ?? "", text: it.text ?? "", notes: it.notes ?? "", providers: (providerFromName(it.platform) ? [providerFromName(it.platform)!] : []) as string[], hashtags: it.hashtags ?? [] }))
         : [{ title, text, notes, providers, hashtags: first.hashtags ?? [] }];
     try {
-      const { res, json } = await jsonFetch("/api/content/import", { method: "POST", body: JSON.stringify({ source, kind: meta.kind, folderId: folderId || null, timezone: browserTimeZone(), items: payload }) });
+      const { res, json } = await jsonFetch("/api/content/import", { method: "POST", body: JSON.stringify({ source, kind: meta.kind, folderId: folderId || null, ...(template ? {} : { brandId }), timezone: browserTimeZone(), items: payload }) });
       if (res.ok) onDone(json as Done);
       else if (res.status === 401) setProblem({ kind: "signed-out", message: "Your session has ended. Sign in again to save this." });
       else setProblem({ kind: "error", message: json?.error?.issues?.[0]?.message ?? json?.error?.message ?? "Couldn't save. Please try again." });
@@ -244,6 +267,15 @@ function SaveDialog({ source, items, done, onDone, onClose }: { source: AiSaveSo
                       </option>
                     ))}
                   </select>
+                </label>
+              ) : null}
+
+              {!template && brands.length ? (
+                <label className="block">
+                  <span className={labelClass}>
+                    Brand <span className="font-normal text-muted-foreground">(optional)</span>
+                  </span>
+                  <BrandSelect brands={brands} value={brandId} onChange={setBrandId} className="mt-1.5" />
                 </label>
               ) : null}
 

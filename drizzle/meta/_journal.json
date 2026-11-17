@@ -162,6 +162,20 @@
       "when": 1794234999600,
       "tag": "0022_content_workspace",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794920433840,
+      "tag": "0023_brand_kit",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1794930358922,
+      "tag": "0024_campaign_planner",
+      "breakpoints": true
     }
   ]
 }

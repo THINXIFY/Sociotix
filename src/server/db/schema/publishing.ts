@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, index, integer, jsonb, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createdAt, oneOf, ts, updatedAt } from "./helpers";
+import { campaigns } from "./campaigns";
+import { brands } from "./content";
 import { customers } from "./identity";
 import { SOCIAL_PROVIDERS, socialConnections } from "./social";
 
@@ -59,6 +61,10 @@ export const socialPosts = pgTable(
     favorite: boolean("favorite").notNull().default(false),
     archivedAt: ts("archived_at"),
     folderId: uuid("folder_id").references(() => contentFolders.id, { onDelete: "set null" }),
+    /** The brand profile this content is for (BR-01); optional, and cleared (never deleted with) if the brand is removed. */
+    brandId: uuid("brand_id").references(() => brands.id, { onDelete: "set null" }),
+    /** The campaign this content is planned for (CP-01); optional, and cleared (never deleted with) if the campaign is removed. */
+    campaignId: uuid("campaign_id").references(() => campaigns.id, { onDelete: "set null" }),
     hashtags: text("hashtags").array().notNull().default(sql`'{}'::text[]`),
     notes: text("notes").notNull().default(""),
     /** Bumped on every edit so two tabs can't silently overwrite each other. */
@@ -69,6 +75,8 @@ export const socialPosts = pgTable(
   (t) => [
     index("social_posts_customer_idx").on(t.customerId, t.updatedAt),
     index("social_posts_folder_idx").on(t.folderId),
+    index("social_posts_brand_idx").on(t.brandId),
+    index("social_posts_campaign_idx").on(t.campaignId),
     check("social_posts_content_check", sql`char_length(${t.notes}) <= 2000 and cardinality(${t.hashtags}) <= 30`),
     check("social_posts_status_check", oneOf(t.status, POST_STATUS)),
     check("social_posts_body_check", sql`char_length(${t.body}) <= 5000 and (${t.title} is null or char_length(${t.title}) <= 100)`),

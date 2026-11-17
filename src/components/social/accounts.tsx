@@ -37,6 +37,7 @@ import {
   type SocialWorkspace,
 } from "@/lib/social/platforms";
 import { cn } from "@/lib/utils";
+import { PageGuide } from "@/components/dashboard/page-guide";
 import { eyebrow, HealthPill, metricValue, page, primaryButton, quietButton, socialApi, SocialHeader, SocialTile, When } from "./parts";
 
 /* -------------------------------------------------------------------------- */
@@ -523,7 +524,21 @@ export function SocialAccounts({ data }: { data: SocialWorkspace }) {
 
   return (
     <div className={page}>
-      <SocialHeader title="My social accounts" subtitle="Connect the accounts you manage, see what each one shares, and disconnect any time. Read-only — Sociotix never posts for you." />
+      <SocialHeader
+        title="Connected accounts"
+        subtitle="Connect the social accounts you manage. Sociotix only reads them and never posts for you."
+        guide={
+          <PageGuide
+            id="accounts"
+            open={data.accounts.length === 0}
+            steps={[
+              { title: "Pick a platform", body: anyAvailable ? "Choose one below and sign in on that platform." : "Each platform must approve Sociotix first. Until then, connecting shows as coming soon." },
+              { title: "Approve access", body: "You decide what Sociotix can see. It's read-only." },
+              { title: "Disconnect any time", body: "Remove an account here and its access ends straight away." },
+            ]}
+          />
+        }
+      />
 
       <div className="mt-6 space-y-8">
         <OutcomeBanner />

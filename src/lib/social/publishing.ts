@@ -227,6 +227,10 @@ export interface PostView {
   favorite: boolean;
   archivedAt: string | null;
   folderId: string | null;
+  /** Brand Kit (BR-01): the brand profile this content is for. */
+  brandId: string | null;
+  /** Campaign Planner (CP-01): the campaign this content is planned for. */
+  campaignId: string | null;
   hashtags: string[];
   notes: string;
   /** Ids of the library images attached, in order (`media` above is their summary). */

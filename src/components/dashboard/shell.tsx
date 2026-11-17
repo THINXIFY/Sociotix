@@ -317,7 +317,7 @@ function Sidebar({ collapsed, animate }: { collapsed: boolean; animate: boolean 
 /* -------------------------------------------------------------------------- */
 
 const TAB_IDS: Destination[] = ["overview", "orders", "new-order", "add-funds"];
-const MORE_IDS: Destination[] = ["transactions", "support", "digital-products", "ai", "social", "referrals", "settings", "profile"];
+const MORE_IDS: Destination[] = ["transactions", "support", "digital-products", "social", "posts", "calendar", "campaigns", "automations", "brand-kit", "accounts", "referrals", "settings", "profile"];
 
 /** Shared look for the bottom bar's tabs: an icon in a pill that fills when active, and a label. */
 const tabClass =

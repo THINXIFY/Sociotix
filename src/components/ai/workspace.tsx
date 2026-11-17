@@ -1,5 +1,6 @@
 "use client";
 
+import { AiBrandPanel, BrandSelectionContext, type BrandSelection } from "./brand-selection";
 import * as React from "react";
 import Link from "next/link";
 import { AlertCircle, Check, ChevronDown, Clock3, Info, Lock, LogIn, MailCheck, Minus, Plus, RefreshCw, RotateCcw, ShieldCheck, Sparkles, Wand2, X } from "lucide-react";
@@ -132,6 +133,8 @@ function Results({ tool, output }: { tool: AiTool; output: unknown }) {
 
 export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: WorkspaceExample[] }) {
   const { status, setStatus } = useToolStatus(tool.id);
+  // Brand Kit (BR-01): an optional brand for the content tools. Its context is kept ready for later and decides where saved results are filed.
+  const [brand, setBrand] = React.useState<BrandSelection>({ brandId: null, context: null });
   const live = status?.availability === "available";
   const locked = !live;
   const account = status?.account ?? "signed_out";
@@ -362,6 +365,7 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 submit();
               }}
             >
+              {tool.category === "content" ? <AiBrandPanel value={brand.brandId} onChange={setBrand} disabled={formLocked} /> : null}
               {primary ? (
                 <Composer
                   field={primary}
@@ -501,7 +505,9 @@ export function AiWorkspace({ tool, examples = [] }: { tool: AiTool; examples?: 
                 <p className="mb-5 flex items-start gap-2 rounded-xl border bg-card px-3.5 py-2.5 text-xs leading-relaxed text-muted-foreground print:hidden">
                   <Info className="mt-px size-3.5 shrink-0" aria-hidden /> AI-written suggestions. Read and edit before posting — nothing is saved or published for you.
                 </p>
-                <Results key={run.key} tool={tool} output={run.output} />
+                <BrandSelectionContext.Provider value={brand}>
+                  <Results key={run.key} tool={tool} output={run.output} />
+                </BrandSelectionContext.Provider>
               </div>
             ) : tool.id === "hashtag-finder" ? (
               <StudioEmpty tool={tool} locked={locked} />

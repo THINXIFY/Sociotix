@@ -15,11 +15,16 @@ import {
   LifeBuoy,
   type LucideIcon,
   Package,
+  Palette,
+  Flag,
+  Compass,
+  Workflow,
+  FileText,
+  CalendarDays,
+  Link2,
   Plus,
   RefreshCw,
   Settings,
-  Share2,
-  Sparkles,
   TriangleAlert,
   Wallet,
 } from "lucide-react";
@@ -45,6 +50,12 @@ export type Destination =
   | "profile"
   | "social"
   | "ai"
+  | "brand-kit"
+  | "campaigns"
+  | "posts"
+  | "calendar"
+  | "accounts"
+  | "automations"
   | "digital-products";
 
 export interface NavItem {
@@ -69,8 +80,13 @@ export const PRIMARY_NAV: NavItem[] = [
 
 /** Sociotix AI areas that live inside the dashboard (AI-06): kept to one discreet group. */
 export const AI_NAV: NavItem[] = [
-  { id: "ai", key: "nav.aiHome", icon: Sparkles },
-  { id: "social", key: "nav.social", icon: Share2 },
+  { id: "social", key: "nav.startHere", icon: Compass },
+  { id: "posts", key: "nav.posts", icon: FileText },
+  { id: "calendar", key: "nav.calendar", icon: CalendarDays },
+  { id: "campaigns", key: "nav.campaigns", icon: Flag },
+  { id: "automations", key: "nav.automations", icon: Workflow },
+  { id: "brand-kit", key: "nav.brandKit", icon: Palette },
+  { id: "accounts", key: "nav.accounts", icon: Link2 },
 ];
 
 export const SECONDARY_NAV: NavItem[] = [
@@ -92,6 +108,12 @@ export const ROUTES: Record<Destination, string> = {
   profile: "/dashboard/profile",
   social: "/dashboard/social",
   ai: "/dashboard/ai",
+  "brand-kit": "/dashboard/brand-kit",
+  campaigns: "/dashboard/campaigns",
+  posts: "/dashboard/social/content",
+  calendar: "/dashboard/social/calendar",
+  accounts: "/dashboard/social/accounts",
+  automations: "/dashboard/social/automations",
   "digital-products": "/dashboard/digital-products",
 };
 
@@ -113,6 +135,8 @@ export const reorderHref = (orderId: string) => `${ROUTES["new-order"]}?reorder=
 export function useActiveDestination(): Destination | null {
   const pathname = usePathname();
   if (pathname === FINDER_ROUTE) return "new-order";
+  // Writing or editing a post belongs to Posts.
+  if (pathname.startsWith("/dashboard/social/publishing")) return "posts";
   const match = (Object.entries(ROUTES) as [Destination, string][])
     .sort((a, b) => b[1].length - a[1].length)
     // Overview is the dashboard home only; pages without their own item (Notifications, Security) don't light it up.

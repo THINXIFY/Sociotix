@@ -18,6 +18,7 @@ import {
   LayoutGrid,
   List,
   MoreHorizontal,
+  Palette,
   Pencil,
   PenLine,
   Plus,
@@ -25,8 +26,11 @@ import {
   Star,
   Trash2,
   X,
+  Flag,
 } from "lucide-react";
+import { BrandChip, BrandSelect } from "@/components/brand/brand-parts";
 import { ConfirmDialog } from "@/components/dashboard/account-ui";
+import { BRAND_ROUTES, type BrandSummary } from "@/lib/brand";
 import { Panel, useHydrated } from "@/components/dashboard/shared";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { menuItem, menuItemDestructive, menuPopup, menuSeparator } from "@/components/ui/menu";
@@ -48,6 +52,8 @@ import { SOCIAL_PLATFORM, SOCIAL_PLATFORMS, type SocialProviderId } from "@/lib/
 import { POST_STATE_LABEL, POST_TEXT_MAX, postHref, PUBLISHING_ROUTES, type PostState, type PostView, type PublishingData } from "@/lib/social/publishing";
 import { browserTimeZone, utcToZonedInput } from "@/lib/social/time";
 import { cn } from "@/lib/utils";
+import { PageGuide } from "@/components/dashboard/page-guide";
+import { campaignHref, type CampaignSummary } from "@/lib/campaign";
 import { fieldClass, labelClass, MediaThumb, UploadButton, uploadMany } from "./content-parts";
 import { page, primaryButton, quietButton, SocialHeader } from "./parts";
 import { EmptyIllustration, PlatformStack, postsApi, StateBadge } from "./publishing-parts";
@@ -95,8 +101,18 @@ export function ContentLibrary({ data }: { data: PublishingData }) {
   return (
     <div className={page}>
       <SocialHeader
-        title="Content Library"
-        subtitle="Write, organise and reuse your social content in one place. Nothing here is published automatically."
+        title="Posts"
+        subtitle="Everything you write lives here: drafts, images and templates. Nothing is published without you."
+        guide={
+          <PageGuide
+            id="posts"
+            steps={[
+              { title: "Write a post", body: "Write once, then adjust it for each platform. It saves as a private draft.", href: PUBLISHING_ROUTES.compose, cta: "Write a post" },
+              { title: "Organise it", body: "Use folders, favourites and brands, or save a great caption as a template." },
+              { title: "Plan it", body: "Give a post a date and it appears on your calendar. Nothing is posted automatically.", href: PUBLISHING_ROUTES.calendar, cta: "Open calendar" },
+            ]}
+          />
+        }
         action={
           <Link href={PUBLISHING_ROUTES.compose} className={primaryButton}>
             <Plus className="size-4" aria-hidden /> New post
@@ -135,6 +151,7 @@ function ContentSection({ data }: { data: PublishingData }) {
   const router = useRouter();
   const hydrated = useHydrated();
   const folders = data.content.folders;
+  const brands = data.content.brands;
   const [view, setView] = React.useState<View>("all");
   const [q, setQ] = React.useState("");
   const [sort, setSort] = React.useState<Sort>("updated");
@@ -142,6 +159,8 @@ function ContentSection({ data }: { data: PublishingData }) {
   const [state, setState] = React.useState<PostState | "">("");
   const [kind, setKind] = React.useState<"" | "text" | "images">("");
   const [folder, setFolder] = React.useState<"all" | "none" | string>("all");
+  const [brand, setBrand] = React.useState<"all" | "none" | string>("all");
+  const [assigning, setAssigning] = React.useState<string[] | null>(null);
   const [layout, setLayout] = React.useState<Layout>("grid");
   const [selected, setSelected] = React.useState<string[]>([]);
   const [notice, setNotice] = React.useState<Notice>(null);
@@ -163,6 +182,7 @@ function ContentSection({ data }: { data: PublishingData }) {
     .filter((p) => (state ? p.state === state : true))
     .filter((p) => (kind === "images" ? p.mediaIds.length > 0 : kind === "text" ? p.mediaIds.length === 0 : true))
     .filter((p) => (folder === "all" ? true : folder === "none" ? !p.folderId : p.folderId === folder))
+    .filter((p) => (brand === "all" ? true : brand === "none" ? !p.brandId : p.brandId === brand))
     .filter((p) => !term || `${headline(p)} ${p.text} ${p.hashtags.join(" ")} ${p.notes}`.toLowerCase().includes(term))
     .sort((a, b) => {
       if (sort === "oldest") return a.updatedAt.localeCompare(b.updatedAt);
@@ -170,13 +190,14 @@ function ContentSection({ data }: { data: PublishingData }) {
       if (sort === "planned") return (a.plannedAt ?? "9999").localeCompare(b.plannedAt ?? "9999");
       return b.updatedAt.localeCompare(a.updatedAt);
     });
-  const filtered = !!(q || platform || state || kind || folder !== "all");
+  const filtered = !!(q || platform || state || kind || folder !== "all" || brand !== "all");
   const clearFilters = () => {
     setQ("");
     setPlatform("");
     setState("");
     setKind("");
     setFolder("all");
+    setBrand("all");
   };
 
   async function run(path: string, method: string, body: unknown, ok: string, after?: () => void) {
@@ -191,13 +212,13 @@ function ContentSection({ data }: { data: PublishingData }) {
     return r;
   }
 
-  async function bulk(action: "favorite" | "unfavorite" | "archive" | "restore" | "delete" | "move", targets: string[], folderId?: string | null) {
+  async function bulk(action: "favorite" | "unfavorite" | "archive" | "restore" | "delete" | "move" | "brand", targets: string[], folderId?: string | null) {
     setBusy(true);
-    const r = await postsApi<{ done: number; skipped: { id: string; reason: string }[] }>("/api/content/bulk", { method: "POST", body: JSON.stringify({ action, ids: targets, ...(action === "move" ? { folderId: folderId ?? null } : {}) }) });
+    const r = await postsApi<{ done: number; skipped: { id: string; reason: string }[] }>("/api/content/bulk", { method: "POST", body: JSON.stringify({ action, ids: targets, ...(action === "move" ? { folderId: folderId ?? null } : {}), ...(action === "brand" ? { brandId: folderId ?? null } : {}) }) });
     setBusy(false);
     if (!r.ok) return setNotice({ ok: false, text: r.message });
     const { done, skipped } = r.data;
-    const verb = { favorite: "favorited", unfavorite: "removed from favorites", archive: "archived", restore: "restored", delete: "deleted", move: "moved" }[action];
+    const verb = { favorite: "favorited", unfavorite: "removed from favorites", archive: "archived", restore: "restored", delete: "deleted", move: "moved", brand: "updated" }[action];
     setNotice({ ok: skipped.length === 0, text: `${done} ${done === 1 ? "post" : "posts"} ${verb}.${skipped.length ? ` ${skipped.length} couldn't change: ${skipped[0]!.reason}` : ""}` });
     setSelected((s) => s.filter((id) => !targets.includes(id) || skipped.some((k) => k.id === id)));
     router.refresh();
@@ -272,6 +293,17 @@ function ContentSection({ data }: { data: PublishingData }) {
               <option value="text">Text only</option>
               <option value="images">With images</option>
             </select>
+            {brands.length ? (
+              <select aria-label="Brand" value={brand} onChange={(e) => setBrand(e.target.value)} className={selectClass}>
+                <option value="all">All brands</option>
+                <option value="none">No brand</option>
+                {brands.map((b) => (
+                  <option key={b.id} value={b.id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            ) : null}
             <select aria-label="Sort by" value={sort} onChange={(e) => setSort(e.target.value as Sort)} className={selectClass}>
               {SORTS.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -349,6 +381,8 @@ function ContentSection({ data }: { data: PublishingData }) {
                 checked={chosen.includes(p.id)}
                 onCheck={(on) => setSelected((s) => (on ? [...s, p.id] : s.filter((x) => x !== p.id)))}
                 folderName={folders.find((f) => f.id === p.folderId)?.name}
+                brand={brands.find((b) => b.id === p.brandId)}
+                campaign={p.campaignId ? data.content.campaigns.find((c) => c.id === p.campaignId) : undefined}
                 busy={busy}
                 actions={{
                   favorite: () => toggleFav(p),
@@ -356,6 +390,7 @@ function ContentSection({ data }: { data: PublishingData }) {
                   template: () => toTemplate(p),
                   plan: () => setPlanning(p),
                   move: () => setMoving([p.id]),
+                  assignBrand: () => setAssigning([p.id]),
                   archive: () => void bulk(p.archivedAt ? "restore" : "archive", [p.id]),
                   remove: () => setConfirmDelete([p.id]),
                 }}
@@ -375,6 +410,9 @@ function ContentSection({ data }: { data: PublishingData }) {
           </button>
           <button type="button" className={cn(quietButton, "h-10 sm:h-9")} disabled={busy} onClick={() => setMoving(chosen)}>
             <FolderInput className="size-4" aria-hidden /> Move
+          </button>
+          <button type="button" className={cn(quietButton, "h-10 sm:h-9")} disabled={busy} onClick={() => setAssigning(chosen)}>
+            <Palette className="size-4" aria-hidden /> Brand
           </button>
           <button type="button" className={cn(quietButton, "h-10 sm:h-9")} disabled={busy} onClick={() => void bulk(view === "archived" ? "restore" : "archive", chosen)}>
             {view === "archived" ? <ArchiveRestore className="size-4" aria-hidden /> : <Archive className="size-4" aria-hidden />} {view === "archived" ? "Restore" : "Archive"}
@@ -402,8 +440,20 @@ function ContentSection({ data }: { data: PublishingData }) {
         }}
       />
 
+      <BrandDialog
+        key={`brand-${assigning?.join(",") ?? "none"}`}
+        targets={assigning}
+        brands={brands}
+        initial={assigning && assigning.length === 1 ? (data.posts.find((p) => p.id === assigning[0])?.brandId ?? null) : null}
+        onClose={() => setAssigning(null)}
+        onAssign={(brandId) => {
+          const t = assigning ?? [];
+          setAssigning(null);
+          void bulk("brand", t, brandId);
+        }}
+      />
       <MoveDialog
-        key={moving?.join(",") ?? "none"}
+        key={`move-${moving?.join(",") ?? "none"}`}
         targets={moving}
         folders={folders}
         onClose={() => setMoving(null)}
@@ -413,7 +463,7 @@ function ContentSection({ data }: { data: PublishingData }) {
           void bulk("move", t, folderId);
         }}
       />
-      <PlanDialog key={planning?.id ?? "none"} post={planning} onClose={() => setPlanning(null)} onSave={(local, tz) => void run(`/api/content/posts/${planning!.id}/flags`, "PATCH", { plannedLocal: local, ...(local ? { timezone: tz } : {}) }, local ? "Planned on your calendar. Nothing will be posted." : "Removed from your calendar.", () => setPlanning(null))} />
+      <PlanDialog key={`plan-${planning?.id ?? "none"}`} post={planning} onClose={() => setPlanning(null)} onSave={(local, tz) => void run(`/api/content/posts/${planning!.id}/flags`, "PATCH", { plannedLocal: local, ...(local ? { timezone: tz } : {}) }, local ? "Planned on your calendar. Nothing will be posted." : "Removed from your calendar.", () => setPlanning(null))} />
       <FolderDialog
         key={`${folderDialog ?? "none"}-${folder}`}
         mode={folderDialog}
@@ -484,11 +534,12 @@ interface ItemActions {
   template: () => void;
   plan: () => void;
   move: () => void;
+  assignBrand: () => void;
   archive: () => void;
   remove: () => void;
 }
 
-function Item({ post: p, layout, hydrated, checked, onCheck, folderName, busy, actions }: { post: PostView; layout: Layout; hydrated: boolean; checked: boolean; onCheck: (on: boolean) => void; folderName?: string; busy: boolean; actions: ItemActions }) {
+function Item({ post: p, layout, hydrated, checked, onCheck, folderName, brand, campaign, busy, actions }: { post: PostView; layout: Layout; hydrated: boolean; checked: boolean; onCheck: (on: boolean) => void; folderName?: string; brand?: BrandSummary; campaign?: CampaignSummary; busy: boolean; actions: ItemActions }) {
   const locked = p.status === "scheduled";
   const title = headline(p);
   const thumb = p.mediaIds[0];
@@ -524,6 +575,13 @@ function Item({ post: p, layout, hydrated, checked, onCheck, folderName, busy, a
             <Folder className="size-3.5 shrink-0" aria-hidden /> <span className="truncate">{folderName}</span>
           </span>
         ) : null}
+        {brand ? <BrandChip brand={brand} /> : null}
+        {campaign ? (
+          <Link href={campaignHref(campaign.id, "content")} className="inline-flex max-w-40 items-center gap-1 rounded text-[0.72rem] text-muted-foreground outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40">
+            <Flag className="size-3.5 shrink-0" aria-hidden /> <span className="sr-only">Marketing plan: </span>
+            <span className="truncate">{campaign.name}</span>
+          </Link>
+        ) : null}
         <span className="text-[0.72rem] text-muted-foreground">{p.plannedAt && p.state === "planned" ? `Planned ${formatDateTime(p.plannedAt)}` : `Updated ${formatDateTime(p.updatedAt)}`}</span>
         <span className="ms-auto inline-flex items-center">
           <button type="button" onClick={actions.favorite} disabled={busy} aria-pressed={p.favorite} aria-label={p.favorite ? `Remove ${title} from favorites` : `Add ${title} to favorites`} className={cn(iconButton, p.favorite && "text-amber-500 hover:text-amber-500")}>
@@ -547,6 +605,9 @@ function Item({ post: p, layout, hydrated, checked, onCheck, folderName, busy, a
                   </Menu.Item>
                   <Menu.Item className={menuItem} onClick={actions.move}>
                     <FolderInput className="size-4" aria-hidden /> Move to folder…
+                  </Menu.Item>
+                  <Menu.Item className={menuItem} onClick={actions.assignBrand}>
+                    <Palette className="size-4" aria-hidden /> Assign brand…
                   </Menu.Item>
                   {!locked && !p.archivedAt ? (
                     <Menu.Item className={menuItem} onClick={actions.plan}>
@@ -589,6 +650,42 @@ function DialogFrame({ open, onClose, title, description, children, footer }: { 
         <div className="flex flex-wrap justify-end gap-2 border-t px-5 py-3.5">{footer}</div>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function BrandDialog({ targets, brands, initial, onClose, onAssign }: { targets: string[] | null; brands: BrandSummary[]; initial: string | null; onClose: () => void; onAssign: (brandId: string | null) => void }) {
+  const [value, setValue] = React.useState<string | null>(initial);
+  return (
+    <DialogFrame
+      open={!!targets}
+      onClose={onClose}
+      title={targets && targets.length > 1 ? `Assign a brand to ${targets.length} posts` : "Assign a brand"}
+      description="The text, images and plan of each post stay exactly as they are."
+      footer={
+        <>
+          <button type="button" className={quietButton} onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className={primaryButton} onClick={() => onAssign(value)}>
+            Save
+          </button>
+        </>
+      }
+    >
+      <label className="block">
+        <span className={labelClass}>Brand</span>
+        <BrandSelect brands={brands} value={value} onChange={setValue} className="mt-1.5" />
+      </label>
+      {!brands.length ? (
+        <p className="mt-2 text-[0.78rem] text-muted-foreground">
+          You don&apos;t have any brands yet.{" "}
+          <Link href={BRAND_ROUTES.create} className="font-semibold text-primary underline-offset-2 hover:underline">
+            Create one in Brand Kit
+          </Link>
+          .
+        </p>
+      ) : null}
+    </DialogFrame>
   );
 }
 

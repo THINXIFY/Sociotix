@@ -44,7 +44,7 @@ describe("recommendations", () => {
 
 describe("destinations", () => {
   it("quick actions are at most four, in order, each a real destination", () => {
-    expect(QUICK_ACTION_IDS.map((id) => DESTINATIONS.find((d) => d.id === id)?.action)).toEqual(["Create a caption", "Find hashtags", "Get growth advice", "Explore Social Management"]);
+    expect(QUICK_ACTION_IDS.map((id) => DESTINATIONS.find((d) => d.id === id)?.action)).toEqual(["Create a caption", "Find hashtags", "Get growth advice", "Open Start here"]);
   });
 
   it("AI destinations link to their registered tool pages; dashboard links point at real routes", () => {

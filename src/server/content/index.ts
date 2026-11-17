@@ -25,6 +25,9 @@ import { isTimeZone } from "@/lib/social/time";
 import { hit } from "../auth/rate-limit";
 import { inspectImage } from "../blog/media";
 import type { Db, Executor } from "../db/client";
+import { assertOwnBrand, brandSummaries } from "../brand";
+import { campaignSummaries } from "../campaign";
+import { assertBrandFitsCampaign } from "../campaign/rules";
 import { contentFolders, contentMedia, contentPostMedia, contentTemplates, socialPosts } from "../db/schema";
 import { AppError, errors, pgErrorOf } from "../errors";
 import { attachMedia, deletePost, ownPost, rebuildPostMedia, saveDraft, toUtc } from "../social/publishing";
@@ -57,7 +60,7 @@ const name = (max: number, what: string) =>
 /* -------------------------------------------------------------------------- */
 
 export async function contentMeta(db: Db, customerId: string): Promise<ContentMeta> {
-  const [folders, folderCounts, templates, media, usage] = await Promise.all([
+  const [folders, folderCounts, templates, media, usage, brandList] = await Promise.all([
     db.select().from(contentFolders).where(eq(contentFolders.customerId, customerId)).orderBy(sql`lower(${contentFolders.name})`),
     db.select({ folderId: socialPosts.folderId, n: count() }).from(socialPosts).where(and(eq(socialPosts.customerId, customerId), isNotNull(socialPosts.folderId))).groupBy(socialPosts.folderId),
     db.select().from(contentTemplates).where(eq(contentTemplates.customerId, customerId)).orderBy(sql`${contentTemplates.updatedAt} desc`),
@@ -67,12 +70,16 @@ export async function contentMeta(db: Db, customerId: string): Promise<ContentMe
       .where(eq(contentMedia.customerId, customerId))
       .orderBy(sql`${contentMedia.createdAt} desc`),
     db.select({ mediaId: contentPostMedia.mediaId, n: count() }).from(contentPostMedia).where(eq(contentPostMedia.customerId, customerId)).groupBy(contentPostMedia.mediaId),
+    brandSummaries(db, customerId),
   ]);
+  const campaignList = await campaignSummaries(db, customerId);
   const used = new Map(usage.map((u) => [u.mediaId, u.n]));
   const counts = new Map(folderCounts.map((c) => [c.folderId, c.n]));
   const mediaViews: MediaView[] = media.map((m) => ({ ...m, createdAt: m.createdAt.toISOString(), usedBy: used.get(m.id) ?? 0 }));
   return {
     folders: folders.map((f) => ({ id: f.id, name: f.name, count: counts.get(f.id) ?? 0 })),
+    brands: brandList,
+    campaigns: campaignList,
     templates: templates.map((t) => ({ id: t.id, name: t.name, body: t.body, hashtags: t.hashtags, providers: t.providers.filter(isSocialProvider), updatedAt: t.updatedAt.toISOString() })),
     media: mediaViews,
     mediaBytes: mediaViews.reduce((a, m) => a + m.sizeBytes, 0),
@@ -139,6 +146,8 @@ const flagsInput = z
     favorite: z.boolean().optional(),
     archived: z.boolean().optional(),
     folderId: z.string().uuid().nullable().optional(),
+    /** Brand Kit (BR-01): assign a brand, or null to clear it. Changing it never touches the draft's content or version. */
+    brandId: z.string().uuid().nullable().optional(),
     /** Plan the draft on the calendar (a local date and time), or clear it with null. */
     plannedLocal: z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).nullable().optional(),
     timezone: z.string().refine(isTimeZone, "Unknown time zone.").optional(),
@@ -162,6 +171,11 @@ async function applyFlags(tx: Executor, customerId: string, id: string, f: PostF
       if (!own) throw new AppError("VALIDATION_FAILED", "That folder isn't available.", { details: { field: "folderId" } });
     }
     set.folderId = f.folderId;
+  }
+  if (f.brandId !== undefined) {
+    await assertOwnBrand(tx, customerId, f.brandId);
+    await assertBrandFitsCampaign(tx, customerId, p.campaignId, f.brandId);
+    set.brandId = f.brandId;
   }
   if (f.plannedLocal !== undefined) {
     set.plannedAt = f.plannedLocal ? new Date(toUtc(f.plannedLocal, f.timezone!).iso) : null;
@@ -204,6 +218,7 @@ export async function setPostMedia(db: Db, customerId: string, id: string, raw: 
 const bulkInput = z.discriminatedUnion("action", [
   z.strictObject({ action: z.enum(["favorite", "unfavorite", "archive", "restore", "delete"]), ids: z.array(z.string().uuid()).min(1).max(BULK_MAX) }),
   z.strictObject({ action: z.literal("move"), ids: z.array(z.string().uuid()).min(1).max(BULK_MAX), folderId: z.string().uuid().nullable() }),
+  z.strictObject({ action: z.literal("brand"), ids: z.array(z.string().uuid()).min(1).max(BULK_MAX), brandId: z.string().uuid().nullable() }),
 ]);
 
 type BulkInput = z.infer<typeof bulkInput>;
@@ -219,6 +234,8 @@ function flagsFor(input: BulkInput): PostFlags {
       return { archived: false };
     case "move":
       return { folderId: input.folderId };
+    case "brand":
+      return { brandId: input.brandId };
     default:
       throw new AppError("VALIDATION_FAILED", "Unknown action.");
   }
@@ -329,6 +346,8 @@ const importInput = z.strictObject({
   source: z.enum(Object.keys(AI_SAVE_SOURCES) as [keyof typeof AI_SAVE_SOURCES, ...(keyof typeof AI_SAVE_SOURCES)[]]),
   kind: z.enum(["draft", "template"]),
   folderId: z.string().uuid().nullable().optional(),
+  /** Brand Kit (BR-01): the brand the saved drafts are for. Hashtag templates have no brand. */
+  brandId: z.string().uuid().nullable().optional(),
   timezone: z.string().refine(isTimeZone, "Unknown time zone."),
   items: z.array(importItem).min(1, "There's nothing to save.").max(IMPORT_MAX, `Save up to ${IMPORT_MAX} items at a time.`),
 });
@@ -361,6 +380,7 @@ export async function importAiContent(db: Db, customerId: string, raw: unknown):
     const [own] = await db.select({ id: contentFolders.id }).from(contentFolders).where(and(eq(contentFolders.id, input.folderId), eq(contentFolders.customerId, customerId)));
     if (!own) throw new AppError("VALIDATION_FAILED", "That folder isn't available.", { details: { field: "folderId" } });
   }
+  await assertOwnBrand(db, customerId, input.brandId);
   const provenance = `Saved from ${source.label}.`;
   const since = new Date(Date.now() - DUPLICATE_WINDOW_MS);
   const out: ImportResult = { kind: input.kind, created: [], duplicates: [], skipped: [] };
@@ -385,15 +405,15 @@ export async function importAiContent(db: Db, customerId: string, raw: unknown):
       const title = it.title ? Array.from(it.title).slice(0, 100).join("") : null;
       const notes = (it.notes.trim() ? `${provenance}\n\n${it.notes.trim()}` : provenance).slice(0, NOTES_MAX);
       const recent = await db
-        .select({ id: socialPosts.id, title: socialPosts.title, providers: socialPosts.providers, hashtags: socialPosts.hashtags })
+        .select({ id: socialPosts.id, title: socialPosts.title, providers: socialPosts.providers, hashtags: socialPosts.hashtags, brandId: socialPosts.brandId })
         .from(socialPosts)
         .where(and(eq(socialPosts.customerId, customerId), eq(socialPosts.body, it.text), sql`${socialPosts.archivedAt} is null`, sql`${socialPosts.createdAt} > ${since}`, sql`${socialPosts.notes} like 'Saved from AI%'`));
-      const dupe = recent.find((p) => (p.title ?? null) === title && sameSet(p.providers, it.providers) && sameSet(p.hashtags, it.hashtags));
+      const dupe = recent.find((p) => (p.title ?? null) === title && p.brandId === (input.brandId ?? null) && sameSet(p.providers, it.providers) && sameSet(p.hashtags, it.hashtags));
       if (dupe) {
         out.duplicates.push({ id: dupe.id, name: title ?? "Draft" });
         continue;
       }
-      const post = await saveDraft(db, customerId, null, { title, text: it.text, providers: it.providers, hashtags: it.hashtags, notes, folderId: input.folderId ?? null, timezone: input.timezone });
+      const post = await saveDraft(db, customerId, null, { title, text: it.text, providers: it.providers, hashtags: it.hashtags, notes, folderId: input.folderId ?? null, brandId: input.kind === "draft" ? (input.brandId ?? null) : null, timezone: input.timezone });
       out.created.push({ id: post.id, name: title ?? "Draft" });
     } catch (e) {
       if (!(e instanceof AppError) && !(e instanceof z.ZodError)) throw e;
