@@ -19,6 +19,7 @@
     "db:studio": "drizzle-kit studio",
     "db:utf8-copy": "tsx --conditions=react-server scripts/db/utf8-copy.ts",
     "worker": "tsx --conditions=react-server src/worker/index.ts",
+    "ops:check": "tsx --conditions=react-server scripts/ops/check.ts",
     "auth:secrets": "tsx scripts/auth/secrets.ts",
     "auth:bootstrap-owner": "tsx --conditions=react-server scripts/auth/bootstrap-owner.ts",
     "auth:reset-mfa": "tsx --conditions=react-server scripts/auth/reset-mfa.ts",

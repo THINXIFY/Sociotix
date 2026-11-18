@@ -80,6 +80,9 @@ believed. This is why origin lock-down is required and not optional.
 | Backups | The provider's backup notifications | any failure |
 | TLS | Certificate-expiry monitor (certbot renews at 30 days) | < 14 days left |
 
+`npm run ops:check` runs these checks from the host. Full thresholds and recovery actions:
+`MONITORING_RECOVERY.md`. Release and Go/No-Go: `RELEASE_CHECKLIST.md`.
+
 Health responses reveal only a one-word status per check. Don't expose logs or `pgboss` tables publicly.
 
 ## Staging launch checklist
