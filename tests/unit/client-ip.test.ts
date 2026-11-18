@@ -78,8 +78,9 @@ describe("configuration", () => {
   const KEY_A = "a".repeat(44);
   const KEY_B = "b".repeat(44);
   const PROD = { NODE_ENV: "production", APP_ENV: "production", DATABASE_URL: "postgresql://a:b@db.example.com/prod?sslmode=verify-full", APP_URL: "https://app.example.com", AUTH_SECRET: KEY_A, DATA_ENCRYPTION_KEY: KEY_B, EMAIL_TRANSPORT: "postmark", EMAIL_FROM: "Sociotix <no-reply@example.com>", EMAIL_API_KEY: "pm-key-0123456789" };
-  it("production requires explicit proxy trust", () => {
-    expect(() => parseEnv(PROD)).toThrow(/TRUST_PROXY_HEADERS must be true in production/);
+  it("production and staging (preview) require explicit proxy trust", () => {
+    expect(() => parseEnv(PROD)).toThrow(/TRUST_PROXY_HEADERS must be true when APP_ENV is production/);
+    expect(() => parseEnv({ ...PROD, APP_ENV: "preview" })).toThrow(/TRUST_PROXY_HEADERS must be true when APP_ENV is preview/);
     expect(parseEnv({ ...PROD, TRUST_PROXY_HEADERS: "true" })).toMatchObject({ TRUST_PROXY_HEADERS: true, TRUSTED_PROXY_HOPS: 1 });
   });
   it("validates the trust settings and keeps development unchanged", () => {

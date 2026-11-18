@@ -1,0 +1,28 @@
+# Sociotix background worker (OPS-01B template). No network listener. Its health is GET /api/health/worker.
+[Unit]
+Description=Sociotix worker (pg-boss jobs)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sociotix
+Group=sociotix
+WorkingDirectory=/srv/sociotix/current
+EnvironmentFile=/etc/sociotix/sociotix.env
+# Same command as `npm run worker`, called directly so npm never needs a writable home or cache.
+# Runs through tsx (a devDependency), so install with plain `npm ci`, not --omit=dev.
+ExecStart=/srv/sociotix/current/node_modules/.bin/tsx --conditions=react-server src/worker/index.ts
+Restart=always
+RestartSec=10
+# The worker stops itself within 30 s on SIGTERM; unfinished jobs retry after their lease expires.
+KillSignal=SIGTERM
+TimeoutStopSec=40
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+CapabilityBoundingSet=
+
+[Install]
+WantedBy=multi-user.target

@@ -165,11 +165,12 @@ export const envSchema = z
       else if (!e.APP_URL.startsWith("https://")) ctx.addIssue({ code: "custom", path: ["APP_URL"], message: "must use https outside local development" });
       if (!e.AUTH_SECRET) ctx.addIssue({ code: "custom", path: ["AUTH_SECRET"], message: `is required when APP_ENV is ${appEnv}` });
       if (!e.DATA_ENCRYPTION_KEY) ctx.addIssue({ code: "custom", path: ["DATA_ENCRYPTION_KEY"], message: `is required when APP_ENV is ${appEnv}` });
+      // Route handlers never see the socket address, so without trusted proxy headers every per-IP limit would be off
+      // (SEC-02). Staging (preview) must behave like production here.
+      if (!e.TRUST_PROXY_HEADERS) ctx.addIssue({ code: "custom", path: ["TRUST_PROXY_HEADERS"], message: `must be true when APP_ENV is ${appEnv} (behind a proxy that meets the SEC-02 requirements)` });
     }
     if (appEnv === "production") {
       if (e.DEMO_MODE) ctx.addIssue({ code: "custom", path: ["DEMO_MODE"], message: "must be false in production" });
-      // Route handlers never see the socket address, so without trusted proxy headers every per-IP limit would be off.
-      if (!e.TRUST_PROXY_HEADERS) ctx.addIssue({ code: "custom", path: ["TRUST_PROXY_HEADERS"], message: "must be true in production (behind a proxy that meets the SEC-02 requirements)" });
       if (!e.EMAIL_TRANSPORT || e.EMAIL_TRANSPORT === "capture") ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: "must be a real provider (resend or postmark) in production" });
     }
     if (e.EMAIL_TRANSPORT === "resend" || e.EMAIL_TRANSPORT === "postmark") {

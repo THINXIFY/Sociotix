@@ -1,0 +1,30 @@
+# Sociotix web process (OPS-01B template). Listens on 127.0.0.1 only: nginx is the sole public entry point.
+[Unit]
+Description=Sociotix web (Next.js)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=sociotix
+Group=sociotix
+WorkingDirectory=/srv/sociotix/current
+# Secrets live here (owner root, group sociotix, mode 0640). Never in the repository.
+EnvironmentFile=/etc/sociotix/sociotix.env
+ExecStart=/srv/sociotix/current/node_modules/.bin/next start --hostname 127.0.0.1 --port 3000
+Restart=always
+RestartSec=5
+# Allow in-flight requests to finish on restart.
+KillSignal=SIGTERM
+TimeoutStopSec=30
+# Hardening.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/sociotix/current/.next
+CapabilityBoundingSet=
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target
