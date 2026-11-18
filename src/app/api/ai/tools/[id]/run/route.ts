@@ -16,7 +16,7 @@ export const POST = route<{ params: Promise<{ id: string }> }>(async (request, {
   assertSameOrigin(request);
   const session = await getCustomerSession().catch(() => null);
   if (session && !session.session.user.emailVerifiedAt) throw new AppError("FORBIDDEN", "Verify your email address to use Sociotix AI.");
-  const subject: AiSubject = session ? { kind: "account", userId: session.session.userId, customerId: session.customer.id } : { kind: "anonymous", ip: (await clientInfo()).ip ?? null };
+  const subject: AiSubject = session ? { kind: "account", userId: session.session.userId, customerId: session.customer.id } : { kind: "anonymous", ip: (await clientInfo()).ipKey ?? null };
   const result = await runTool(getDb(), (await params).id, await request.json().catch(() => ({})), subject, { signal: request.signal });
   return privateJson(result);
 });

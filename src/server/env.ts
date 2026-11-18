@@ -56,8 +56,20 @@ export const envSchema = z
     EMAIL_NOTIFICATIONS: bool.default(false),
     /** Show the illustrative dashboard/admin records to signed-in users (never in production). */
     DEMO_MODE: bool.default(false),
-    /** Trust x-forwarded-for from the hosting platform's proxy for client IPs. */
+    /** Read the client IP from proxy headers (SEC-02). Only behind a proxy you control; required in production. */
     TRUST_PROXY_HEADERS: bool.default(false),
+    /** Optional: a header your edge sets to the single client IP (e.g. cf-connecting-ip). When set, X-Forwarded-For is ignored. */
+    CLIENT_IP_HEADER: blank(
+      z
+        .string()
+        .trim()
+        .toLowerCase()
+        .regex(/^[a-z0-9-]{1,64}$/, "must be a header name like cf-connecting-ip")
+        .refine((h) => h !== "x-forwarded-for", "must name a single-IP header; X-Forwarded-For is read with TRUSTED_PROXY_HOPS instead")
+        .optional(),
+    ),
+    /** Without CLIENT_IP_HEADER: how many proxies you run that append to X-Forwarded-For (read from the right). */
+    TRUSTED_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
 
     /**
      * Manual bank transfer (Phase 5D). Off unless the operator turns it on AND
@@ -156,6 +168,8 @@ export const envSchema = z
     }
     if (appEnv === "production") {
       if (e.DEMO_MODE) ctx.addIssue({ code: "custom", path: ["DEMO_MODE"], message: "must be false in production" });
+      // Route handlers never see the socket address, so without trusted proxy headers every per-IP limit would be off.
+      if (!e.TRUST_PROXY_HEADERS) ctx.addIssue({ code: "custom", path: ["TRUST_PROXY_HEADERS"], message: "must be true in production (behind a proxy that meets the SEC-02 requirements)" });
       if (!e.EMAIL_TRANSPORT || e.EMAIL_TRANSPORT === "capture") ctx.addIssue({ code: "custom", path: ["EMAIL_TRANSPORT"], message: "must be a real provider (resend or postmark) in production" });
     }
     if (e.EMAIL_TRANSPORT === "resend" || e.EMAIL_TRANSPORT === "postmark") {

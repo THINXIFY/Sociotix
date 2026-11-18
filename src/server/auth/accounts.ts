@@ -55,7 +55,7 @@ export async function registerCustomer(db: Db, input: { name: string; email: str
   if (problem) throw fieldError("password", problem);
 
   await enforce(db, "register-global", "all", LIMITS.registerGlobal);
-  if (client.ip) await enforce(db, "register-ip", client.ip, LIMITS.registerIp);
+  if (client.ipKey) await enforce(db, "register-ip", client.ipKey, LIMITS.registerIp);
 
   const [existing] = await db.select({ id: users.id }).from(users).where(sql`lower(${users.email}) = ${email.data}`).limit(1);
   if (existing) {
@@ -100,7 +100,7 @@ export async function registerCustomer(db: Db, input: { name: string; email: str
 
 /** Confirms an email from a verification link. Idempotent for already-verified users. */
 export async function verifyEmail(db: Db, rawToken: string, client: ClientInfo = {}): Promise<{ status: "verified" | "invalid" }> {
-  if (client.ip) await enforce(db, "token-ip", client.ip, LIMITS.tokenIp);
+  if (client.ipKey) await enforce(db, "token-ip", client.ipKey, LIMITS.tokenIp);
   const used = await consumeToken(db, rawToken, "verify_email");
   if (!used) return { status: "invalid" };
   // Only the first confirmation counts as new; a later link for an already-verified address changes nothing.
@@ -117,7 +117,7 @@ export async function verifyEmail(db: Db, rawToken: string, client: ClientInfo =
 export async function resendVerification(db: Db, rawEmail: string, client: ClientInfo = {}): Promise<{ status: "check_email" }> {
   const email = emailSchema.safeParse(rawEmail);
   if (!email.success) throw fieldError("email", email.error.issues[0].message);
-  if (client.ip) await enforce(db, "reset-ip", client.ip, LIMITS.resetIp);
+  if (client.ipKey) await enforce(db, "reset-ip", client.ipKey, LIMITS.resetIp);
   const [u] = await db
     .select({ id: users.id, name: users.name, verified: users.emailVerifiedAt, customer: customers.id })
     .from(users)
@@ -136,7 +136,7 @@ export async function resendVerification(db: Db, rawEmail: string, client: Clien
 export async function loginCustomer(db: Db, input: { email: string; password: string }, client: ClientInfo = {}) {
   const email = emailSchema.safeParse(input.email);
   if (!email.success || !input.password) throw new AppError("UNAUTHENTICATED", LOGIN_FAILED);
-  if (client.ip) await enforce(db, "login-ip", client.ip, LIMITS.loginIp);
+  if (client.ipKey) await enforce(db, "login-ip", client.ipKey, LIMITS.loginIp);
   await enforce(db, "login-email", email.data, LIMITS.loginEmail);
 
   const [u] = await db
@@ -163,7 +163,7 @@ export async function loginCustomer(db: Db, input: { email: string; password: st
 export async function requestPasswordReset(db: Db, rawEmail: string, client: ClientInfo = {}): Promise<{ status: "check_email" }> {
   const email = emailSchema.safeParse(rawEmail);
   if (!email.success) throw fieldError("email", email.error.issues[0].message);
-  if (client.ip) await enforce(db, "reset-ip", client.ip, LIMITS.resetIp);
+  if (client.ipKey) await enforce(db, "reset-ip", client.ipKey, LIMITS.resetIp);
   const [u] = await db.select({ id: users.id, status: users.status }).from(users).where(sql`lower(${users.email}) = ${email.data}`).limit(1);
   if (u && u.status === "active") {
     if ((await hit(db, "email-send", email.data, LIMITS.emailSend)).ok) {
@@ -193,7 +193,7 @@ async function notifyPasswordChange(tx: Executor, userId: string, how: "changed"
 
 /** Sets a new password from a reset link and signs the user out everywhere. */
 export async function resetPassword(db: Db, rawToken: string, newPassword: string, client: ClientInfo = {}): Promise<{ status: "reset" | "invalid" }> {
-  if (client.ip) await enforce(db, "token-ip", client.ip, LIMITS.tokenIp);
+  if (client.ipKey) await enforce(db, "token-ip", client.ipKey, LIMITS.tokenIp);
   const peek = await peekToken(db, rawToken, "reset_password");
   if (!peek) return { status: "invalid" };
   const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, peek.userId)).limit(1);

@@ -53,7 +53,10 @@ export interface ValidSession {
 }
 
 export interface ClientInfo {
+  /** Verified client IP (audit and session records). */
   ip?: string | null;
+  /** Rate-limit identity for per-IP limits (SEC-02): the IP (IPv6 by /64), "unverified", or null when proxy trust is off. */
+  ipKey?: string | null;
   userAgent?: string | null;
 }
 

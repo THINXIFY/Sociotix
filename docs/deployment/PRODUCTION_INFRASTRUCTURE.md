@@ -57,7 +57,8 @@ rule below is broken. `.env.example` shows every key.
 - [ ] `AUTH_SECRET` and `DATA_ENCRYPTION_KEY`: generate with `npm run auth:secrets`; they must differ. **Never rotate
   `DATA_ENCRYPTION_KEY` without a re-encryption plan.**
 - [ ] `EMAIL_TRANSPORT=resend|postmark`, `EMAIL_FROM`, `EMAIL_API_KEY`, `SUPPORT_CONTACT_EMAIL`
-- [ ] `TRUST_PROXY_HEADERS=true`, only behind a proxy that meets section 5.2
+- [ ] `TRUST_PROXY_HEADERS=true` (required in production), plus either `CLIENT_IP_HEADER` or the right
+  `TRUSTED_PROXY_HOPS`, behind a proxy that meets section 5.2
 - [ ] `DATABASE_POOL_MAX` sized as in section 1 (default 10); `LOG_LEVEL=info`
 
 **Must stay off at launch (postponed)**
@@ -93,10 +94,24 @@ Branches).
 
 ### 5.2 Reverse-proxy requirements
 - HTTPS only, with HTTP → HTTPS redirects. The app already sends HSTS and the other security headers.
-- **Overwrite** `X-Forwarded-For` with the connecting client IP (for example nginx
-  `proxy_set_header X-Forwarded-For $remote_addr;`, or a Cloudflare Transform Rule setting it from
-  `cf.connecting_ip`). The app trusts the first entry, so an appended header lets visitors fake their IP and get
-  around the per-IP limits. Only then set `TRUST_PROXY_HEADERS=true`.
+- **Client IP (SEC-02).** The app reads client IPs only from proxies you explicitly trust (`src/server/client-ip.ts`):
+  - `TRUST_PROXY_HEADERS=true` is **required in production**; the app refuses to start without it. Route handlers
+    can't see the socket address, so without it every per-IP limit would be off.
+  - **Option A, edge header (preferred with a CDN):** `CLIENT_IP_HEADER=cf-connecting-ip` (or your edge's
+    equivalent, such as `fly-client-ip` or `true-client-ip`). The edge must **set** it on every request, and it must
+    hold exactly one address. `X-Forwarded-For` is then ignored.
+  - **Option B, `X-Forwarded-For` chain:** leave `CLIENT_IP_HEADER` empty and set `TRUSTED_PROXY_HOPS` to the
+    number of proxies **you run** that append to the header: `1` for the platform's load balancer only, `2` for
+    edge + load balancer. The app reads the entry that many places from the **right**. The first entry is never
+    trusted, so it doesn't matter whether a proxy appends or overwrites.
+  - **The origin must be reachable only through those proxies.** Use the platform's private networking, an IP
+    allow-list for the edge's ranges, or an authenticated origin pull. A request that reaches the app directly can
+    set any header it likes, and no header-based scheme can detect that.
+  - Requests whose client IP can't be established (header missing, malformed, duplicated, or a chain shorter than
+    the hops) share a single strict `unverified` rate-limit bucket, so forging headers never opens a fresh one.
+    IPv6 clients are limited per /64. If legitimate users ever hit "Too many attempts" together, the hop count or
+    header is misconfigured.
+  - `X-Real-IP`, `True-Client-IP` and similar headers are ignored unless named in `CLIENT_IP_HEADER`.
 - **Rate limits (per IP):** `/login`, `/register`, `/forgot-password`, `/reset-password`, `/api/ai/*`,
   `/api/catalog/*` and search. Start with about 10 requests/minute on the auth pages and about 60/minute on search.
   The app's own limiters stay in place behind these.

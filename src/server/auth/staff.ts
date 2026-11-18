@@ -100,7 +100,7 @@ export async function describeSetupLink(db: Db, rawToken: string) {
 
 /** Consumes the setup link, sets the password, verifies the email and starts an MFA-pending session. */
 export async function completeStaffSetup(db: Db, rawToken: string, password: string, client: ClientInfo = {}) {
-  if (client.ip) await enforce(db, "token-ip", client.ip, LIMITS.tokenIp);
+  if (client.ipKey) await enforce(db, "token-ip", client.ipKey, LIMITS.tokenIp);
   const peek = await peekToken(db, rawToken, "staff_invite");
   if (!peek) throw new AppError("NOT_FOUND", "This setup link is invalid or has expired. Ask the owner for a new one.");
   const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, peek.userId)).limit(1);
@@ -124,7 +124,7 @@ export async function completeStaffSetup(db: Db, rawToken: string, password: str
 export async function loginStaff(db: Db, input: { email: string; password: string }, client: ClientInfo = {}) {
   const email = emailSchema.safeParse(input.email);
   if (!email.success || !input.password) throw new AppError("UNAUTHENTICATED", LOGIN_FAILED);
-  if (client.ip) await enforce(db, "login-ip", client.ip, LIMITS.loginIp);
+  if (client.ipKey) await enforce(db, "login-ip", client.ipKey, LIMITS.loginIp);
   await enforce(db, "staff-login-email", email.data, LIMITS.loginEmail);
   const [u] = await db
     .select({ id: users.id, hash: users.passwordHash, status: users.status, verified: users.emailVerifiedAt, staffStatus: staffMembers.status })

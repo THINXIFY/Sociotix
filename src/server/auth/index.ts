@@ -1,6 +1,7 @@
 import "server-only";
 import { eq } from "drizzle-orm";
 import { cookies, headers } from "next/headers";
+import { resolveClientIp } from "../client-ip";
 import { type Db, type Executor, getDb } from "../db/client";
 import { customers, mfaFactors, roleModuleAccess, roleSensitivePermissions, roles, staffMembers } from "../db/schema";
 import { ACCESS_LEVEL, MODULE, SENSITIVE_PERMISSION } from "../db/schema/enums";
@@ -40,12 +41,17 @@ async function cookieValue(kind: SessionKind): Promise<string | null> {
   }
 }
 
-/** Client IP (only when the hosting proxy is trusted) and user agent, for rate limits and audit. */
+/**
+ * Client IP and user agent, for rate limits and audit (SEC-02). The IP comes only from proxy headers we explicitly
+ * trust (see src/server/client-ip.ts); `ipKey` is the rate-limit identity, "unverified" when trust is on but no valid
+ * IP could be established, so forged or missing headers can't open a fresh bucket.
+ */
 export async function clientInfo(): Promise<ClientInfo> {
   try {
     const h = await headers();
-    const ip = getEnv().TRUST_PROXY_HEADERS ? (h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? h.get("x-real-ip")) : null;
-    return { ip: ip || null, userAgent: h.get("user-agent") };
+    const env = getEnv();
+    const r = resolveClientIp((n) => h.get(n), { trust: env.TRUST_PROXY_HEADERS, header: env.CLIENT_IP_HEADER, hops: env.TRUSTED_PROXY_HOPS });
+    return { ip: r.ip, ipKey: r.key, userAgent: h.get("user-agent") };
   } catch {
     return {};
   }
