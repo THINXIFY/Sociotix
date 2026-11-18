@@ -35,15 +35,22 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
 
       - name: Install dependencies
         run: npm ci
+
+      # PageProps/LayoutProps are generated into .next/types; a fresh checkout has none.
+      - name: Generate route types
+        run: npx next typegen
+        env:
+          APP_ENV: development
+          NEXT_TELEMETRY_DISABLED: "1"
 
       - name: Typecheck
         run: npm run typecheck
