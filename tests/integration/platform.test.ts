@@ -86,6 +86,31 @@ describe("health and jobs against PostgreSQL", () => {
     }
   });
 
+  it("worker heartbeat: unknown before the first beat, ok while fresh, stale after three minutes (OPS-01A)", async () => {
+    const { checkWorker, recordWorkerHeartbeat, HEARTBEAT_STALE_MS } = await import("@/server/health");
+    const { platformSettings } = await import("@/server/db/schema");
+    await db.delete(platformSettings).where(eq(platformSettings.key, "worker.heartbeat"));
+    expect(await checkWorker(Date.now(), db)).toBe("unknown");
+    const t = new Date();
+    await recordWorkerHeartbeat(db, t);
+    await recordWorkerHeartbeat(db, t); // idempotent upsert, one row
+    expect(await checkWorker(t.getTime() + 60_000, db)).toBe("ok");
+    expect(await checkWorker(t.getTime() + HEARTBEAT_STALE_MS + 1, db)).toBe("stale");
+    const [row] = await db.select().from(platformSettings).where(eq(platformSettings.key, "worker.heartbeat"));
+    expect(Object.keys(row!.value as object)).toEqual(["at"]); // only a timestamp is stored
+    vi.stubEnv("DATABASE_URL", inject("databaseUrl"));
+    resetEnvCache();
+    try {
+      const { GET } = await import("@/app/api/health/worker/route");
+      const res = await GET(new Request("http://localhost/api/health/worker"), {});
+      expect(res.headers.get("cache-control")).toBe("no-store");
+      expect(await res.json()).toEqual({ worker: res.status === 200 ? "ok" : expect.stringMatching(/^(stale|unknown)$/) });
+    } finally {
+      vi.unstubAllEnvs();
+      resetEnvCache();
+    }
+  });
+
   it("runs the ledger-verification job through pg-boss, deduplicating by idempotency key", async () => {
     const boss = await startQueue(inject("databaseUrl"), { supervise: false });
     try {

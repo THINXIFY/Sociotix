@@ -1,0 +1,65 @@
+# Sociotix CI (OPS-01A): verify every pull request and every push to main.
+# Checks only. It never deploys, never touches a real database and uses no secrets:
+# tests run against a throwaway PostgreSQL service container (UTF-8, discarded after
+# the job), and the build runs with non-secret settings.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        # Throwaway database for this job only (the password exists only inside the CI container).
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: socivanta_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Tests (unit + integration on the throwaway PostgreSQL service)
+        run: npm test
+        env:
+          # tests/setup/postgres.ts resets and migrates this database; its name must contain "test".
+          TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/socivanta_test
+
+      - name: Production build
+        run: npm run build
+        env:
+          # Build-time only. No database, secrets or external services are used while building.
+          APP_ENV: development
+          NEXT_TELEMETRY_DISABLED: "1"

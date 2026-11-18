@@ -3,6 +3,7 @@ import { createDb } from "@/server/db/client";
 import { getEnv } from "@/server/env";
 import { registerWorkers, SCHEDULE } from "@/server/jobs/handlers";
 import { enqueue, startQueue } from "@/server/jobs/queue";
+import { recordWorkerHeartbeat } from "@/server/health";
 import { logger } from "@/server/log";
 
 /**
@@ -19,10 +20,12 @@ async function main() {
   logger().info({ appEnv: env.APP_ENV }, "worker started");
 
   // Recurring jobs: one queued run per time bucket, however many workers run.
+  // Each tick also records a heartbeat, read by /api/health/worker (OPS-01A).
   const tick = () =>
-    Promise.all(
-      SCHEDULE.map((s) => enqueue(boss, s.name, {}, { idempotencyKey: `${s.name}:${Math.floor(Date.now() / 1000 / s.everySeconds)}` }).catch((err) => logger().error({ err, job: s.name }, "could not queue job"))),
-    );
+    Promise.all([
+      ...SCHEDULE.map((s) => enqueue(boss, s.name, {}, { idempotencyKey: `${s.name}:${Math.floor(Date.now() / 1000 / s.everySeconds)}` }).catch((err) => logger().error({ err, job: s.name }, "could not queue job"))),
+      recordWorkerHeartbeat(db).catch((err) => logger().error({ err }, "could not record worker heartbeat")),
+    ]);
   void tick();
   const timer = setInterval(() => void tick(), 60_000);
 
